@@ -16,7 +16,13 @@ void UnitGenerator::set_params(double p1, double p2){
   param2_ = p2>=0 ? p2 : 0;
 }
 
-
+double UnitGenerator::interpolate(double *array, int length, double index){
+  int trunc_index = floor(index);
+  double leftover = index-trunc_index;
+  double sample_one = array[(trunc_index + length)%length];
+  double sample_two = array[(trunc_index + length + 1)%length];
+  return sample_one*(1-leftover) + sample_two*leftover;
+}
 
 
 /*
@@ -87,22 +93,20 @@ Chorus::~Chorus(){
 // Jon Dattorro - Part 2: Delay-Line Modulation and Chorus 
 // https://ccrma.stanford.edu/~dattorro/EffectDesignPart2.pdf
 double Chorus::tick(double in){
-  double blend = 0.0;
-  double feedback = 0;//0.7071;
+  double blend = 1.0;//1.0;
+  double feedback = 0.7071;
   double feedforward = 0.7071;
   //feedback
-  int buf_fb = buf_write_ - round(sample_rate_ * kDelayCenter) + buffer_size_;
-  buf_fb %= buffer_size_;
+  double buf_fb = buf_write_ - sample_rate_ * kDelayCenter + buffer_size_;
+  buf_fb = fmod(buf_fb, buffer_size_);
   
   //feedforward
-  int buf_read = buf_write_ - round(sample_rate_ * ( kDelayCenter + 
-        depth_* sin(rate_hz_ * sample_count_))) + buffer_size_;
-  buf_read %= buffer_size_;
+  double buf_read = buf_write_ - sample_rate_ * ( kDelayCenter + 
+        depth_* sin(rate_hz_ * sample_count_)) + buffer_size_;
+  buf_read = fmod(buf_read,buffer_size_);
   
-  buffer_[buf_write_] = in - feedback * buffer_[buf_fb];
-  printf("%lf %2.25f\n", round(sample_rate_ * ( kDelayCenter + 
-        depth_* sin(rate_hz_ * sample_count_))), buffer_[buf_write_]);
-  double output = feedforward * buffer_[buf_read] + blend * buffer_[buf_write_];
+  buffer_[buf_write_] = in - feedback * interpolate(buffer_, buffer_size_, buf_fb);
+  double output = feedforward * interpolate(buffer_, buffer_size_, buf_read) + blend * buffer_[buf_write_];
   
   //Wrap variables to prevent out-of-bounds/overflow
   ++sample_count_;
@@ -134,12 +138,44 @@ The delay effect plays the signal back some time later
   param1 = time in seconds until delay repeats
   param2 = amount of feedback in delay buffer
 */
-Delay::Delay(){}
-Delay::~Delay(){}
+Delay::Delay(int sample_rate){
+  sample_rate_ = sample_rate;
+  buffer_size_ = ceil(sample_rate_ * param1_);
+  //Makes an empty buffer
+  buffer_ = new float[buffer_size_];
+  for (int i = 0; i < buffer_size_; ++i) buffer_[i] = 0;
+}
+
+Delay::~Delay(){
+  delete[] buffer_;
+}
 // Processes a single sample in the unit generator
 double Delay::tick(double in){
   return in;
 }
+
+void Delay::set_params(double p1, double p2){
+  p1 = p1 > 2 ? 2 : p1;
+  p1 = p1 < 0 ? 0 : p1;
+  if (p1!=param1_){
+    param1_ = p1;
+    int new_buffer_size = ceil(sample_rate_ * param1_);
+  
+    float *new_buffer;
+    new_buffer = new float[new_buffer_size];
+    for (int i = 0; i < new_buffer_size; ++i) new_buffer[new_buffer_size-i-1] = buffer_[(buf_write_-i+buffer_size_)%buffer_size_]; 
+    delete[] buffer_;
+    buffer_ = new_buffer;
+    buffer_size_ = new_buffer_size;
+  }
+  
+  p2 = p2 > 1 ? 1 : p2;
+  param2_ = p2 < 0? 0 : p2;
+  
+}
+
+
+
 
 
 /*

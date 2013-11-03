@@ -23,10 +23,11 @@ int audioCallback(void *outputBuffer, void *inputBuffer, unsigned int num_frames
    
   double newVal = 0;
   for (unsigned int i = 0; i < num_frames; ++i) {
-    //newVal = chain->tick(input_buffer[i] / UGenChain::kMaxOutput);
-    double out = .3 * sin(2*3.141*400/44100*(++globaltime));
-    newVal = chain->tick(out);
+    newVal = chain->tick(input_buffer[i] / UGenChain::kMaxOutput);
+    //double out = .3 * sin(2*3.141*400/44100*(++globaltime));
+    //newVal = chain->tick(out);
     //std::cout << newVal << std::endl;
+    
     //Output limiting
     if (fabs(newVal) > 1.001){
       printf("Clipping has occured!\n");

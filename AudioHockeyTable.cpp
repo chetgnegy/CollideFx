@@ -23,7 +23,7 @@ int main(int argc, char *argv[]) {
   myChain->initialize();
   
   Chorus *c = new Chorus(44100);
-  c->set_params(.8,.9);
+  c->set_params(.2,.99);
   myChain->add_effect(c);
   
   World *myWorld = new World(20, 20);

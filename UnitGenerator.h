@@ -24,11 +24,15 @@ public:
   // complex behavior.  Parameters are forced to be positive by default
   void set_params(double p1, double p2);
 
+  // Gets the interpolated value between two samples of array
+  double interpolate(double *array, int length, double index);
+  
   // generic parameters for the unit generator. It is up 
   // to the subclass to define these and make them meaningful
   double param1_;
   double param2_;
   double mix_;
+  
 };
 
 
@@ -101,10 +105,17 @@ The delay effect plays the signal back some time later
 */
 class Delay : public UnitGenerator {
 public:
-  Delay();
+  Delay(int sample_rate);
   ~Delay();
   // Processes a single sample in the unit generator
   double tick(double in);  
+  // reallocates the buffer if the delay length changes
+  void set_params(double p1, double p2);
+private:
+  float *buffer_;
+  int buf_write_;
+  int buffer_size_;
+  int sample_rate_;
 };
 
 /*
