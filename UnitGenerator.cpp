@@ -23,6 +23,13 @@ double UnitGenerator::interpolate(double *array, int length, double index){
   double sample_two = array[(trunc_index + length + 1)%length];
   return sample_one*(1-leftover) + sample_two*leftover;
 }
+float UnitGenerator::interpolate(float *array, int length, double index){
+  int trunc_index = floor(index);
+  float leftover = index-trunc_index;
+  float sample_one = array[(trunc_index + length)%length];
+  float sample_two = array[(trunc_index + length + 1)%length];
+  return sample_one*(1-leftover) + sample_two*leftover;
+}
 
 
 /*
@@ -93,9 +100,9 @@ Chorus::~Chorus(){
 // Jon Dattorro - Part 2: Delay-Line Modulation and Chorus 
 // https://ccrma.stanford.edu/~dattorro/EffectDesignPart2.pdf
 double Chorus::tick(double in){
-  double blend = 1.0;//1.0;
+  double blend =  0.7071;//1.0;
   double feedback = 0.7071;
-  double feedforward = 0.7071;
+  double feedforward = 1.0;
   //feedback
   double buf_fb = buf_write_ - sample_rate_ * kDelayCenter + buffer_size_;
   buf_fb = fmod(buf_fb, buffer_size_);
@@ -139,11 +146,13 @@ The delay effect plays the signal back some time later
   param2 = amount of feedback in delay buffer
 */
 Delay::Delay(int sample_rate){
+  param1_=.5; param2_ =  .9;
   sample_rate_ = sample_rate;
   buffer_size_ = ceil(sample_rate_ * param1_);
   //Makes an empty buffer
   buffer_ = new float[buffer_size_];
   for (int i = 0; i < buffer_size_; ++i) buffer_[i] = 0;
+  buf_write_ = 0;
 }
 
 Delay::~Delay(){
@@ -151,7 +160,13 @@ Delay::~Delay(){
 }
 // Processes a single sample in the unit generator
 double Delay::tick(double in){
-  return in;
+  double buf_read = fmod(buf_write_ - sample_rate_ * param1_+ buffer_size_, buffer_size_);
+  double read_sample = interpolate(buffer_, buffer_size_, buf_read);
+  buffer_[buf_write_] = in + param2_ * read_sample;
+  double out =  in + read_sample;
+  ++buf_write_;
+  buf_write_ %= buffer_size_;
+  return out;
 }
 
 void Delay::set_params(double p1, double p2){

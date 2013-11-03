@@ -22,8 +22,8 @@ int main(int argc, char *argv[]) {
   UGenChain *myChain = new UGenChain();
   myChain->initialize();
   
-  Chorus *c = new Chorus(44100);
-  c->set_params(.2,.99);
+  Delay *c = new Delay(44100);
+  //c->set_params(.5,.0);
   myChain->add_effect(c);
   
   World *myWorld = new World(20, 20);

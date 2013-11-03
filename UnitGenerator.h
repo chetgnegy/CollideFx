@@ -26,6 +26,7 @@ public:
 
   // Gets the interpolated value between two samples of array
   double interpolate(double *array, int length, double index);
+  float interpolate(float *array, int length, double index);
   
   // generic parameters for the unit generator. It is up 
   // to the subclass to define these and make them meaningful
