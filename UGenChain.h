@@ -10,6 +10,7 @@
 #define _UGENCHAIN_H_
 
 #include <list>
+#include <cmath>
 #include "DigitalFilter.h" 
 #include "UnitGenerator.h" 
 #include "RtAudio.h"

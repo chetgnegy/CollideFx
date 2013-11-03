@@ -106,6 +106,7 @@ The delay effect plays the signal back some time later
 */
 class Delay : public UnitGenerator {
 public:
+  static const int kShortestDelay = 50;
   Delay(int sample_rate);
   ~Delay();
   // Processes a single sample in the unit generator

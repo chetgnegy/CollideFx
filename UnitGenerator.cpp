@@ -10,6 +10,7 @@
 
 #include "UnitGenerator.h"
 #include <iostream>//remove
+#include <algorithm>
 // Allows user to set the generic parameters, parameters are forced to be positive
 void UnitGenerator::set_params(double p1, double p2){
   param1_ = p1>=0 ? p1 : 0;
@@ -17,11 +18,12 @@ void UnitGenerator::set_params(double p1, double p2){
 }
 
 double UnitGenerator::interpolate(double *array, int length, double index){
-  int trunc_index = floor(index);
-  double leftover = index-trunc_index;
+  int trunc_index = static_cast<int>(floor(index));
+  double leftover = index-1.0*trunc_index;
   double sample_one = array[(trunc_index + length)%length];
   double sample_two = array[(trunc_index + length + 1)%length];
-  return sample_one*(1-leftover) + sample_two*leftover;
+  double output = sample_one*(1-leftover) + sample_two*leftover;
+  return output;
 }
 float UnitGenerator::interpolate(float *array, int length, double index){
   int trunc_index = floor(index);
@@ -80,9 +82,9 @@ The chorus effect delays the signal by a variable amount
   param2 = depth of the chorus effect
 */
 Chorus::Chorus(int sample_rate){
-  set_params(0,0);
-  
   sample_rate_ = sample_rate;
+  
+  set_params(0.3,0.5);
   buffer_size_ = ceil((kMaxDelay + kDelayCenter)*sample_rate_);
   
   //Makes an empty buffer
@@ -123,6 +125,7 @@ double Chorus::tick(double in){
   
   ++buf_write_;
   buf_write_ %= buffer_size_;
+  
   return output;
 }
 // restricts parameters to range (0,1) and calculates other params
@@ -131,8 +134,8 @@ void Chorus::set_params(double p1, double p2){
   p1 = p1 < 0 ? 0 : p1;
   param1_ = p1;
   p1 = (kMaxFreq-kMinFreq) * pow( param1_, 4) + kMinFreq;
-  
-  rate_hz_ = 6.2831853 / sample_rate_ * p1;
+  //sets the rate of the chorusing
+  rate_hz_ = 6.2831853 / (1.0 * sample_rate_) * p1;
   
   p2 = p2 > 1 ? 1 : p2;
   param2_ = p2 < 0? 0 : p2;
@@ -146,8 +149,9 @@ The delay effect plays the signal back some time later
   param2 = amount of feedback in delay buffer
 */
 Delay::Delay(int sample_rate){
-  param1_=.5; param2_ =  .9;
   sample_rate_ = sample_rate;
+  
+  param1_=.5; param2_ =  0;
   buffer_size_ = ceil(sample_rate_ * param1_);
   //Makes an empty buffer
   buffer_ = new float[buffer_size_];
@@ -172,20 +176,44 @@ double Delay::tick(double in){
 void Delay::set_params(double p1, double p2){
   p1 = p1 > 2 ? 2 : p1;
   p1 = p1 < 0 ? 0 : p1;
+  
+  //Reallocates delay buffer
   if (p1!=param1_){
     param1_ = p1;
+    //delay must be at least kShortestDelay samples
     int new_buffer_size = ceil(sample_rate_ * param1_);
-  
-    float *new_buffer;
-    new_buffer = new float[new_buffer_size];
-    for (int i = 0; i < new_buffer_size; ++i) new_buffer[new_buffer_size-i-1] = buffer_[(buf_write_-i+buffer_size_)%buffer_size_]; 
-    delete[] buffer_;
-    buffer_ = new_buffer;
-    buffer_size_ = new_buffer_size;
+    new_buffer_size = new_buffer_size < kShortestDelay ? kShortestDelay : new_buffer_size;
+    //makes the new buffer
+    float *new_buffer = new float[new_buffer_size];
+    for (int i = 0; i < new_buffer_size; ++i) new_buffer[i] = 0;
+    
+    buf_write_ = 0; // starts back at the beginning
+    double old_sample, fadeout = 1;
+    int last = std::min(new_buffer_size, buffer_size_);
+    
+    for (int i = 0; i < last; ++i) {
+      if (buffer_size_ - i < kShortestDelay){
+        fadeout = (buffer_size_-i)/(1.0*kShortestDelay);
+      } 
+      old_sample = buffer_[(buf_write_ - i + buffer_size_) % buffer_size_]; 
+      new_buffer[new_buffer_size-i-1] = fadeout * old_sample; 
+    }
+    
+    float *trash_buffer = buffer_;
+    //The order change should solve some concurrency issues (may not be necessary).
+    //if (buffer_size_>new_buffer_size){
+      buffer_size_ = new_buffer_size;
+      buffer_ = new_buffer; 
+    //}
+    //else {
+    //  buffer_ = new_buffer; 
+    //  buffer_size_ = new_buffer_size;
+    //}
+    delete[] trash_buffer;
   }
   
   p2 = p2 > 1 ? 1 : p2;
-  param2_ = p2 < 0? 0 : p2;
+  param2_ = p2 < 0 ? 0 : p2;
   
 }
 
