@@ -123,7 +123,7 @@ private:
 /*
 The distortion effect clips the input to a speficied level
   param1 = pre clip gain
-  param2 = clipping level
+  param2 = post clip gain
 */
 class Distortion : public UnitGenerator {
 public:
@@ -131,6 +131,7 @@ public:
   ~Distortion();
   // Processes a single sample in the unit generator
   double tick(double in);  
+  
 };
 
 /*
@@ -140,10 +141,36 @@ The looper effect keeps a section of the input in a buffer and loops it back
 */
 class Looper : public UnitGenerator {
 public:
-  Looper();
+  Looper(int sample_rate, double param1, double param2);
   ~Looper();
+  
   // Processes a single sample in the unit generator
   double tick(double in);  
+  
+  // reallocates the buffer if the delay length changes
+  void set_params(double p1, double p2);
+  
+  // Starts counting down beats until recording starts 
+  void start_countdown();
+  
+  // Cue Loop to start recording
+  void start_recording();
+  
+  // Cue Loop to stop recording and start playing
+  void stop_recording();
+  
+  // Cue for a single beat
+  void pulse();
+
+private:
+  float *buffer_;
+  int buf_write_, buf_read_;
+  int buffer_size_;
+  int sample_rate_;
+  int this_beat_;
+  int beat_count_;
+  bool counting_down_;
+  bool is_recording_, has_recording_;
 };
 
 /*

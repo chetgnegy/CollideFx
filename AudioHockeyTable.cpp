@@ -22,16 +22,20 @@ int main(int argc, char *argv[]) {
   UGenChain *myChain = new UGenChain();
   myChain->initialize();
   
-  Delay *c = new Delay(44100);
-  Chorus *d = new Chorus(44100);
+  Looper *c = new Looper(44100, 120, 16);
+  Distortion *d = new Distortion();
   myChain->add_effect(c);
+  d->set_params(20,.5);
   //myChain->add_effect(d);
-  
+  usleep(4000000);
+  c->start_countdown();
+  usleep(24000000);
+  c->start_countdown();
   World *myWorld = new World(20, 20);
-  while (true){
-    usleep(1000000);
+  /*while (true){
+    
     c->set_params(rand()/(1.0*RAND_MAX)+.01, rand()/(1.0*RAND_MAX));
-  }
+  }*/
   char input;
   std::cin.get(input); //Pause after a single frame
   

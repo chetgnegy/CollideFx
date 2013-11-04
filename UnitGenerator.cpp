@@ -230,7 +230,7 @@ Distortion::Distortion(){}
 Distortion::~Distortion(){}
 // Processes a single sample in the unit generator
 double Distortion::tick(double in){
-  return in;
+  return param2_ * atan(param1_*in);
 }  
 
 
@@ -239,15 +239,116 @@ The looper effect keeps a section of the input in a buffer and loops it back
   param1 = beats per second
   param2 = number of beats
 */
-Looper::Looper(){
+Looper::Looper(int sample_rate, double param1, double param2){
   //declare float buffer
+  sample_rate_ = sample_rate;
+  
+  param1_= static_cast<int>(param1); 
+  param2_ = static_cast<int>(param2);
+  buffer_size_ = ceil(60* sample_rate_ * param2_ / param1_);
+  //Makes two empty buffers
+  buffer_ = new float[buffer_size_];
+  for (int i = 0; i < buffer_size_; ++i) {
+    buffer_[i] = 0;
+  }
+  
+  buf_write_ =0;
+  buf_read_ = 0;
+  this_beat_ = 0;
+  buf_write_ = 0;
+  beat_count_ = 0;
+  counting_down_ = false;
+  is_recording_ = false;
+  has_recording_ = false;
 }
 Looper::~Looper(){
   //destroy float buffer
+  delete[] buffer_;
 }
 // Processes a single sample in the unit generator
 double Looper::tick(double in){
-  return in;
+  //Keeps track of beats
+  ++beat_count_;
+  if (beat_count_ > 60 * sample_rate_ / param1_) {
+    pulse();
+    beat_count_ = 0;
+  }
+  //Stores the current input
+  if (is_recording_){
+    buffer_[buf_write_] = in;
+    ++buf_write_;
+  }
+  //Plays back the recording
+  else if (has_recording_){
+    double fadeout = 1;
+    //Fades near the edges
+    if (buf_read_ < 10){
+      fadeout = buf_read_/10.0;
+    }
+    if (buffer_size_ - buf_read_ < 10){
+      fadeout = (buffer_size_ - buf_read_)/10.0;
+    }
+    double out =  buffer_[buf_read_] * fadeout;
+    ++buf_read_;
+    buf_read_ %= buffer_size_;
+    return out;
+  }
+  return 0;
+}
+
+void Looper::set_params(double a, double b){
+  printf("Loop cannot change parameters. Create new instance.");
+}
+
+void Looper::pulse(){
+  printf("Pulse! %d\n",this_beat_);
+  if (counting_down_){
+    this_beat_ = (this_beat_ - 1);
+    if (this_beat_ < 0){
+      this_beat_ = 0;
+      start_recording();
+    } 
+  }
+  else {
+    this_beat_ = (this_beat_+1);//count either way
+    //tells it when to stop
+    if (this_beat_ == static_cast<int>(param2_)){
+      this_beat_ = 0;
+      if (is_recording_){
+        stop_recording();
+      }
+    }
+  }
+}
+
+// Starts counting down beats until recording starts 
+void Looper::start_countdown(){
+  printf("Counting Down! \n");
+  this_beat_ = 4;
+  beat_count_ = 0;
+  is_recording_ = false;
+  has_recording_ = false;
+  counting_down_ = true;
+}
+
+// Cue Loop to start playing
+void Looper::start_recording(){
+  printf("Recording! \n");
+  this_beat_ = 0;
+  buf_write_ = 0;
+  is_recording_ = true;
+  has_recording_ = false;
+  counting_down_ = false;
+}
+
+// Cue Loop to start playing
+void Looper::stop_recording(){
+  printf("Playing Back! \n");
+  this_beat_ = 0;
+  buf_read_ = 0;
+  is_recording_ = false;
+  has_recording_ = true;
+  counting_down_ = false;
 }
 
 /*
