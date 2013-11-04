@@ -9,6 +9,7 @@
 */
 
 #include "UnitGenerator.h"
+#include "complex.h"
 #include <iostream>//remove
 #include <algorithm>
 // Allows user to set the generic parameters, parameters are forced to be positive
@@ -98,6 +99,7 @@ Chorus::Chorus(int sample_rate){
 Chorus::~Chorus(){
   delete[] buffer_;
 }
+
 // Processes a single sample in the unit generator
 // Jon Dattorro - Part 2: Delay-Line Modulation and Chorus 
 // https://ccrma.stanford.edu/~dattorro/EffectDesignPart2.pdf
@@ -356,10 +358,40 @@ The reverb effect convolves the signal with an impulse response
   param1 = 
   param2 = 
 */
-Reverb::Reverb(){}
-Reverb::~Reverb(){}
+const int Reverb::kCombDelays[] = {1116,1188,1356,1277,1422,1491,1617,1557};
+const int Reverb::kAllPassDelays[] = {225, 556, 441, 341};
+
+Reverb::Reverb(){
+  fb_ = new FilterBank();
+  for (int i = 0; i < 8; ++i){
+    fb_->add_filter(new FilteredFeedbackCombFilter(kCombDelays[i], .84, .2)); 
+  }
+  for (int i = 0; i < 4; ++i){
+    aaf_.push_back(new AllpassApproximationFilter(kAllPassDelays[i], 0.5));
+  }
+  
+}
+Reverb::~Reverb(){
+  std::list<AllpassApproximationFilter *>::iterator it;
+  it = aaf_.begin();
+  //Deletes all filters
+  while (aaf_.size() > 0 && it != aaf_.end()) {
+    delete (*it);
+    ++it;
+  }
+  delete fb_;
+}
 // Processes a single sample in the unit generator
 double Reverb::tick(double in){
-  return in;
+  complex sample = fb_->tick(in);
+  //std::cout << sample.re() << std::endl;
+  std::list<AllpassApproximationFilter *>::iterator it;
+  it = aaf_.begin();
+  //Deletes all filters
+  while (aaf_.size() > 0 && it != aaf_.end()) {
+    sample = (*it)->tick(sample);
+    ++it;
+  }
+  return sample.re();
 }  
 

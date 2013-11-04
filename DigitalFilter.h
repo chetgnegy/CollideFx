@@ -34,8 +34,8 @@ class DigitalFilter {
   // Must be overridden by subclass
   void calculate_coefficients();
 
-  // Advances the filter by a single sample, in.
-  void tick(complex in);
+  // Advances the filter by a single sample, in. The new value is returned.
+  complex tick(complex in);
 
   // Gets the current output of the filter.
   complex most_recent_sample(void);
@@ -109,6 +109,48 @@ class DigitalHighpassFilter : public DigitalFilter {
   
 };
 
+class SinglePoleFilter : public DigitalFilter {
+ public:
+  SinglePoleFilter(double pole, double gain)
+      : DigitalFilter(pole, 1, gain) {
+      this->calculate_coefficients();
+  };
+  //Calculates the single pole filter's coefficients
+  void calculate_coefficients();
+  
+};
+
+class FilteredFeedbackCombFilter : public DigitalFilter {
+ public:
+  FilteredFeedbackCombFilter(int samples, double roomsize, double damping);
+  ~FilteredFeedbackCombFilter();
+
+  // Computes a new value and adds it to a sample from the filtered delay line
+  complex tick(complex in);
+private:
+  int samples_;
+  double roomsize_, damping_;
+  SinglePoleFilter *lp_;
+  complex *buffer_;
+  int buf_index_;
+};
+
+
+class AllpassApproximationFilter : public DigitalFilter {
+ public:
+  AllpassApproximationFilter(int samples, double g);
+  ~AllpassApproximationFilter();
+
+  // Computes a new value and adds it to a sample from the filtered delay line
+  complex tick(complex in);
+private:
+  int samples_;
+  double g_;
+  complex *output_buffer_;
+  complex *input_buffer_;
+  int buf_index_;
+};
+
 //A bunch of filters can be added to this. They are all used in parallel.
 class FilterBank {
  public:
@@ -124,8 +166,8 @@ class FilterBank {
   // A new sample 'in' is added into the filter and a new output is
   // calculated (and can be accssed using most_recent_sample()). The 
   // output of each filter is summed together. The lowpass filter
-  // is given the output.
-  void tick(complex);
+  // is given the output. The new value is returned.
+  complex tick(complex);
   
   
   // Adds a filter in parallel

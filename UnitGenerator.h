@@ -14,6 +14,8 @@
 
 #include <cmath>
 #include <stdio.h>//remove
+#include <list>
+#include "DigitalFilter.h"
 
 class UnitGenerator{
 public: 
@@ -180,10 +182,17 @@ The reverb effect convolves the signal with an impulse response
 */
 class Reverb : public UnitGenerator {
 public:
+  static const int kCombDelays[];
+  static const int kAllPassDelays[];
   Reverb();
   ~Reverb();
   // Processes a single sample in the unit generator
   double tick(double in);  
+  
+private:
+  FilterBank *fb_;
+  std::list<AllpassApproximationFilter *> aaf_;
+  
 };
 
 
