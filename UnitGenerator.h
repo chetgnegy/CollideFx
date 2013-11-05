@@ -39,6 +39,9 @@ public:
 };
 
 
+
+
+
 /*
 The input unit gen just returns what it was given
   parameters are ignored
@@ -50,6 +53,12 @@ public:
   // Processes a single sample in the unit generator
   double tick(double in){return in;}  
 };
+
+
+
+
+
+
 
 /*
 The bitcrusher effect quantizes and downsamples the input 
@@ -71,6 +80,10 @@ private:
   double sample_;
   double sample_count_;
 };
+
+
+
+
 
 
 /*
@@ -101,6 +114,10 @@ private:
   int sample_rate_;
 };
 
+
+
+
+
 /*
 The delay effect plays the signal back some time later
   param1 = time in seconds until delay repeats
@@ -123,6 +140,10 @@ private:
   int sample_rate_;
 };
 
+
+
+
+
 /*
 The distortion effect clips the input to a speficied level
   param1 = pre clip gain
@@ -137,6 +158,10 @@ public:
   double tick(double in);  
   
 };
+
+
+
+
 
 /*
 The looper effect keeps a section of the input in a buffer and loops it back
@@ -178,6 +203,10 @@ private:
   bool is_recording_, has_recording_;
 };
 
+
+
+
+
 /*
 The reverb effect convolves the signal with an impulse response
   param1 = room size
@@ -199,6 +228,8 @@ private:
   std::list<AllpassApproximationFilter *> aaf_;
   
 };
+
+
 
 
 

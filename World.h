@@ -7,16 +7,10 @@
 #ifndef _DISC_H_
 #define _DISC_H_
 
-#ifdef __MACOSX_CORE__
-  #include <GLUT/glut.h>
-#else
-  #include <GL/gl.h>
-  #include <GL/glu.h>
-  #include <GL/glut.h>
-#endif
 
+#include "Drawable.h"
 
-class World {
+class World : public Drawable {
 public:
   //Creates the world
   World(double x, double y);
@@ -24,6 +18,8 @@ public:
   ~World();
   //Draws the world in OpenGl
   void draw();
+  void get_origin(double &x, double &y, double &z);
+  void get_rotation(double &x, double &y, double &z);
   
 private:
   //size of the map

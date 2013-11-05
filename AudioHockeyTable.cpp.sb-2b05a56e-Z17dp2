@@ -15,30 +15,27 @@
 
 #include "UGenChain.h"
 #include "World.h"
-#include "GraphicsBox.h"
+
 
 int main(int argc, char *argv[]) {
-
   srand (time(NULL));
   UGenChain *myChain = new UGenChain();
-  //myChain->initialize();
+  myChain->initialize();
   
-  //Chorus *d = new Chorus(44100);
-  //myChain->add_effect(d);
-  //while (true){
-  //  usleep(1000000);
-  //  d->set_params(.99*rand()/(1.0*RAND_MAX)+.01, .99*rand()/(1.0*RAND_MAX));
-  //}
+  Chorus *d = new Chorus(44100);
+  myChain->add_effect(d);
   
   
   World *myWorld = new World(20, 20);
-  GraphicsBox *myGraphics = new GraphicsBox(300, 300);
-  
-  myGraphics->initialize(argc, argv);
-  myGraphics->start_graphics();
-  
+  while (true){
+    usleep(1000000);
+    d->set_params(.99*rand()/(1.0*RAND_MAX)+.01, .99*rand()/(1.0*RAND_MAX));
+  }
   char input;
   std::cin.get(input); //Pause after a single frame
+  
+  
+  
   delete myWorld;
   delete myChain;
   return 1;

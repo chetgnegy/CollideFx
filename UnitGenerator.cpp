@@ -37,6 +37,9 @@ float UnitGenerator::interpolate(float *array, int length, double index){
 }
 
 
+
+
+
 /*
 The bitcrusher effect quantizes and downsamples the input 
   param1 = bits (casted to an int)
@@ -58,17 +61,13 @@ double BitCrusher::tick(double in){
     //Quantization
     sample_ = quantize(in);
   }
-
   return sample_;
 }
 // casts the parameters to ints and restricts them to a certain value
 void BitCrusher::set_params(double p1, double p2){
-  p1 = floor(p1); // bounded by 1 and 16
-  p1 = p1 > 16 ? 16 : p1;
-  param1_ = p1 < 1 ? 1 : p1;
-  
-  p2 = floor(p2); // bounded by 1 and 16
-  p2 = p2 > 16 ? 16 : p2;
+  p1 = p1 > 16 ? 16 : floor(p1); // bounded by 1 and 16
+  param1_ = p1 < 1 ? 1 : p1;  
+  p2 = p2 > 16 ? 16 : floor(p2); // bounded by 1 and 16
   param2_ = p2 < 1? 1 : p2;
 }
 
@@ -78,6 +77,12 @@ double BitCrusher::quantize(double in){
   if (param1_ == 1) return in;
   return round(in * pow(2.0, param1_)) / pow(2.0, param1_);
 }
+
+
+
+
+
+
 
 /*
 The chorus effect delays the signal by a variable amount
@@ -145,6 +150,13 @@ void Chorus::set_params(double p1, double p2){
   depth_ = kMaxDelay * param2_;
   
 }
+
+
+
+
+
+
+
 
 /*
 The delay effect plays the signal back some time later
@@ -225,6 +237,9 @@ void Delay::set_params(double p1, double p2){
 
 
 
+
+
+
 /*
 The distortion effect clips the input to a speficied level
   param1 = pre clip gain
@@ -238,6 +253,14 @@ Distortion::~Distortion(){}
 double Distortion::tick(double in){
   return param2_ * atan(param1_*in);
 }  
+
+
+
+
+
+
+
+
 
 
 /*
@@ -357,6 +380,15 @@ void Looper::stop_recording(){
   counting_down_ = false;
 }
 
+
+
+
+
+
+
+
+
+
 /*
 The reverb effect convolves the signal with an impulse response
   param1 = room size
@@ -424,6 +456,13 @@ void Reverb::set_params(double p1, double p2){
     ++it;
   }
 }
+
+
+
+
+
+
+
 
 
 

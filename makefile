@@ -18,7 +18,7 @@ LIBS=-framework CoreAudio -framework CoreMIDI -framework CoreFoundation \
 endif
 
 
-OBJS=  RtAudio.o DigitalFilter.o UnitGenerator.o Disc.o World.o UGenChain.o audiohockeytable.o 
+OBJS=  RtAudio.o DigitalFilter.o UnitGenerator.o GraphicsBox.o Disc.o World.o UGenChain.o audiohockeytable.o 
 
 audiohockeytable: $(OBJS)
 	$(CXX) -o audiohockeytable $(OBJS) $(LIBS) 
@@ -32,13 +32,16 @@ UGenChain.o: UGenChain.cpp UGenChain.h
 UnitGenerator.o: UnitGenerator.cpp UnitGenerator.h
 	$(CXX) $(FLAGS) UnitGenerator.cpp
 
-Disc.o: Disc.cpp Disc.h
+GraphicsBox.o: GraphicsBox.cpp GraphicsBox.h
+	$(CXX) $(FLAGS) GraphicsBox.cpp
+
+Disc.o: Disc.cpp Disc.h Drawable.h
 	$(CXX) $(FLAGS) Disc.cpp
 
 DigitalFilter.o: DigitalFilter.cpp DigitalFilter.h
 	$(CXX) $(FLAGS) DigitalFilter.cpp
 
-World.o: World.cpp World.h
+World.o: World.cpp World.h Drawable.h
 	$(CXX) $(FLAGS) World.cpp
 
 

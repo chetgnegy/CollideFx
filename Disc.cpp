@@ -23,3 +23,10 @@ void Disc::set_location(double x, double y){};
 
 void Disc::set_velocity(double y, double z){};
 
+void Disc::draw(){}
+void Disc::get_origin(double &x, double &y, double &z){
+  x=0; y=0; z=0;
+}
+void Disc::get_rotation(double &x, double &y, double &z){
+  x=0; y=0; z=0;
+}
