@@ -24,7 +24,7 @@ public:
   
   // Allows user to set the generic parameters. Override this for more
   // complex behavior.  Parameters are forced to be positive by default
-  virtual void set_params(double p1, double p2);
+  void set_params(double p1, double p2);
 
   // Gets the interpolated value between two samples of array
   double interpolate(double *array, int length, double index);
