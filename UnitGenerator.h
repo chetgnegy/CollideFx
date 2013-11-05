@@ -58,7 +58,7 @@ The bitcrusher effect quantizes and downsamples the input
 */
 class BitCrusher : public UnitGenerator {
 public:
-  BitCrusher();
+  BitCrusher(int p1 = 8, int p2 = 2);
   ~BitCrusher();
   // Processes a single sample in the unit generator
   double tick(double in);
@@ -85,7 +85,7 @@ public:
   static const double kMaxFreq = 10.0;// Hz
   static const double kMinFreq = .020;// Hz
   
-  Chorus(int sample_rate);
+  Chorus(int sample_rate, double p1 = 0.5, double p2 = 0.5);
   ~Chorus();
   // Processes a single sample in the unit generator
   double tick(double in);  
@@ -109,7 +109,8 @@ The delay effect plays the signal back some time later
 class Delay : public UnitGenerator {
 public:
   static const int kShortestDelay = 50;
-  Delay(int sample_rate);
+  
+  Delay(int sample_rate, double p1 = 0.5, double p2 = 0.5);
   ~Delay();
   // Processes a single sample in the unit generator
   double tick(double in);  
@@ -129,7 +130,8 @@ The distortion effect clips the input to a speficied level
 */
 class Distortion : public UnitGenerator {
 public:
-  Distortion();
+  
+  Distortion(double p1 = 18.0, double p2 = 0.6);
   ~Distortion();
   // Processes a single sample in the unit generator
   double tick(double in);  
@@ -143,6 +145,7 @@ The looper effect keeps a section of the input in a buffer and loops it back
 */
 class Looper : public UnitGenerator {
 public:
+  
   Looper(int sample_rate, double param1, double param2);
   ~Looper();
   
@@ -184,7 +187,8 @@ class Reverb : public UnitGenerator {
 public:
   static const int kCombDelays[];
   static const int kAllPassDelays[];
-  Reverb();
+  
+  Reverb(double p1 = 0.8, double p2 = 0.2);
   ~Reverb();
   // Processes a single sample in the unit generator
   double tick(double in);  
@@ -207,7 +211,8 @@ class Tremolo : public UnitGenerator {
 public:
   static const double kMaxFreq = 10.0;// Hz
   static const double kMinFreq = .020;// Hz
-  Tremolo(int sample_rate);
+  
+  Tremolo(int sample_rate, double p1 = 0.5, double p2 = 0.5);
   ~Tremolo();
   
   // Processes a single sample in the unit generator

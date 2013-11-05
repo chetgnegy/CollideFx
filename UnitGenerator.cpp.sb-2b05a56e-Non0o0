@@ -26,6 +26,7 @@ double UnitGenerator::interpolate(double *array, int length, double index){
   double output = sample_one*(1-leftover) + sample_two*leftover;
   return output;
 }
+
 float UnitGenerator::interpolate(float *array, int length, double index){
   int trunc_index = floor(index);
   float leftover = index-trunc_index;
@@ -366,18 +367,18 @@ const int Reverb::kAllPassDelays[] = {225, 556, 441, 341};
 Reverb::Reverb(double p1, double p2){
   param1_ = p1;
   param2_ = p2;
-  
+  // Comb filtering
   fb_ = new FilterBank();
   for (int i = 0; i < 8; ++i){
     FilteredFeedbackCombFilter *k = new FilteredFeedbackCombFilter(kCombDelays[i], param1_, param2_);
     fb_->add_filter(k);  
   }
-  
+  // Allpass filtering  
   for (int i = 0; i < 4; ++i){
     aaf_.push_back(new AllpassApproximationFilter(kAllPassDelays[i], 0.5));
-  }
-  
+  }  
 }
+
 Reverb::~Reverb(){
   std::list<AllpassApproximationFilter *>::iterator it;
   it = aaf_.begin();
@@ -421,8 +422,6 @@ void Reverb::set_params(double p1, double p2){
     apf->sp_->change_parameters(param2_, 1 - param2_, 1.0);
     ++it;
   }
-  
-
 }
 
 

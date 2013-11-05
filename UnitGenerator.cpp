@@ -12,6 +12,7 @@
 #include "complex.h"
 #include <iostream>//remove
 #include <algorithm>
+
 // Allows user to set the generic parameters, parameters are forced to be positive
 void UnitGenerator::set_params(double p1, double p2){
   param1_ = p1>=0 ? p1 : 0;
@@ -26,6 +27,7 @@ double UnitGenerator::interpolate(double *array, int length, double index){
   double output = sample_one*(1-leftover) + sample_two*leftover;
   return output;
 }
+
 float UnitGenerator::interpolate(float *array, int length, double index){
   int trunc_index = floor(index);
   float leftover = index-trunc_index;
@@ -40,12 +42,12 @@ The bitcrusher effect quantizes and downsamples the input
   param1 = bits (casted to an int)
   param2 = downsampling factor
 */
-BitCrusher::BitCrusher(){
-  set_params(1, 1);
-  
+BitCrusher::BitCrusher(int p1, int p2){
+  set_params(p1, p2); 
   sample_ = 0;
   sample_count_ = 0;
 }
+
 BitCrusher::~BitCrusher(){}
 // Processes a single sample in the unit generator
 double BitCrusher::tick(double in){
@@ -82,10 +84,10 @@ The chorus effect delays the signal by a variable amount
   param1 = rate of the chorus LFO
   param2 = depth of the chorus effect
 */
-Chorus::Chorus(int sample_rate){
+Chorus::Chorus(int sample_rate, double p1, double p2){
   sample_rate_ = sample_rate;
   
-  set_params(0.3,0.5);
+  set_params(p1, p2);
   buffer_size_ = ceil((kMaxDelay + kDelayCenter)*sample_rate_);
   
   //Makes an empty buffer
@@ -94,7 +96,6 @@ Chorus::Chorus(int sample_rate){
   
   sample_count_ = 0;
   buf_write_ = 0;
-  mix_ = .5;
 }
 Chorus::~Chorus(){
   delete[] buffer_;
@@ -150,10 +151,11 @@ The delay effect plays the signal back some time later
   param1 = time in seconds until delay repeats
   param2 = amount of feedback in delay buffer
 */
-Delay::Delay(int sample_rate){
+Delay::Delay(int sample_rate, double p1, double p2){
   sample_rate_ = sample_rate;
   
-  param1_=.5; param2_ =  0;
+  param1_ = p1; 
+  param2_ = p2;
   buffer_size_ = ceil(sample_rate_ * param1_);
   //Makes an empty buffer
   buffer_ = new float[buffer_size_];
@@ -228,7 +230,9 @@ The distortion effect clips the input to a speficied level
   param1 = pre clip gain
   param2 = clipping level
 */
-Distortion::Distortion(){}
+Distortion::Distortion(double p1, double p2){
+  set_params(p1, p2);
+}
 Distortion::~Distortion(){}
 // Processes a single sample in the unit generator
 double Distortion::tick(double in){
@@ -361,21 +365,21 @@ The reverb effect convolves the signal with an impulse response
 const int Reverb::kCombDelays[] = {1116,1188,1356,1277,1422,1491,1617,1557};
 const int Reverb::kAllPassDelays[] = {225, 556, 441, 341};
 
-Reverb::Reverb(){
-  param1_ = .8;
-  param2_ = .2;
-  
+Reverb::Reverb(double p1, double p2){
+  param1_ = p1;
+  param2_ = p2;
+  // Comb filtering
   fb_ = new FilterBank();
   for (int i = 0; i < 8; ++i){
     FilteredFeedbackCombFilter *k = new FilteredFeedbackCombFilter(kCombDelays[i], param1_, param2_);
     fb_->add_filter(k);  
   }
-  
+  // Allpass filtering  
   for (int i = 0; i < 4; ++i){
     aaf_.push_back(new AllpassApproximationFilter(kAllPassDelays[i], 0.5));
-  }
-  
+  }  
 }
+
 Reverb::~Reverb(){
   std::list<AllpassApproximationFilter *>::iterator it;
   it = aaf_.begin();
@@ -419,8 +423,6 @@ void Reverb::set_params(double p1, double p2){
     apf->sp_->change_parameters(param2_, 1 - param2_, 1.0);
     ++it;
   }
-  
-
 }
 
 
@@ -431,9 +433,9 @@ The Tremolo effect modulates the amplitude of the signal
   param1 = rate
   param2 = depth
 */
-Tremolo::Tremolo(int sample_rate){
+Tremolo::Tremolo(int sample_rate, double p1, double p2){
   sample_rate_ = sample_rate;
-  set_params(0.3,0.5);
+  set_params(p1, p2);
   sample_count_ = 0;
   mix_ = .5;
 }

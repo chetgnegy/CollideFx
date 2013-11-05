@@ -22,7 +22,7 @@ int main(int argc, char *argv[]) {
   UGenChain *myChain = new UGenChain();
   myChain->initialize();
   
-  Tremolo *d = new Tremolo(44100);
+  Chorus *d = new Chorus(44100);
   myChain->add_effect(d);
   
   
