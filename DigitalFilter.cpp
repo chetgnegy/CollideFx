@@ -33,6 +33,7 @@ complex DigitalFilter::tick(complex in) {
 
   y_past_[0] = -a_[1] * y_past_[1] - a_[2] * y_past_[2]
       + (b_[0] * x_past_[0] + b_[1] * x_past_[1] + b_[2] * x_past_[2]);
+  
   return most_recent_sample();
 }
 
@@ -136,22 +137,23 @@ void DigitalHighpassFilter::calculate_coefficients() {
 }
 
 void SinglePoleFilter::calculate_coefficients() {
-  b_[0] = gain_;
+  b_[0] = Q_;
   b_[1] = 0;
   b_[2] = 0;
   a_[0] = 1;
   a_[1] = -(corner_frequency_);
   a_[2] = 0;
-
+  
 }
 
 // A lowpass filter with filtered feedback
 //https://ccrma.stanford.edu/~jos/pasp/Lowpass_Feedback_Comb_Filter.html
-FilteredFeedbackCombFilter::FilteredFeedbackCombFilter(int samples, double roomsize, double damping): DigitalFilter(0.0, 0.0, 0.0){
+FilteredFeedbackCombFilter::FilteredFeedbackCombFilter(int samples, double roomsize, double damping): DigitalFilter(0.0, 0.0, 1.0){
   samples_ = samples; 
   roomsize_ = roomsize;
   damping_ = damping;
-  lp_ = new SinglePoleFilter(damping_, 1 - damping_);
+  
+  sp_ = new SinglePoleFilter(damping_, 1 - damping_, 1.0);
   buffer_ = new complex[samples_];
   for (int i = 0; i < samples_; ++i){
     buffer_[i] = 0;
@@ -161,21 +163,21 @@ FilteredFeedbackCombFilter::FilteredFeedbackCombFilter(int samples, double rooms
 
 FilteredFeedbackCombFilter::~FilteredFeedbackCombFilter(){
   delete[] buffer_;
-  delete lp_;
+  delete sp_;
 }
 
 // Computes a new value and adds it to a sample from the filtered delay line
 complex FilteredFeedbackCombFilter::tick(complex in){
-  complex out = in + roomsize_ * lp_->tick(buffer_[buf_index_]);
+  complex out = in + roomsize_ * sp_->tick(buffer_[buf_index_]);
   buffer_[buf_index_] = out;
   ++buf_index_;
   buf_index_ %= samples_;
   return out;    
 }
 
-//One zero, one pole approximation of an allpas filter
+//One zero, one pole approximation of an allpass filter
 //https://ccrma.stanford.edu/~jos/pasp/Freeverb_Allpass_Approximation.html
-AllpassApproximationFilter::AllpassApproximationFilter(int samples, double g): DigitalFilter(0.0, 0.0, 0.0){
+AllpassApproximationFilter::AllpassApproximationFilter(int samples, double g): DigitalFilter(0.0, 0.0, 1.0){
   samples_ = samples; 
   g_ = g;
   input_buffer_ = new complex[samples];
@@ -232,7 +234,7 @@ FilterBank::~FilterBank() {
 void FilterBank::add_filter(DigitalFilter *f) {
   filters_.push_back(f);
   ++num_filters_;
-
+  
 }
 
 // A new sample 'in' is added into the filter and a new output is
@@ -246,7 +248,6 @@ complex FilterBank::tick(complex in) {
     list_iterator = filters_.begin();
 
     complex output = 0;
-
     while (list_iterator != filters_.end()) {
       //The convolution with the resonant body
       output += (*list_iterator)->tick(in);

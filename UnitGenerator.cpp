@@ -364,8 +364,10 @@ const int Reverb::kAllPassDelays[] = {225, 556, 441, 341};
 Reverb::Reverb(){
   fb_ = new FilterBank();
   for (int i = 0; i < 8; ++i){
-    fb_->add_filter(new FilteredFeedbackCombFilter(kCombDelays[i], .84, .2)); 
+    FilteredFeedbackCombFilter *k = new FilteredFeedbackCombFilter(kCombDelays[i], .90, .2);
+    fb_->add_filter(k);  
   }
+  
   for (int i = 0; i < 4; ++i){
     aaf_.push_back(new AllpassApproximationFilter(kAllPassDelays[i], 0.5));
   }
@@ -383,15 +385,16 @@ Reverb::~Reverb(){
 }
 // Processes a single sample in the unit generator
 double Reverb::tick(double in){
-  complex sample = fb_->tick(in);
-  //std::cout << sample.re() << std::endl;
+  complex sample = fb_->tick(.125*in);
+  
+  //Ticks each allpass
   std::list<AllpassApproximationFilter *>::iterator it;
   it = aaf_.begin();
-  //Deletes all filters
   while (aaf_.size() > 0 && it != aaf_.end()) {
     sample = (*it)->tick(sample);
     ++it;
   }
+  
   return sample.re();
 }  
 

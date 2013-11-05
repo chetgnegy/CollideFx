@@ -30,6 +30,7 @@ int audioCallback(void *outputBuffer, void *inputBuffer, unsigned int num_frames
     
     
     //Output limiting
+    /*
     if (fabs(newVal) > 1.001){
       newVal = lastVal;
       printf("Clipping has occured!\n");
@@ -37,6 +38,7 @@ int audioCallback(void *outputBuffer, void *inputBuffer, unsigned int num_frames
     else{
       lastVal = newVal;
     }
+    */
     output_buffer[i * numChannels] =  newVal;
   }
   

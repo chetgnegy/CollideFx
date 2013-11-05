@@ -24,6 +24,9 @@ int main(int argc, char *argv[]) {
   
   Reverb *d = new Reverb();
   myChain->add_effect(d);
+  Chorus *c = new Chorus(44100);
+  myChain->add_effect(c);
+  
   
   World *myWorld = new World(20, 20);
   /*while (true){

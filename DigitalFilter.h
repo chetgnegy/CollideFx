@@ -32,10 +32,10 @@ class DigitalFilter {
   ~DigitalFilter();
   
   // Must be overridden by subclass
-  void calculate_coefficients();
+  virtual void calculate_coefficients();
 
   // Advances the filter by a single sample, in. The new value is returned.
-  complex tick(complex in);
+  virtual complex tick(complex in);
 
   // Gets the current output of the filter.
   complex most_recent_sample(void);
@@ -111,8 +111,9 @@ class DigitalHighpassFilter : public DigitalFilter {
 
 class SinglePoleFilter : public DigitalFilter {
  public:
-  SinglePoleFilter(double pole, double gain)
-      : DigitalFilter(pole, 1, gain) {
+  SinglePoleFilter(double pole, double damping, double gain)
+      : DigitalFilter(pole, damping, gain) {
+      corner_frequency_ = pole;
       this->calculate_coefficients();
   };
   //Calculates the single pole filter's coefficients
@@ -127,10 +128,11 @@ class FilteredFeedbackCombFilter : public DigitalFilter {
 
   // Computes a new value and adds it to a sample from the filtered delay line
   complex tick(complex in);
+  
 private:
   int samples_;
   double roomsize_, damping_;
-  SinglePoleFilter *lp_;
+  SinglePoleFilter *sp_;
   complex *buffer_;
   int buf_index_;
 };
