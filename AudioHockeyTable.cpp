@@ -24,15 +24,13 @@ int main(int argc, char *argv[]) {
   
   Reverb *d = new Reverb();
   myChain->add_effect(d);
-  Chorus *c = new Chorus(44100);
-  myChain->add_effect(c);
   
   
   World *myWorld = new World(20, 20);
-  /*while (true){
-    
-    c->set_params(rand()/(1.0*RAND_MAX)+.01, rand()/(1.0*RAND_MAX));
-  }*/
+  while (true){
+    usleep(1000000);
+    d->set_params(.99*rand()/(1.0*RAND_MAX)+.01, .99*rand()/(1.0*RAND_MAX));
+  }
   char input;
   std::cin.get(input); //Pause after a single frame
   

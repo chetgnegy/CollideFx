@@ -6,7 +6,7 @@
 DigitalFilter::DigitalFilter(double center, double Q, double gain) {
   gain_ = gain;
   Q_ = Q;
-  corner_frequency_ = TWOPI * center;  //Convert to rads/sec
+  corner_frequency_ = center;  //Convert to rads/sec
   x_past_[0] = 0;
   x_past_[1] = 0;
   x_past_[2] = 0;
@@ -20,8 +20,9 @@ DigitalFilter::~DigitalFilter() {
 }
 
 //Must be overridden by subclass
-void DigitalFilter::calculate_coefficients() {
+void DigitalFilter::calculate_coefficients() {  
 }
+
 
 //Advances the filter by a single sample, in.
 complex DigitalFilter::tick(complex in) {
@@ -47,11 +48,21 @@ double DigitalFilter::dc_gain() {
   return (b_[0] + b_[1] + b_[2]) / (a_[0] + a_[1] + a_[2]);
 }
 
+void DigitalFilter::change_parameters(double center, double Q, double gain){
+  gain_ = gain;
+  Q_ = Q;
+  corner_frequency_ = center;  //Convert to rads/sec
+  calculate_coefficients();
+}
+
+
+
+
 
 void DigitalBandpassFilter::calculate_coefficients() {
-  double bandwidth = corner_frequency_ / Q_;
-  double lambda_1 = corner_frequency_ - bandwidth / 2.0;
-  double lambda_2 = corner_frequency_ + bandwidth / 2.0;
+  double bandwidth = TWOPI * corner_frequency_ / Q_;
+  double lambda_1 = TWOPI * corner_frequency_ - bandwidth / 2.0;
+  double lambda_2 = TWOPI * corner_frequency_ + bandwidth / 2.0;
 
   double gamma_0 = 4 * SAMPLE_RATE * SAMPLE_RATE;
   double gamma_1 = 2 * SAMPLE_RATE * (bandwidth);
@@ -73,9 +84,9 @@ void DigitalBandpassFilter::calculate_coefficients() {
 
 void DigitalBandstopFilter::calculate_coefficients() {
 
-  double bandwidth = corner_frequency_ / Q_;
-  double lambda_1 = corner_frequency_ - bandwidth / 2.0;
-  double lambda_2 = corner_frequency_ + bandwidth / 2.0;
+  double bandwidth = TWOPI * corner_frequency_ / Q_;
+  double lambda_1 = TWOPI * corner_frequency_ - bandwidth / 2.0;
+  double lambda_2 = TWOPI * corner_frequency_ + bandwidth / 2.0;
 
   double gamma_0 = 4 * SAMPLE_RATE * SAMPLE_RATE;
   double gamma_1 = 2 * SAMPLE_RATE * (bandwidth);
@@ -99,8 +110,8 @@ void DigitalBandstopFilter::calculate_coefficients() {
 void DigitalLowpassFilter::calculate_coefficients() {
 
   double gamma_0 = 4;
-  double gamma_1 = 2 / SAMPLE_RATE * (corner_frequency_) / Q_;
-  double gamma_2 = pow(corner_frequency_ / SAMPLE_RATE, 2);
+  double gamma_1 = 2 / SAMPLE_RATE * (TWOPI * corner_frequency_) / Q_;
+  double gamma_2 = pow(TWOPI * corner_frequency_ / SAMPLE_RATE, 2);
 
   double denominator = gamma_0 + gamma_1 + gamma_2;
   double alpha_1 = (gamma_0 - gamma_1 - gamma_2) / denominator;
@@ -120,8 +131,8 @@ void DigitalLowpassFilter::calculate_coefficients() {
 void DigitalHighpassFilter::calculate_coefficients() {
   
   double gamma_0 = 4;
-  double gamma_1 = 2 / SAMPLE_RATE * (corner_frequency_) / Q_;
-  double gamma_2 = pow(corner_frequency_ / SAMPLE_RATE, 2);
+  double gamma_1 = 2 / SAMPLE_RATE * (TWOPI * corner_frequency_) / Q_;
+  double gamma_2 = pow(TWOPI * corner_frequency_ / SAMPLE_RATE, 2);
 
   double denominator = gamma_0 + gamma_1 + gamma_2;
   double alpha_1 = (gamma_0 - gamma_1 - gamma_2) / denominator;
@@ -133,8 +144,10 @@ void DigitalHighpassFilter::calculate_coefficients() {
   a_[0] = 1;
   a_[1] = -(alpha_1 + alpha_2);
   a_[2] = 1 + alpha_1 - alpha_2;
-
 }
+
+
+
 
 void SinglePoleFilter::calculate_coefficients() {
   b_[0] = Q_;
@@ -142,9 +155,12 @@ void SinglePoleFilter::calculate_coefficients() {
   b_[2] = 0;
   a_[0] = 1;
   a_[1] = -(corner_frequency_);
-  a_[2] = 0;
+  a_[2] = 0; 
   
 }
+
+
+
 
 // A lowpass filter with filtered feedback
 //https://ccrma.stanford.edu/~jos/pasp/Lowpass_Feedback_Comb_Filter.html
@@ -169,11 +185,23 @@ FilteredFeedbackCombFilter::~FilteredFeedbackCombFilter(){
 // Computes a new value and adds it to a sample from the filtered delay line
 complex FilteredFeedbackCombFilter::tick(complex in){
   complex out = in + roomsize_ * sp_->tick(buffer_[buf_index_]);
+  //std::cout << out.re() << std::endl;
   buffer_[buf_index_] = out;
   ++buf_index_;
   buf_index_ %= samples_;
   return out;    
 }
+
+void FilteredFeedbackCombFilter::change_parameters(int samples, double roomsize, double damping){
+  samples_ = samples; 
+  roomsize_ = roomsize;
+  damping_ = damping;
+}
+
+
+
+
+
 
 //One zero, one pole approximation of an allpass filter
 //https://ccrma.stanford.edu/~jos/pasp/Freeverb_Allpass_Approximation.html

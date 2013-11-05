@@ -177,9 +177,31 @@ private:
 
 /*
 The reverb effect convolves the signal with an impulse response
+  param1 = room size
+  param2 = damping
+*/
+class Reverb : public UnitGenerator {
+public:
+  static const int kCombDelays[];
+  static const int kAllPassDelays[];
+  Reverb();
+  ~Reverb();
+  // Processes a single sample in the unit generator
+  double tick(double in);  
+  //Updates the filter variables
+  double set_params(double p1, double p2);
+private:
+  FilterBank *fb_;
+  std::list<AllpassApproximationFilter *> aaf_;
+  
+};
+
+
+/*
+The reverb effect convolves the signal with an impulse response
   param1 = 
   param2 = 
-*/
+
 class Reverb : public UnitGenerator {
 public:
   static const int kCombDelays[];
@@ -194,6 +216,5 @@ private:
   std::list<AllpassApproximationFilter *> aaf_;
   
 };
-
-
+*/
 #endif

@@ -45,6 +45,8 @@ class DigitalFilter {
   double dc_gain(void);
   double gain_;
 
+  virtual void change_parameters(double center_frequency, double Q, double gain);
+  
  protected:
   //The coefficients for the numerator
   double a_[3];  
@@ -113,7 +115,6 @@ class SinglePoleFilter : public DigitalFilter {
  public:
   SinglePoleFilter(double pole, double damping, double gain)
       : DigitalFilter(pole, damping, gain) {
-      corner_frequency_ = pole;
       this->calculate_coefficients();
   };
   //Calculates the single pole filter's coefficients
@@ -121,6 +122,8 @@ class SinglePoleFilter : public DigitalFilter {
   
 };
 
+
+// This is mainly used for reverberation (Freeverb)
 class FilteredFeedbackCombFilter : public DigitalFilter {
  public:
   FilteredFeedbackCombFilter(int samples, double roomsize, double damping);
@@ -129,10 +132,14 @@ class FilteredFeedbackCombFilter : public DigitalFilter {
   // Computes a new value and adds it to a sample from the filtered delay line
   complex tick(complex in);
   
-private:
-  int samples_;
+  //The internal filter
   double roomsize_, damping_;
   SinglePoleFilter *sp_;
+  
+  //This filter is a bit different
+  void change_parameters(int samples, double roomsize, double damping);
+private:
+  int samples_;
   complex *buffer_;
   int buf_index_;
 };

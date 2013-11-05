@@ -355,16 +355,19 @@ void Looper::stop_recording(){
 
 /*
 The reverb effect convolves the signal with an impulse response
-  param1 = 
-  param2 = 
+  param1 = room size
+  param2 = damping
 */
 const int Reverb::kCombDelays[] = {1116,1188,1356,1277,1422,1491,1617,1557};
 const int Reverb::kAllPassDelays[] = {225, 556, 441, 341};
 
 Reverb::Reverb(){
+  param1_ = .8;
+  param2_ = .2;
+  
   fb_ = new FilterBank();
   for (int i = 0; i < 8; ++i){
-    FilteredFeedbackCombFilter *k = new FilteredFeedbackCombFilter(kCombDelays[i], .90, .2);
+    FilteredFeedbackCombFilter *k = new FilteredFeedbackCombFilter(kCombDelays[i], param1_, param2_);
     fb_->add_filter(k);  
   }
   
@@ -398,3 +401,24 @@ double Reverb::tick(double in){
   return sample.re();
 }  
 
+double Reverb::set_params(double p1, double p2){
+  p1 = p1 > 1 ? 1 : p1;
+  p1 = p1 < 0 ? 0 : p1;
+  param1_ = p1;
+  
+  p2 = p2 > 1 ? 1 : p2;
+  p2 = p2 < 0 ? 0 : p2;
+  param2_ = p2;
+  
+  int i = 0;
+  std::list<DigitalFilter *>::iterator it;
+  it = fb_->filters_.begin();
+  while (fb_->filters_.size() > 0 && it != fb_->filters_.end()) {
+    FilteredFeedbackCombFilter *apf = static_cast<FilteredFeedbackCombFilter *>(*it);
+    apf->change_parameters(kCombDelays[i++], param1_, param2_);
+    apf->sp_->change_parameters(param2_, 1 - param2_, 1.0);
+    ++it;
+  }
+  
+
+}
