@@ -6,13 +6,12 @@
   This file the object that interacts with OpenGL.
 */
 #include <iostream>
-#include <math.h>
 #include "GraphicsBox.h"
 
-void displayFunc();
+void display();
 void glInitialize();
-void idleFunc();
-void reshapeFunc(int width, int height);
+void idle();
+void reshape(int width, int height);
 
 std::list<Drawable *> *draw_list;
 
@@ -30,7 +29,7 @@ int GraphicsBox::initialize(int argc, char *argv[]){
   // initialize GLUT
   glutInit(&argc, argv);
   // initialize the window size
-  glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA | GLUT_ALPHA);
+  glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGB);
 
   glutInitWindowSize(w_, h_);
   // set the window postion
@@ -39,18 +38,21 @@ int GraphicsBox::initialize(int argc, char *argv[]){
   glutCreateWindow("AudioHockeyTable");
   //glutEnterGameMode();
 
+  glInitialize();
+  
   // set the idle function - called when idle
-  //glutIdleFunc(idleFunc);
+  glutIdleFunc(idle);
   // set the display function - called when redrawing
-  glutDisplayFunc(displayFunc);
+  glutDisplayFunc(display);
   // set the reshape function - called when client area changes
-  //glutReshapeFunc(reshapeFunc);
+  glutReshapeFunc(reshape);
   // set the keyboard function - called on keyboard events
-  //glutKeyboardFunc(keyboardFunc);
+  //glutKeyboardFunc(keyboard);
   // set the mouse function - called on mouse stuff
-  //glutMouseFunc(mouseFunc);
+  //glutMouseFunc(mouse);
   // set the special function - called on special keys events (fn, arrows, pgDown, etc)
-  //glutSpecialFunc(specialFunc);
+  //glutSpecialFunc(special);
+  
   
   return 0;
 }
@@ -62,10 +64,10 @@ void GraphicsBox::start_graphics(){
 
 void GraphicsBox::add_drawable(Drawable *k){
   items_.push_back(k);
-
 }
+
 //Is the main loop. Runs repeatedly.
-void displayFunc() {
+void display() {
   // clear the color and depth buffers
   glMatrixMode (GL_MODELVIEW);
   // clear the drawing buffer.
@@ -73,6 +75,10 @@ void displayFunc() {
   
   
   glLoadIdentity();
+  glPushMatrix();
+  
+  glTranslatef(0, 0, -20);
+  glScalef(.45,.45,.45);
   
   //Draws every drawable that is on the list
   std::list<Drawable *> items = *draw_list;
@@ -86,14 +92,7 @@ void displayFunc() {
     }
   }
   
-  //Draws a test sphere
-  glPushMatrix();
-  glTranslatef(0,0,1.8);
-  glColor4f(1.0, 0.0, 1.0, 1.0);
-  glutSolidSphere(1, 20, 20);
-  glPushMatrix();
-  
-  
+  glPopMatrix();
   // flush!
   glFlush();
   // swap the double buffer
@@ -105,33 +104,38 @@ void displayFunc() {
 void glInitialize() {
   // seed random number generator
   srand(time(NULL));
-  // set fill mode
-  glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-  // Enable transparency
-  glEnable (GL_BLEND);
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-  glEnable (GL_COLOR_MATERIAL);
-  glEnable (GL_LIGHT0);
-  glEnable (GL_DEPTH_TEST);
+  GLfloat mat_specular[] = { 1.0, 1.0, 1.0, 1.0 };
+  GLfloat mat_ambient[] = { 0.6, 0.6, 0.6, 1.0 };
+  GLfloat mat_shininess[] = { 50.0 };
+  GLfloat light_position[] = { 1.0, 1.0, 1.0, 0.0 };
+  glClearColor (0.0, 0.0, 0.0, 0.0);
+  glShadeModel (GL_SMOOTH);
+  
+  glMaterialfv(GL_FRONT, GL_AMBIENT, mat_ambient);
+  glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
+  glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess);
+  glLightfv(GL_LIGHT0, GL_POSITION, light_position);
+  
+  //glEnable(GL_LIGHTING);
+  glEnable(GL_LIGHT0);
+  glEnable(GL_DEPTH_TEST);
   
 }
 
 
-void reshapeFunc(int x, int y) {
-  // save the new window size
-  if (y == 0 || x == 0)
+void reshape(int w, int h) {
+  if (h == 0 || w == 0)
     return;
   glMatrixMode (GL_PROJECTION);
   glLoadIdentity();
-  gluPerspective(39.0, (GLdouble) x / (GLdouble) y, 0.6, 21.0);
+  gluPerspective(39.0, (GLdouble) w / (GLdouble) h, 0.6, 40.0);
   glMatrixMode (GL_MODELVIEW);
-  glViewport(0, 0, x, y);
+  glViewport(0, 0, w, h);
 }
 
 
-void idleFunc() {
+void idle() {
   // render the scene
   glutPostRedisplay();
 }

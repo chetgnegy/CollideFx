@@ -10,6 +10,7 @@
 #define _GRAPHICSBOX_H_
 
 #include <list>
+#include <math.h>
 #include "Drawable.h"
 
 #ifdef __MACOSX_CORE__

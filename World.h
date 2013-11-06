@@ -4,11 +4,10 @@
 
   World.h
 */
-#ifndef _DISC_H_
-#define _DISC_H_
+#ifndef _WORLD_H_
+#define _WORLD_H_
 
-
-#include "Drawable.h"
+#import "Drawable.h" //imports opengl stuff, too
 
 class World : public Drawable {
 public:

@@ -10,7 +10,7 @@
 #define _DISC_H_
 
 #include "UnitGenerator.h"
-#include "Drawable.h"
+#include "Drawable.h" //imports opengl stuff, too
 
 class Disc : public Drawable {
 public:
@@ -40,6 +40,7 @@ private:
   //angular velocity
   double w_;
   
+  GLUquadricObj *quadratic; 
 };
 
 

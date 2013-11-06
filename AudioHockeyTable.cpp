@@ -14,6 +14,7 @@
 #include <iostream>
 
 #include "UGenChain.h"
+#include "Disc.h"
 #include "World.h"
 #include "GraphicsBox.h"
 
@@ -23,7 +24,7 @@ int main(int argc, char *argv[]) {
   UGenChain *myChain = new UGenChain();
   //myChain->initialize();
   
-  //Chorus *d = new Chorus(44100);
+  Chorus *d = new Chorus(44100);
   //myChain->add_effect(d);
   //while (true){
   //  usleep(1000000);
@@ -31,15 +32,21 @@ int main(int argc, char *argv[]) {
   //}
   
   
-  World *myWorld = new World(20, 20);
-  GraphicsBox *myGraphics = new GraphicsBox(300, 300);
+  World *myWorld = new World(30, 30);
+  Disc *myDisc = new Disc(d, 1);
+  
+  GraphicsBox *myGraphics = new GraphicsBox(800, 600);
   
   myGraphics->initialize(argc, argv);
+  myGraphics->add_drawable(myWorld);
+  myGraphics->add_drawable(myDisc);
+  
+  
   myGraphics->start_graphics();
   
-  char input;
-  std::cin.get(input); //Pause after a single frame
+  
   delete myWorld;
+  delete myDisc;
   delete myChain;
   return 1;
 
