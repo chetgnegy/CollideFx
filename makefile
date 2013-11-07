@@ -35,7 +35,7 @@ UnitGenerator.o: UnitGenerator.cpp UnitGenerator.h
 GraphicsBox.o: GraphicsBox.cpp GraphicsBox.h
 	$(CXX) $(FLAGS) GraphicsBox.cpp
 
-Disc.o: Disc.cpp Disc.h Drawable.h
+Disc.o: Disc.cpp Disc.h Drawable.h Moveable.h
 	$(CXX) $(FLAGS) Disc.cpp
 
 DigitalFilter.o: DigitalFilter.cpp DigitalFilter.h

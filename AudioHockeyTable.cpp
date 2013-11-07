@@ -40,6 +40,7 @@ int main(int argc, char *argv[]) {
   myGraphics->initialize(argc, argv);
   myGraphics->add_drawable(myWorld);
   myGraphics->add_drawable(myDisc);
+  myGraphics->add_moveable(myDisc);
   
   
   myGraphics->start_graphics();

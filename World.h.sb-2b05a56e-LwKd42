@@ -11,7 +11,7 @@
 
 class World : public Drawable {
 public:
-  static const double kWallThickness = 0.02;
+  static const double kWallThickness = 0.2;
   //Creates the world
   World(double x, double y);
   //Should clean up all discs inside too

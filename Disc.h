@@ -11,26 +11,38 @@
 
 #include "UnitGenerator.h"
 #include "Drawable.h" //imports opengl stuff, too
+#include "Moveable.h"
 
-class Disc : public Drawable {
+class Disc : public Drawable, public Moveable {
 public:
-  //Pairs the disc with a unit generator
+  // Pairs the disc with a unit generator
   Disc(UnitGenerator *u, double radius); 
-  //Cleans up the unit generator
+  // Cleans up the unit generator
   ~Disc();
   
-  //Places disc at certain location
+  // Places disc at certain location
   void set_location(double x, double y);
-  //Sets instantaneous velocity of the disc
+  // Sets instantaneous velocity of the disc
   void set_velocity(double x, double y);
   
+  // OpenGL instructions for drawing a unit disc centered at the origin
   void draw(void);
+  
+  // The actual location of the disc's center
   void get_origin(double &x, double &y, double &z);
+  
+  // The orientation of the disk
   void get_rotation(double &x, double &y, double &z);
+
+  // Moves the object to new coordinates
+  void move(double x, double y, double z);
+  void prepare_move(double x, double y, double z);
+  bool check_clicked(double x, double y, double z);
+
 private:
   UnitGenerator *ugen_;
   //positions
-  double x_, y_;
+  double x_, y_, x_offset_, y_offset_;
   //velocity
   double vx_, vy_;
   //forces
@@ -39,7 +51,7 @@ private:
   double r_;
   //angular velocity
   double w_;
-  
+  //An object that is useful for drawing the cylinder
   GLUquadricObj *quadratic; 
 };
 

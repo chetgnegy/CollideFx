@@ -12,8 +12,7 @@
 #include <list>
 #include <math.h>
 #include "Drawable.h"
-#include "Moveable.h"
-  
+
 #ifdef __MACOSX_CORE__
   #include <GLUT/glut.h>
 #else
@@ -40,7 +39,7 @@ private:
   void display_function();
   int w_, h_;
   std::list<Drawable *> draw_items_;
-  std::list<Moveable *> move_items_;
+  std::list<Drawable *> move_items_;
   
 };
 
