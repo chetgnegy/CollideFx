@@ -34,7 +34,6 @@ void Disc::set_velocity(double y, double z){};
 
 // OpenGL instructions for drawing a unit disc centered at the origin
 void Disc::draw(){
-
   glPushMatrix();
     glScalef(r_, r_, 1);
     quadratic=gluNewQuadric();          // Create A Pointer To The Quadric Object ( NEW )
@@ -47,7 +46,6 @@ void Disc::draw(){
     gluDisk(quadratic,0.0f,1.0f,32,32);
     //delete quadratic;
     glPopMatrix();
-
 }
 
 // The current location of the disc's center
@@ -58,6 +56,31 @@ void Disc::get_origin(double &x, double &y, double &z){
 // The current orientation of the disk
 void Disc::get_rotation(double &x, double &y, double &z){
   x=0; y=0; z=0;
+}
+
+void Disc::set_attributes(){
+  glPushAttrib(GL_ALL_ATTRIB_BITS);
+  GLfloat mat_specular[] = { 1.0, 1.0, 1.0, 1.0 };
+  GLfloat mat_ambient[] = { 0.6, 0.6, 0.6, 1.0 };
+  GLfloat mat_shininess[] = { 10.0 };
+  
+  glMaterialfv(GL_FRONT, GL_AMBIENT, mat_ambient);
+  //glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
+  glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess);
+  
+  glEnable (GL_COLOR_MATERIAL);
+  glEnable(GL_LIGHTING);
+  glEnable(GL_LIGHT0);
+  
+}
+
+void Disc::remove_attributes(){
+  glPopAttrib();
+}
+
+
+void Disc::prepare_graphics(void){
+
 }
 
 void Disc::move(double x, double y, double z){
@@ -75,3 +98,4 @@ bool Disc::check_clicked(double x, double y, double z){
   if (pow(x-x_,2) + pow(y-y_,2) < pow(r_,2)) return true;
   return false;
 }
+

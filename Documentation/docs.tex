@@ -100,6 +100,20 @@ This is an implementation of Freeverb$_{[3]}$ using feedback comb filters and al
 \subsubsection{Tremolo} 
 The tremolo module provides simple low frequency amplitude modulation with a sinusoidal carrier wave. The modulation rate, $f_t$ is bounded on the range 0.02 - 10.0 Hz.
 
+\section{Graphics}
+The OpenGL library is used to provide a graphical interface for the project. The two main classes of displayable objects are the "World" and the "Disc". Each instance of these classes implements an interface Drawable, which allows for clean integration with the OpenGL module. OpenGL need only hold on to a list of Drawable objects, and the individual classes are responsible for their own rendering instructions.
+
+\subsubsection{The Drawable Interface}
+Drawable is an abstract class containing only pure virtual methods. These methods are:
+
+\begin{itemize}
+    \item draw() - draws the object, with its center around the point (0,0,0) and with no rotation
+    \item get_origin(\&x, \&y, \&z) - stores the origin of the object in the passed coordinates. This allows the object to be shifted to where it thinks it should be externally to its draw method.
+    \item get_rotation(\&x, \&y, \&z) - rotates the object to the coordinates specified by its internal parameters
+    \item set_attributes() - must be called before drawing, sets up OpenGL settings and pushes them to the attributes stack.
+    \item remove_attributes() - must be called after drawing, pops the attributes stack
+    \item prepare_graphics() - called on
+\end{itemize} 
 
 \spag fix the "quotes" with bold or something to signify that it is code \spag
 

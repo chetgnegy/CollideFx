@@ -36,8 +36,11 @@ public:
 
   // Moves the object to new coordinates
   void move(double x, double y, double z);
+  void set_attributes();
+  void remove_attributes();
   void prepare_move(double x, double y, double z);
   bool check_clicked(double x, double y, double z);
+  void prepare_graphics(void);
 
 private:
   UnitGenerator *ugen_;

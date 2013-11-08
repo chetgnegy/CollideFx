@@ -24,7 +24,6 @@ bool valid_clicked;
 float distance = -20.0;
 float scale = .45;
 
-
 GraphicsBox::GraphicsBox(int w, int h){
   w_ = w;
   h_ = h;
@@ -70,7 +69,10 @@ int GraphicsBox::initialize(int argc, char *argv[]){
 //Starts the main loop
 void GraphicsBox::start_graphics(){ glutMainLoop(); }
 
-void GraphicsBox::add_drawable(Drawable *k){ draw_items_.push_back(k); }
+void GraphicsBox::add_drawable(Drawable *k){ 
+  k->prepare_graphics();
+  draw_items_.push_back(k); 
+}
 
 void GraphicsBox::add_moveable(Moveable *k){ move_items_.push_back(k); }
 
@@ -100,24 +102,22 @@ void display() {
     while (it != items.end()) {
       
       glPushMatrix();
+      (*it)->set_attributes();
       (*it)->get_origin(x,y,z);
       glTranslatef(x,y,z);
       (*it)->draw();
+      (*it)->remove_attributes();
       glPopMatrix();
       
       ++it;
     }
   }
-  
   glPopMatrix();
   // flush!
   glFlush();
   // swap the double buffer
   glutSwapBuffers();
 }
-
-
-
 
 void mouse(int button, int state, int x, int y) {
     double coordX, coordY;
@@ -138,7 +138,6 @@ void mouse(int button, int state, int x, int y) {
                 valid_clicked = true;
                 clicked = *it;
                 clicked->prepare_move(coordX, coordY, -distance);
-                
             }
             ++it;
           }
@@ -183,9 +182,6 @@ void recoverClick(int iX, int iY, double &oX, double &oY){
   gluUnProject(iX, viewport[1] + viewport[3] - iY, 0, modelview, projection, viewport, &posX1, &posY1, &posZ1);  // Near plane
   gluUnProject(iX, viewport[1] + viewport[3] - iY, 1, modelview, projection, viewport, &posX2, &posY2, &posZ2);  // Far plane
 
-  // Vector3f rayPoint1((float)posX1, (float)posY1, (float)posZ1);
-  // Vector3f rayPoint2((float)posX2, (float)posY2, (float)posZ2);
-
   // This is a little bit hacky. The top of the discs is .5 above the board. 
   //This offset keeps the mouse in the plane of the top of the disc.
   GLfloat t = (posZ1 - distance - 0.5) / (posZ1 - posZ2);
@@ -199,27 +195,13 @@ void recoverClick(int iX, int iY, double &oX, double &oY){
 
 
 void glInitialize() {
-  // seed random number generator
-  srand(time(NULL));
-
-  GLfloat mat_specular[] = { 1.0, 1.0, 1.0, 1.0 };
-  GLfloat mat_ambient[] = { 0.6, 0.6, 0.6, 1.0 };
-  GLfloat mat_shininess[] = { 10.0 };
-  GLfloat light_position[] = { 0.0, 0.0, 1.0, 0.0 };
-  glClearColor (0.0, 0.0, 0.0, 0.0);
-  glShadeModel (GL_SMOOTH);
-  
-  glMaterialfv(GL_FRONT, GL_AMBIENT, mat_ambient);
-  //glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
-  glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess);
+  glClearColor (0.6, 0.6, 0.6, 0.0);
+  /*GLfloat light_position[] = { 0.0, 0.0, 1.0, 0.0 };
   glLightfv(GL_LIGHT0, GL_POSITION, light_position);
   glLightModeli(GL_LIGHT_MODEL_AMBIENT, GL_TRUE);
-
-  glEnable (GL_COLOR_MATERIAL);
-  glEnable(GL_LIGHTING);
-  glEnable(GL_LIGHT0);
   glEnable(GL_DEPTH_TEST);
-  
+  glShadeModel (GL_SMOOTH);
+  */
 }
 
 

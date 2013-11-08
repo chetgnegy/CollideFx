@@ -1,12 +1,12 @@
 #!/bin/sh
 
-CXX=llvm-g++-4.2
+CXX=llvm-g++-4.2 
 INCLUDES=
 
 UNAME := $(shell uname)
 
 ifeq ($(UNAME), Linux)
-FLAGS=-D__UNIX_JACK__ -c
+FLAGS=-D__UNIX_JACK__ -c 
 LIBS=-lasound -lpthread -ljack -lstdc++ -lm
 endif
 ifeq ($(UNAME), Darwin)
@@ -18,10 +18,10 @@ LIBS=-framework CoreAudio -framework CoreMIDI -framework CoreFoundation \
 endif
 
 
-OBJS=  RtAudio.o DigitalFilter.o UnitGenerator.o GraphicsBox.o Disc.o World.o UGenChain.o audiohockeytable.o 
+OBJS=  RtAudio.o DigitalFilter.o UnitGenerator.o GraphicsBox.o Disc.o World.o UGenChain.o audiohockeytable.o
 
 audiohockeytable: $(OBJS)
-	$(CXX) -o audiohockeytable $(OBJS) $(LIBS) 
+	$(CXX) -o audiohockeytable $(OBJS) $(LIBS)
 
 audiohockeytable.o: audiohockeytable.cpp graphics.h DigitalFilter.h
 	$(CXX) $(FLAGS) audiohockeytable.cpp
@@ -41,10 +41,9 @@ Disc.o: Disc.cpp Disc.h Drawable.h Moveable.h
 DigitalFilter.o: DigitalFilter.cpp DigitalFilter.h
 	$(CXX) $(FLAGS) DigitalFilter.cpp
 
-World.o: World.cpp World.h Drawable.h
+World.o: World.cpp World.h Drawable.h graphicsutil.h
 	$(CXX) $(FLAGS) World.cpp
-
-
+	
 RtAudio.o: RtAudio.h RtError.h RtAudio.cpp
 	$(CXX) $(FLAGS) RtAudio.cpp
 

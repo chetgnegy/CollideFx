@@ -21,6 +21,10 @@ public:
   virtual void draw() = 0;
   virtual void get_origin(double &x, double &y, double &z) = 0;
   virtual void get_rotation(double &x, double &y, double &z) = 0;
+  virtual void set_attributes(void) = 0;
+  virtual void remove_attributes(void) = 0;  
+  virtual void prepare_graphics(void) = 0;
+  
 };
 
 
