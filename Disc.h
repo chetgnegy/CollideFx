@@ -12,9 +12,12 @@
 #include "UnitGenerator.h"
 #include "Drawable.h" //imports opengl stuff, too
 #include "Moveable.h"
+#include "Particle.h"
 
 class Disc : public Drawable, public Moveable {
 public:
+  static const int kNumParticles = 5;
+
   // Pairs the disc with a unit generator
   Disc(UnitGenerator *u, double radius); 
   // Cleans up the unit generator
@@ -34,15 +37,30 @@ public:
   // The orientation of the disk
   void get_rotation(double &x, double &y, double &z);
 
-  // Moves the object to new coordinates
-  void move(double x, double y, double z);
+  // Sets up the visual attributes for the Disc
   void set_attributes();
+  
+  // Pops the attributes matrix off the stack
   void remove_attributes();
-  void prepare_move(double x, double y, double z);
-  bool check_clicked(double x, double y, double z);
+  
+  // initializes the textures
   void prepare_graphics(void);
 
+  // Moves the object to new coordinates
+  void move(double x, double y, double z);
+
+  void prepare_move(double x, double y, double z);
+  
+  bool check_clicked(double x, double y, double z);
+  
+
 private:
+  // Draws the glowing, moving orbs
+  void draw_particles();
+
+  // Advances the position of the particles, or possibly triggers new ones
+  void advance_particles();
+
   UnitGenerator *ugen_;
   //positions
   double x_, y_, x_offset_, y_offset_;
@@ -56,6 +74,9 @@ private:
   double w_;
   //An object that is useful for drawing the cylinder
   GLUquadricObj *quadratic; 
+
+  Particle *particles_;
+  GLuint texture_[1]; 
 };
 
 

@@ -7,20 +7,12 @@
 #ifndef _WORLD_H_
 #define _WORLD_H_
 
+#include <math.h>
 #include <stdlib.h>
-#include <iostream>
 #include <algorithm>
-#import "Drawable.h" //imports opengl stuff, too
+#include "Drawable.h" //imports opengl stuff, too
+#include "Particle.h"
 
-typedef struct {
-    bool active;
-    float life;
-    float fade;
-    float r, g, b;
-    float x, y, z;
-    float dx, dy, dz;
-    int enroute;
-} Particle;
 
 class World : public Drawable {
 public:
@@ -28,15 +20,17 @@ public:
   static const int kNumParticles = 5;
   static const int kNumLines = 15;
   
-  //Creates the world
+  // Creates the world
   World(double sx, double sy, double x, double y);
-  //Should clean up all discs inside too
+  // Should clean up all discs inside too
   ~World();
-  //Draws the world in OpenGL
+  // Draws the world in OpenGL
   void draw();
   
+  // Sets up the transparency that is necessary for the texture
   void set_attributes();
   
+  // Pops the attributes matrix off the stack
   void remove_attributes();
 
   // Gets the current position of the world. The world doesn't need to move.
@@ -45,18 +39,31 @@ public:
   // Gets the current orientation of the world.
   void get_rotation(double &x, double &y, double &z);
   
+  // initializes the textures
   void prepare_graphics(void);
 
-  void handle_particles();
+  
   
 private:
-  //size of the map
+  // Draws a wireframe wall and a pulsing interior
+  void draw_wall(int size);
+  
+  // Draws the glowing lines and the moving orbs
+  void draw_lines();
+  
+  // Draws the glowing, moving orbs
+  void draw_particles();
+  
+  // Advances the position of the particles, or possibly triggers new ones
+  void advance_particles();
+  
+  // size of the map
   double size_x_, size_y_;
   double x_, y_;
-  void draw_lines();
-  void tron_effect();
   Particle *particles_;
-  GLuint texture_[3]; 
+  GLuint texture_[2]; 
+  // Ticks the graphics counter
+  double ticky_;
 };
 
 

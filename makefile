@@ -1,7 +1,7 @@
 #!/bin/sh
 
 CXX=llvm-g++-4.2 
-INCLUDES=
+ 
 
 UNAME := $(shell uname)
 
@@ -21,31 +21,31 @@ endif
 OBJS=  RtAudio.o DigitalFilter.o UnitGenerator.o GraphicsBox.o Disc.o World.o UGenChain.o audiohockeytable.o
 
 audiohockeytable: $(OBJS)
-	$(CXX) -o audiohockeytable $(OBJS) $(LIBS)
+	$(CXX) -o  audiohockeytable $(INC) $(OBJS) $(LIBS)
 
 audiohockeytable.o: audiohockeytable.cpp graphics.h DigitalFilter.h
-	$(CXX) $(FLAGS) audiohockeytable.cpp
+	$(CXX) $(FLAGS) $(INC) audiohockeytable.cpp
 
 UGenChain.o: UGenChain.cpp UGenChain.h
-	$(CXX) $(FLAGS) UGenChain.cpp
+	$(CXX) $(FLAGS) $(INC) UGenChain.cpp
 
 UnitGenerator.o: UnitGenerator.cpp UnitGenerator.h
-	$(CXX) $(FLAGS) UnitGenerator.cpp
+	$(CXX) $(FLAGS) $(INC) UnitGenerator.cpp
 
 GraphicsBox.o: GraphicsBox.cpp GraphicsBox.h
-	$(CXX) $(FLAGS) GraphicsBox.cpp
+	$(CXX) $(FLAGS) $(INC) GraphicsBox.cpp
 
 Disc.o: Disc.cpp Disc.h Drawable.h Moveable.h
-	$(CXX) $(FLAGS) Disc.cpp
+	$(CXX) $(FLAGS) $(INC) Disc.cpp
 
 DigitalFilter.o: DigitalFilter.cpp DigitalFilter.h
-	$(CXX) $(FLAGS) DigitalFilter.cpp
+	$(CXX) $(FLAGS) $(INC) DigitalFilter.cpp
 
 World.o: World.cpp World.h Drawable.h graphicsutil.h
-	$(CXX) $(FLAGS) World.cpp
+	$(CXX) $(FLAGS) $(INC) World.cpp
 	
 RtAudio.o: RtAudio.h RtError.h RtAudio.cpp
-	$(CXX) $(FLAGS) RtAudio.cpp
+	$(CXX) $(FLAGS) $(INC) RtAudio.cpp
 
 
 
