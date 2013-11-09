@@ -116,9 +116,9 @@ void Physics::collision_prevention(){
       it_a = all_.begin();
       while (it_a != all_.end()) {
         if ( (*it_a)->has_collisions() ){ // Only if A can collide
-          it_b = it_a.next();
+          it_b = it_a;
           while (it_b != all_.end()) {
-            if ((*it_b)->has_collisions()) { // Only if B can collide
+            if (it_b != it_a && (*it_b)->has_collisions()) { // Only if B can collide
               //  Check if radii intersect
               between = (*it_b)->pos_ - (*it_a)->pos_;
               
@@ -154,9 +154,9 @@ bool Physics::check_reduce_timestep(){
     it_a = all_.begin();
     while (it_a != all_.end()) {
       if ( (*it_a)->has_collisions()){
-        it_b = it_a.next();
+        it_b = it_a;
         while (it_b != all_.end()) {
-          if ((*it_b)->has_collisions()) {
+          if (it_b != it_a && (*it_b)->has_collisions()) {
             //  Check if radii intersect
             Vector3d between = (*it_b)->pos_ - (*it_a)->pos_;
             if (between.length() < 1.005*((*it_b)->intersection_distance() 
