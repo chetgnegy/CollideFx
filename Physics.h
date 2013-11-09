@@ -28,6 +28,9 @@ public:
   // Uses Velocity Verlet integration to compute the next positions of the object
   static void velocity_verlet(double timestep, Physical* object);
 
+  // Velocity Verlet algorithm applied to the angular motion
+  static void angular_verlet(double timestep, Physical* object);
+
   // Uses vector projections to make sure things don't get too close to each other
   static void collision_prevention();
 

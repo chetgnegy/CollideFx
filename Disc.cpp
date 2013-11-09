@@ -12,7 +12,7 @@
 Disc::Disc(UnitGenerator *u, double radius){
   ugen_ = u;
   r_ = radius;
-  mass_ = 1;
+  mass_ = 1 * radius * radius;
   x_offset_ = 0; 
   y_offset_ = 0;
   particles_ = new Particle[kNumParticles];
@@ -101,8 +101,8 @@ void Disc::get_origin(double &x, double &y, double &z){
 }
 
 // The current orientation of the disk
-void Disc::get_rotation(double &x, double &y, double &z){
-  x=0; y=0; z=0;
+void Disc::get_rotation(double &w, double &x, double &y, double &z){
+  w=ang_pos_.length(); x=ang_pos_.x; y=ang_pos_.y; z=ang_pos_.z;
 }
 
 void Disc::set_attributes(){
@@ -250,9 +250,6 @@ void Disc::draw_particles(){
 
 // Advances the position of the particles, or possibly triggers new ones
 void Disc::advance_particles(){
-
-  double speed = 0.0007;
-  
   for (int i = 0; i<kNumParticles; ++i)
     {
       if (particles_[i].active){
@@ -263,11 +260,7 @@ void Disc::advance_particles(){
       else {
         //Move them somewhere?
         particles_[i].active = true;
-        
-        
-
       }
-
       //going out of bounds
       if (fabs(particles_[i].x) > .5 && fabs(particles_[i].x) < fabs(particles_[i].x + particles_[i].dx)){
         particles_[i].active = false;
@@ -275,13 +268,15 @@ void Disc::advance_particles(){
       if (fabs(particles_[i].z) > .5 && fabs(particles_[i].z) < fabs(particles_[i].z + particles_[i].dz)){
         particles_[i].active = false;
       }
-
-
     }
-
 }
-
 
 Vector3d Disc::external_forces(){
   return Vector3d(0,0,0);
 }
+
+
+Vector3d Disc::external_torques(){
+  return Vector3d(0,0,-.003) * 180.0 / 3.1415926535;
+}
+

@@ -36,20 +36,26 @@ int main(int argc, char *argv[]) {
   World *myWorld = new World(30, 30, 9, 0);
   Disc *myDisc = new Disc(d, 1);
   Disc *myDisc2 = new Disc(d, 1);
+  Disc *myDisc3 = new Disc(d, 2);
   
   GraphicsBox *myGraphics = new GraphicsBox(960, 600);
   
   myGraphics->initialize(argc, argv);
   myGraphics->add_drawable(myWorld);
+
   myGraphics->add_drawable(myDisc);
   myGraphics->add_drawable(myDisc2);
+  myGraphics->add_drawable(myDisc3);
   myGraphics->add_moveable(myDisc);
   myGraphics->add_moveable(myDisc2);
   myDisc->set_velocity(3,3);
   myDisc2->set_location(-3,3);
   myDisc2->set_velocity(7,0);
+  myDisc3->set_location(3,12);
+  myDisc3->set_velocity(-2,-7);
   Physics::give_physics(myDisc);
   Physics::give_physics(myDisc2);
+  Physics::give_physics(myDisc3);
   
   myGraphics->start_graphics();
   

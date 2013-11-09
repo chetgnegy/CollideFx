@@ -37,7 +37,7 @@ public:
   void get_origin(double &x, double &y, double &z);
   
   // The orientation of the disk
-  void get_rotation(double &x, double &y, double &z);
+  void get_rotation(double &w, double &x, double &y, double &z);
 
   // Sets up the visual attributes for the Disc
   void set_attributes();
@@ -65,6 +65,8 @@ public:
   double intersection_distance(){ return r_; }
 
   Vector3d external_forces();
+
+  Vector3d external_torques();
 private:
   // Draws the glowing, moving orbs
   void draw_particles();

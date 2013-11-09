@@ -94,7 +94,6 @@ void display() {
   if (time_now > 0){
     Physics::update(time_diff*1.0e-6);
   }
-  time_now = new_time;
   
   //char input;
   //std::cin.get(input);
@@ -112,7 +111,7 @@ void display() {
   glTranslatef(0, 0, distance);
   glScalef(scale,scale,scale);
   
-  double x,y,z;
+  double w,x,y,z;
   
 
   //Draws every drawable that is on the list
@@ -124,9 +123,14 @@ void display() {
     while (it != items.end()) {
       
       glPushMatrix();
+      if (time_now > 0){
+        (*it)->advance_time(time_diff*1.0e-6);
+      }
       (*it)->set_attributes();
       (*it)->get_origin(x,y,z);
       glTranslatef(x,y,z);
+      (*it)->get_rotation(w,x,y,z);
+      glRotatef(w,x,y,z);
       (*it)->draw();
       (*it)->remove_attributes();
       glPopMatrix();
@@ -139,7 +143,13 @@ void display() {
   glFlush();
   // swap the double buffer
   glutSwapBuffers();
+
+  time_now = new_time;
+  
 }
+
+
+
 
 void mouse(int button, int state, int x, int y) {
     double coordX, coordY;
@@ -149,12 +159,10 @@ void mouse(int button, int state, int x, int y) {
     // when left mouse button is down, move left
 
       if (state == GLUT_DOWN) {
-        //Draws every drawable that is on the list
         std::list<Moveable *> items = *move_list;
         if (items.size() > 0) {
           std::list<Moveable *>::iterator it;
           it = items.begin();
-          //Process each effect in chain
           while (it != items.end()) {
             if ((*it)->check_clicked(coordX, coordY, -distance)){
                 valid_clicked = true;

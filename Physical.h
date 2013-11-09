@@ -19,12 +19,15 @@ public:
   virtual bool uses_friction() = 0;
   virtual double intersection_distance() = 0;
   virtual Vector3d external_forces() = 0;
+  virtual Vector3d external_torques() = 0;
   Vector3d pos_;
   Vector3d vel_;
   Vector3d acc_;
   double mass_;
+  Vector3d ang_pos_;
   Vector3d ang_vel_;
-
+  Vector3d ang_acc_;
+  
 };
 
 

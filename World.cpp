@@ -113,8 +113,8 @@ void World::get_origin(double &x, double &y, double &z){
 }
 
 // Gets the current orientation of the world.
-void World::get_rotation(double &x, double &y, double &z){
-  x=0; y=0; z=0;
+void World::get_rotation(double &w, double &x, double &y, double &z){
+   w=0; x=0; y=0; z=0;
 }
 
 // initializes the textures
@@ -153,7 +153,14 @@ void World::prepare_graphics(void){
 
 }
 
+void World::advance_time(double time){
+  ticky_ += time;
+  if (ticky_ > 1/kAnimationFrequency) {
+    ticky_ -= 1/kAnimationFrequency ;
 
+  }
+  
+};
 
 
 // Draws a wireframe wall and a pulsing interior
@@ -161,7 +168,7 @@ void World::draw_wall(int size){
   glColor4f(0, 1, .5, 1);
   glutWireCube(size);
   //The pulsing walls
-  glColor4f(.3, 1, .1, 0.1*(1-sin(ticky_))+.05);
+  glColor4f(.3, 1, .1, 0.1*(1-sin(kAnimationFrequency*6.283185*ticky_))+.05);
   glutSolidCube(size);
 }
 
@@ -169,15 +176,13 @@ void World::draw_wall(int size){
 // Draws the glowing lines and the moving orbs
 void World::draw_lines(){
   glPushMatrix();
-    ticky_ += 0.0005;
-    if (ticky_>6.283185) ticky_-=6.283185;
     glTranslatef(0.0, 0.5, 0.0);
     //Draws the glowy orbs
     draw_particles();
     glPopAttrib();
 
     //The glowing of the lines
-    glColor4f(0.2, 1.0, 0.0, 0.2*sin(ticky_)+0.5);
+    glColor4f(0.2, 1.0, 0.0, 0.2*sin(kAnimationFrequency*6.283185*ticky_)+0.5);
     
     for (int i = 1 ; i < kNumLines; ++i){
       //Draws Horizontal Lines
@@ -237,7 +242,7 @@ void World::draw_particles(){
 // Advances the position of the particles, or possibly triggers new ones
 void World::advance_particles(){
 
-  double speed = 0.0007;
+  double speed = 0.002;
   for (int i = 0; i<kNumParticles; ++i)
     {
       if (particles_[i].active){

@@ -10,6 +10,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include <algorithm>
+#include <iostream>//remove
 #include "Drawable.h" //imports opengl stuff, too
 #include "Particle.h"
 
@@ -19,6 +20,7 @@ public:
   static const double kWallThickness = 0.02;
   static const int kNumParticles = 5;
   static const int kNumLines = 15;
+  static const double kAnimationFrequency = .25;
   
   // Creates the world
   World(double sx, double sy, double x, double y);
@@ -37,11 +39,13 @@ public:
   void get_origin(double &x, double &y, double &z);
   
   // Gets the current orientation of the world.
-  void get_rotation(double &x, double &y, double &z);
+  void get_rotation(double &w, double &x, double &y, double &z);
   
   // initializes the textures
   void prepare_graphics(void);
 
+  // Advances the graphics
+  void advance_time(double time);
   
   
 private:
