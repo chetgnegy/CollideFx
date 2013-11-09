@@ -17,6 +17,7 @@
 #include "Disc.h"
 #include "World.h"
 #include "GraphicsBox.h"
+#include "Physics.h"
 
 int main(int argc, char *argv[]) {
 
@@ -41,9 +42,14 @@ int main(int argc, char *argv[]) {
   myGraphics->initialize(argc, argv);
   myGraphics->add_drawable(myWorld);
   myGraphics->add_drawable(myDisc);
-  //myGraphics->add_drawable(myDisc2);
+  myGraphics->add_drawable(myDisc2);
   myGraphics->add_moveable(myDisc);
-  //myGraphics->add_moveable(myDisc2);
+  myGraphics->add_moveable(myDisc2);
+  myDisc->set_velocity(3,3);
+  myDisc2->set_location(-3,3);
+  myDisc2->set_velocity(7,0);
+  Physics::give_physics(myDisc);
+  Physics::give_physics(myDisc2);
   
   myGraphics->start_graphics();
   

@@ -13,8 +13,9 @@
 #include "Drawable.h" //imports opengl stuff, too
 #include "Moveable.h"
 #include "Particle.h"
+#include "Physical.h"
 
-class Disc : public Drawable, public Moveable {
+class Disc : public Drawable, public Moveable, public Physical{
 public:
   static const int kNumParticles = 5;
 
@@ -25,6 +26,7 @@ public:
   
   // Places disc at certain location
   void set_location(double x, double y);
+
   // Sets instantaneous velocity of the disc
   void set_velocity(double x, double y);
   
@@ -46,14 +48,23 @@ public:
   // initializes the textures
   void prepare_graphics(void);
 
-  // Moves the object to new coordinates
+  //Responds to the user moving in the interface
   void move(double x, double y, double z);
 
+  //Corrects for offset from center of object in user click
   void prepare_move(double x, double y, double z);
   
+  //Checks if positions are within radius of center of object
   bool check_clicked(double x, double y, double z);
   
+  //Discs can have collisions with other discs
+  bool has_collisions(){ return true; }
 
+  bool uses_friction(){ return true; }
+
+  double intersection_distance(){ return r_; }
+
+  Vector3d external_forces();
 private:
   // Draws the glowing, moving orbs
   void draw_particles();
@@ -62,21 +73,18 @@ private:
   void advance_particles();
 
   UnitGenerator *ugen_;
-  //positions
-  double x_, y_, x_offset_, y_offset_;
-  //velocity
-  double vx_, vy_;
-  //forces
-  double fx_, fy_;
+  
+  //position offsets
+  double x_offset_, y_offset_;
+  
   //radius
   double r_;
-  //angular velocity
-  double w_;
+  
   //An object that is useful for drawing the cylinder
   GLUquadricObj *quadratic; 
 
   Particle *particles_;
-  GLuint texture_[1]; 
+  GLuint texture_[2]; 
 };
 
 

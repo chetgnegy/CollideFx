@@ -18,7 +18,7 @@ LIBS=-framework CoreAudio -framework CoreMIDI -framework CoreFoundation \
 endif
 
 
-OBJS=  RtAudio.o DigitalFilter.o UnitGenerator.o GraphicsBox.o Disc.o World.o UGenChain.o audiohockeytable.o
+OBJS=  vmath.o RtAudio.o Physics.o DigitalFilter.o UnitGenerator.o GraphicsBox.o Disc.o World.o UGenChain.o audiohockeytable.o
 
 audiohockeytable: $(OBJS)
 	$(CXX) -o  audiohockeytable $(INC) $(OBJS) $(LIBS)
@@ -35,7 +35,7 @@ UnitGenerator.o: UnitGenerator.cpp UnitGenerator.h
 GraphicsBox.o: GraphicsBox.cpp GraphicsBox.h
 	$(CXX) $(FLAGS) $(INC) GraphicsBox.cpp
 
-Disc.o: Disc.cpp Disc.h Drawable.h Moveable.h
+Disc.o: Disc.cpp Disc.h Drawable.h Moveable.h Physical.h
 	$(CXX) $(FLAGS) $(INC) Disc.cpp
 
 DigitalFilter.o: DigitalFilter.cpp DigitalFilter.h
@@ -43,10 +43,15 @@ DigitalFilter.o: DigitalFilter.cpp DigitalFilter.h
 
 World.o: World.cpp World.h Drawable.h graphicsutil.h
 	$(CXX) $(FLAGS) $(INC) World.cpp
-	
+
+Physics.o: Physics.cpp Physics.h Physical.h
+	$(CXX) $(FLAGS) $(INC) Physics.cpp
+
 RtAudio.o: RtAudio.h RtError.h RtAudio.cpp
 	$(CXX) $(FLAGS) $(INC) RtAudio.cpp
 
+vmath.o: vmath.cpp vmath.h
+	$(CXX) $(FLAGS) $(INC) vmath.cpp
 
 
 clean:

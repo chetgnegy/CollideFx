@@ -12,8 +12,7 @@
 Disc::Disc(UnitGenerator *u, double radius){
   ugen_ = u;
   r_ = radius;
-  x_ = 0; 
-  y_ = 0;
+  mass_ = 1;
   x_offset_ = 0; 
   y_offset_ = 0;
   particles_ = new Particle[kNumParticles];
@@ -26,7 +25,7 @@ Disc::Disc(UnitGenerator *u, double radius){
       particles_[i].fade = 0;
       particles_[i].r = 1.0;
       particles_[i].g = 0.0;
-      particles_[i].b = 0.2;
+      particles_[i].b = 0.5;
       particles_[i].x = 2 * cos(theta);
       particles_[i].y = 0;
       particles_[i].z = 2 * sin(theta);
@@ -44,15 +43,21 @@ Disc::~Disc(){
 
 // Places disc at certain location  
 void Disc::set_location(double x, double y){
-  x_ = x;
-  y_ = y;
+  pos_.x = x;
+  pos_.y = y;
+  pos_.z = 0;
 };
 
 // Sets instantaneous velocity of the disc
-void Disc::set_velocity(double y, double z){};
+void Disc::set_velocity(double x, double y){
+  vel_.x = x;
+  vel_.y = y;
+  vel_.z = 0;
+};
 
 // OpenGL instructions for drawing a unit disc centered at the origin
 void Disc::draw(){
+
   glPushMatrix();
     glRotatef(90,1,0,0);//face up
     
@@ -76,7 +81,7 @@ void Disc::draw(){
     gluDisk(quadratic,0.0f,1.0f,32,32);
     glTranslatef(0,0,1);
     gluDisk(quadratic,0.0f,1.0f,32,32);
-    
+
     glPushMatrix();
       glScalef(1,1,.4);
       for (int i = 0; i < 6; ++i){
@@ -92,7 +97,7 @@ void Disc::draw(){
 
 // The current location of the disc's center
 void Disc::get_origin(double &x, double &y, double &z){
-  x=x_; y=y_; z=0;
+  x=pos_.x; y=pos_.y; z=0;
 }
 
 // The current orientation of the disk
@@ -102,6 +107,7 @@ void Disc::get_rotation(double &x, double &y, double &z){
 
 void Disc::set_attributes(){
   glPushAttrib(GL_ALL_ATTRIB_BITS);
+  
   GLfloat mat_specular[] = { 0.256777, 0.137622,  0.086014, 1.0 };
   GLfloat mat_diffuse[] = { 0.7038,  0.27048, 0.0828, 1.0 };
   GLfloat mat_ambient[] = { 0.19125, 0.0735,  0.0225, 1.0 };
@@ -126,10 +132,11 @@ void Disc::set_attributes(){
   glDisable(GL_DEPTH_TEST);
   glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
   glHint(GL_POINT_SMOOTH_HINT, GL_NICEST);
-  glEnable(GL_TEXTURE_2D);
-  glBindTexture(GL_TEXTURE_2D,texture_[0]); 
   glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-   
+  glEnable( GL_TEXTURE_2D );
+  glEnable (GL_BLEND);
+      
+  
 }
 
 void Disc::remove_attributes(){
@@ -138,34 +145,55 @@ void Disc::remove_attributes(){
 
 
 void Disc::prepare_graphics(void){
-  GLubyte *tex = new GLubyte[32 * 32 * 3];
+  GLubyte *tex = new GLubyte[256 * 256 * 3];
   FILE *tf;
-  tf = fopen ( "Particle.raw", "rb" );
-  fread ( tex, 1, 32 * 32 * 3, tf );
+  tf = fopen ( "dustbunny_mask.raw", "rb" );
+  fread ( tex, 256 * 256 * 3, 1, tf );
+  fclose ( tf );
+  
+  glGenTextures(1, &texture_[0]);
+  glBindTexture(GL_TEXTURE_2D, texture_[0]);
+  glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );
+  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST );
+  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+  gluBuild2DMipmaps(GL_TEXTURE_2D, 3, 256, 256, GL_RGB, GL_UNSIGNED_BYTE, tex);
+  delete [] tex;
+
+  tex = new GLubyte[256 * 256 * 3];
+  tf = fopen ( "dustbunny.raw", "rb" );
+  fread ( tex, 256 * 256 * 3, 1, tf );
   fclose ( tf );
 
-  glGenTextures(1, &texture_[0]);
-
-  glBindTexture(GL_TEXTURE_2D, texture_[0]);
-  glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
-  glTexImage2D(GL_TEXTURE_2D, 0, 3, 32, 32, 0, GL_RGB, GL_UNSIGNED_BYTE, tex);
+  glGenTextures(1, &texture_[1]);
+  glBindTexture(GL_TEXTURE_2D, texture_[1]);
+  glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );
+  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST );
+  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+  gluBuild2DMipmaps(GL_TEXTURE_2D, 3, 256, 256, GL_RGB, GL_UNSIGNED_BYTE, tex);
+  
   delete [] tex;
 }
 
+//Responds to the user moving in the interface
 void Disc::move(double x, double y, double z){
-  x_ = x - x_offset_;
-  y_ = y - y_offset_;
+  pos_.x = x - x_offset_;
+  pos_.y = y - y_offset_;
 
 }
 
+//Corrects for offset from center of object in user click
 void Disc::prepare_move(double x, double y, double z){
-  x_offset_ = x - x_;
-  y_offset_ = y - y_;
+  x_offset_ = x - pos_.x;
+  y_offset_ = y - pos_.y;
 }
 
+//Checks if positions are within radius of center of object
 bool Disc::check_clicked(double x, double y, double z){
-  if (pow(x-x_,2) + pow(y-y_,2) < pow(r_,2)) return true;
+  if (pow(x-pos_.x,2) + pow(y-pos_.y,2) < pow(r_,2)) return true;
   return false;
 }
 
@@ -174,7 +202,7 @@ bool Disc::check_clicked(double x, double y, double z){
 void Disc::draw_particles(){
   advance_particles();
   double x,y,z;
-  double particle_size = .4;
+  double particle_size = 0.4;
   for ( int i=0; i<kNumParticles; ++i ) {
     if(particles_[i].active){
       
@@ -191,14 +219,30 @@ void Disc::draw_particles(){
       glTranslatef(x,y,z);
       //Draws the particles
       
+      /*
+      glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);   
+      glBindTexture (GL_TEXTURE_2D, texture_[0]);
+
       glBegin(GL_TRIANGLE_STRIP);
       glTexCoord2d(1,1); glVertex3f(x + particle_size, 0, z + particle_size); // Top Right
       glTexCoord2d(0,1); glVertex3f(x - particle_size, 0, z + particle_size); // Top Left
       glTexCoord2d(1,0); glVertex3f(x + particle_size, 0, z - particle_size); // Bottom Right
       glTexCoord2d(0,0); glVertex3f(x - particle_size, 0, z - particle_size); // Bottom Left
       glEnd();
-     
+     */
       
+
+      glBlendFunc (GL_ONE, GL_ONE);//works //additive blending
+      glBindTexture (GL_TEXTURE_2D, texture_[1]);
+    
+      glBegin(GL_TRIANGLE_STRIP);
+      glTexCoord2d(1,1); glVertex3f(x + particle_size, 0, z + particle_size); // Top Right
+      glTexCoord2d(0,1); glVertex3f(x - particle_size, 0, z + particle_size); // Top Left
+      glTexCoord2d(1,0); glVertex3f(x + particle_size, 0, z - particle_size); // Bottom Right
+      glTexCoord2d(0,0); glVertex3f(x - particle_size, 0, z - particle_size); // Bottom Left
+      glEnd();
+      
+    
       glPopMatrix();
     }
   }
@@ -235,4 +279,9 @@ void Disc::advance_particles(){
 
     }
 
+}
+
+
+Vector3d Disc::external_forces(){
+  return Vector3d(0,0,0);
 }

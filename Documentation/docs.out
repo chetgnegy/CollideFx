@@ -2,12 +2,9 @@
 \BOOKMARK [1][-]{section.2}{Audio Framework}{}% 2
 \BOOKMARK [2][-]{subsection.2.1}{Signal Path}{section.2}% 3
 \BOOKMARK [2][-]{subsection.2.2}{Unit Generators}{section.2}% 4
-\BOOKMARK [3][-]{subsubsection.2.2.1}{Bit Crusher}{subsection.2.2}% 5
-\BOOKMARK [3][-]{subsubsection.2.2.2}{Chorus}{subsection.2.2}% 6
-\BOOKMARK [3][-]{subsubsection.2.2.3}{Delay}{subsection.2.2}% 7
-\BOOKMARK [3][-]{subsubsection.2.2.4}{Distortion}{subsection.2.2}% 8
-\BOOKMARK [3][-]{subsubsection.2.2.5}{Looper}{subsection.2.2}% 9
-\BOOKMARK [3][-]{subsubsection.2.2.6}{Reverb}{subsection.2.2}% 10
-\BOOKMARK [3][-]{subsubsection.2.2.7}{Tremolo}{subsection.2.2}% 11
-\BOOKMARK [1][-]{section.3}{Graphics}{}% 12
-\BOOKMARK [2][-]{subsubsection.3.0.8}{The Drawable Interface}{section.3}% 13
+\BOOKMARK [1][-]{section.3}{Graphics}{}% 5
+\BOOKMARK [2][-]{subsection.3.1}{The Drawable Interface}{section.3}% 6
+\BOOKMARK [2][-]{subsection.3.2}{World}{section.3}% 7
+\BOOKMARK [2][-]{subsection.3.3}{Discs}{section.3}% 8
+\BOOKMARK [1][-]{section.4}{User Interaction}{}% 9
+\BOOKMARK [1][-]{section.5}{Physics}{}% 10

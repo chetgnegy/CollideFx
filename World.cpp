@@ -292,10 +292,10 @@ void World::advance_particles(){
       }
       //going out of bounds
       
-      if (fabs(particles_[i].x) > .5 && fabs(particles_[i].x) < fabs(particles_[i].x + particles_[i].dx)){
+      if (fabs(particles_[i].x) > 0.8 && fabs(particles_[i].x) < fabs(particles_[i].x + particles_[i].dx)){
         particles_[i].active = false;
       }
-      if (fabs(particles_[i].z) > .5 && fabs(particles_[i].z) < fabs(particles_[i].z + particles_[i].dz)){
+      if (fabs(particles_[i].z) > 0.8 && fabs(particles_[i].z) < fabs(particles_[i].z + particles_[i].dz)){
         particles_[i].active = false;
       }
 

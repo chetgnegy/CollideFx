@@ -7,6 +7,10 @@
 */
 #include <iostream>
 #include "GraphicsBox.h"
+#include "Physics.h"
+#include <sys/time.h>
+#include <time.h>
+
 
 void display();
 void glInitialize();
@@ -20,7 +24,8 @@ std::list<Drawable *> *draw_list;
 std::list<Moveable *> *move_list;
 Moveable *clicked;
 bool valid_clicked;
-
+long time_now;
+struct timeval timer; 
 float distance = -20.0;
 float scale = .45;
 
@@ -39,7 +44,7 @@ int GraphicsBox::initialize(int argc, char *argv[]){
   // initialize GLUT
   glutInit(&argc, argv);
   // initialize the window size
-  glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGB);
+  glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA);
 
   glutInitWindowSize(w_, h_);
   // set the window postion
@@ -63,6 +68,9 @@ int GraphicsBox::initialize(int argc, char *argv[]){
   glutMotionFunc(mouseMotion);
   // set the special function - called on special keys events (fn, arrows, pgDown, etc)
   //glutSpecialFunc(special);
+
+
+  time_now = -1;
   return 0;
 }
 
@@ -78,6 +86,19 @@ void GraphicsBox::add_moveable(Moveable *k){ move_items_.push_back(k); }
 
 //Is the main loop. Runs repeatedly.
 void display() {
+  usleep(1000);
+
+  gettimeofday(&timer, NULL);  
+  long new_time = (long)(timer.tv_sec*1000000+timer.tv_usec);
+  long time_diff =  new_time - time_now;
+  if (time_now > 0){
+    Physics::update(time_diff*1.0e-6);
+  }
+  time_now = new_time;
+  
+  //char input;
+  //std::cin.get(input);
+  
   // clear the color and depth buffers
   glMatrixMode (GL_MODELVIEW);
   // clear the drawing buffer.
@@ -92,7 +113,8 @@ void display() {
   glScalef(scale,scale,scale);
   
   double x,y,z;
-      
+  
+
   //Draws every drawable that is on the list
   std::list<Drawable *> items = *draw_list;
   if (items.size() > 0) {
@@ -195,13 +217,13 @@ void recoverClick(int iX, int iY, double &oX, double &oY){
 
 
 void glInitialize() {
-  glClearColor (0.6, 0.6, 0.6, 0.0);
   /*GLfloat light_position[] = { 0.0, 0.0, 1.0, 0.0 };
   glLightfv(GL_LIGHT0, GL_POSITION, light_position);
   glLightModeli(GL_LIGHT_MODEL_AMBIENT, GL_TRUE);
   glEnable(GL_DEPTH_TEST);
   glShadeModel (GL_SMOOTH);
   */
+
 }
 
 
