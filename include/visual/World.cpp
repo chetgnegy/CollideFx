@@ -217,8 +217,8 @@ void World::draw_particles(){
       double tempx, tempz, reduction;
       for (int k = 0; k < 10; ++k){
         
-        tempx = particles_[i].x - 1000*particles_[i].dx * particle_size*k;
-        tempz = particles_[i].z - 1000*particles_[i].dz * particle_size*k;
+        tempx = particles_[i].x - 400*particles_[i].dx * particle_size*k;
+        tempz = particles_[i].z - 400*particles_[i].dz * particle_size*k;
 
         if (fabs(tempx)<.5 && fabs(tempz)<.5){
           reduction = pow(10-k,2)/100.0;
@@ -250,7 +250,7 @@ void World::advance_particles(){
         particles_[i].y += particles_[i].dy;
         particles_[i].z += particles_[i].dz;
       }
-      else if (rand()/(1.0*RAND_MAX) < .0003){
+      else if (rand()/(1.0*RAND_MAX) < .0005){
         particles_[i].active = true;
         int k = rand()%4;
         int j = rand()%(kNumLines-1) + 1;
