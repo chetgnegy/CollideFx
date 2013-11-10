@@ -47,6 +47,9 @@ public:
   // Advances the graphics
   void advance_time(double time);
   
+  // size of the map
+  double size_x_, size_y_;
+  double x_, y_;
   
 private:
   // Draws a wireframe wall and a pulsing interior
@@ -61,9 +64,7 @@ private:
   // Advances the position of the particles, or possibly triggers new ones
   void advance_particles();
   
-  // size of the map
-  double size_x_, size_y_;
-  double x_, y_;
+  
   Particle *particles_;
   GLuint texture_[2]; 
   // Ticks the graphics counter

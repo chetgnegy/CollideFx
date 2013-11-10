@@ -11,6 +11,8 @@
 typedef std::pair< Physical *, Physical *> Collision;
 std::list<Physical *> Physics::all_;
 std::list<Collision *> Physics::recent_collisions_;
+double Physics::x_min_ = -10e10, Physics::x_max_ = 10e10;
+double Physics::y_min_ = -10e10, Physics::y_max_ = -10e10;
 
 // Removes physics from an object
 bool Physics::take_physics(Physical *object){
@@ -58,8 +60,7 @@ void Physics::update(double update_time){
 
     //only need to prevent collisions if things got close
     if (too_close) collision_prevention();
-    
-  
+    check_in_bounds();
     
   }
 }
@@ -67,11 +68,11 @@ void Physics::update(double update_time){
 // Uses Velocity Verlet integration to compute the next positions of the object
 void Physics::velocity_verlet(double timestep, Physical* obj){
   //kinetic friction
-  double mu_k = 0.99;
+  double mu_k = 3.99;
       
   Vector3d v_half = obj->vel_ + obj->acc_ * 0.5 * timestep ;
   obj->pos_ += v_half * timestep;
-  Vector3d acc_next = obj->external_forces();
+  Vector3d acc_next = obj->external_forces()/obj->m_;
   
   // Friction
   if (obj->uses_friction()){
@@ -209,4 +210,36 @@ bool Physics::check_reduce_timestep(){
     }
   }
   return false;
+}
+
+void Physics::check_in_bounds(){
+  if (all_.size() > 0) {
+      std::list<Physical *>::iterator it;
+      it = all_.begin();
+      while (it != all_.end()) {
+
+        if ((*it)->pos_.x - (*it)->intersection_distance() < x_min_ && (*it)->vel_.x < 0){
+          (*it)->vel_.x = -(*it)->vel_.x;
+        }
+        else if ((*it)->pos_.x + (*it)->intersection_distance() > x_max_ && (*it)->vel_.x > 0){
+          (*it)->vel_.x = -(*it)->vel_.x;
+        }
+        if ((*it)->pos_.y - (*it)->intersection_distance() < y_min_ && (*it)->vel_.y < 0){
+          (*it)->vel_.y = -(*it)->vel_.y;
+        }
+        else if ((*it)->pos_.y + (*it)->intersection_distance() > y_max_ && (*it)->vel_.y > 0){
+          (*it)->vel_.y = -(*it)->vel_.y;
+        }
+
+        ++it;
+      }
+    }
+}
+
+void Physics::set_bounds(double size_x, double size_y, double x, double y){
+  x_min_ = -size_x/2.0 + x;
+  x_max_ = size_x/2.0 + x;
+  y_min_ = -size_y/2.0 + y;
+  y_max_ = size_y/2.0 + y;
+
 }

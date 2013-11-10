@@ -43,7 +43,12 @@ public:
   // Check to see if two objects are so close that we should reduce the timestep
   static bool check_reduce_timestep();
 
+  static void check_in_bounds();
+
+  static void set_bounds(double size_x, double size_y, double x, double y);
 private:
+
+  static double x_max_,x_min_,y_max_,y_min_;
   static std::list<Physical *> all_;
   static std::list<std::pair <Physical *, Physical *> *> recent_collisions_;
 };

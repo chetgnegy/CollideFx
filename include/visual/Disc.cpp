@@ -16,9 +16,9 @@ Disc::Disc(UnitGenerator *u, double radius){
   x_offset_ = 0; 
   y_offset_ = 0;
   particles_ = new Particle[kNumParticles];
+  is_clicked_ = false;
   double theta;
-  for (int i = 0; i < kNumParticles; ++i)
-  {
+  for (int i = 0; i < kNumParticles; ++i){
       theta = 6.283185*rand()/(1.0*RAND_MAX);
       particles_[i].active = false;
       particles_[i].life = 0.5;
@@ -180,8 +180,8 @@ void Disc::prepare_graphics(void){
 
 //Responds to the user moving in the interface
 void Disc::move(double x, double y, double z){
-  pos_.x = x - x_offset_;
-  pos_.y = y - y_offset_;
+  is_clicked_ = true;
+  pull_point_ = Vector3d(x,y,0);
 
 }
 
@@ -193,10 +193,13 @@ void Disc::prepare_move(double x, double y, double z){
 
 //Checks if positions are within radius of center of object
 bool Disc::check_clicked(double x, double y, double z){
-  if (pow(x-pos_.x,2) + pow(y-pos_.y,2) < pow(r_,2)) return true;
+  if (pow(x-pos_.x,2) + pow(y-pos_.y,2) < pow(r_,2)){ 
+    return true;
+  }
   return false;
 }
 
+void Disc::unclicked(){ is_clicked_ = false;}
 
 // Draws the glowing, moving orbs
 void Disc::draw_particles(){
@@ -272,7 +275,10 @@ void Disc::advance_particles(){
 }
 
 Vector3d Disc::external_forces(){
-  return Vector3d(0,0,0);
+  if (is_clicked_){
+    Vector3d anchor(pos_.x + x_offset_, pos_.y + y_offset_, 0);
+    return (pull_point_-anchor)*75.0 - vel_*15; 
+  }return Vector3d(0,0,0);
 }
 
 

@@ -14,6 +14,7 @@
 #include "Moveable.h"
 #include "Particle.h"
 #include "Physical.h"
+#include "vmath.h"
 
 class Disc : public Drawable, public Moveable, public Physical{
 public:
@@ -57,6 +58,8 @@ public:
   //Checks if positions are within radius of center of object
   bool check_clicked(double x, double y, double z);
   
+  void unclicked();
+
   //Discs can have collisions with other discs
   bool has_collisions(){ return true; }
 
@@ -67,6 +70,7 @@ public:
   Vector3d external_forces();
 
   Vector3d external_torques();
+
 private:
   // Draws the glowing, moving orbs
   void draw_particles();
@@ -78,7 +82,9 @@ private:
   
   //position offsets
   double x_offset_, y_offset_;
-  
+  Vector3d pull_point_;
+  bool is_clicked_;
+
   //radius
   double r_;
   

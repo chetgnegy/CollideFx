@@ -48,11 +48,9 @@ int main(int argc, char *argv[]) {
   myGraphics->add_drawable(myDisc3);
   myGraphics->add_moveable(myDisc);
   myGraphics->add_moveable(myDisc2);
-  myDisc->set_velocity(0,-3);
   myDisc->set_location(7,0);
-  myDisc->set_velocity(-9,0);
   myDisc3->set_location(0,4);
-  myDisc3->set_velocity(-2,-7);
+  Physics::set_bounds(30, 30, 9, 0);
   Physics::give_physics(myDisc);
   Physics::give_physics(myDisc2);
   Physics::give_physics(myDisc3);
