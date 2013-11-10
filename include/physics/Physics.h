@@ -34,15 +34,18 @@ public:
   // Uses vector projections to make sure things don't get too close to each other
   static void collision_prevention();
 
-  // Handles a collision using conservation of linear momentum;
-  static void collide();
+  // Handles a collision using conservation of linear momentum
+  static void collide(Physical* a, Physical* b);
+
+  // Checks to see if a pair has collided recently
+  static bool on_collision_list(Physical* a, Physical* b);
 
   // Check to see if two objects are so close that we should reduce the timestep
   static bool check_reduce_timestep();
 
 private:
   static std::list<Physical *> all_;
-  static std::list<std::pair <Physical *, Physical *> > recent_collisions_;
+  static std::list<std::pair <Physical *, Physical *> *> recent_collisions_;
 };
 
 #endif

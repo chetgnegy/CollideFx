@@ -12,7 +12,7 @@
 Disc::Disc(UnitGenerator *u, double radius){
   ugen_ = u;
   r_ = radius;
-  mass_ = 1 * radius * radius;
+  m_ = 1 * radius * radius;
   x_offset_ = 0; 
   y_offset_ = 0;
   particles_ = new Particle[kNumParticles];
@@ -277,6 +277,6 @@ Vector3d Disc::external_forces(){
 
 
 Vector3d Disc::external_torques(){
-  return Vector3d(0,0,-.003) * 180.0 / 3.1415926535;
+  return Vector3d(0,0,0) * 180.0 / 3.1415926535;
 }
 
