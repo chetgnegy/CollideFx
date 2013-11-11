@@ -37,8 +37,8 @@ void Physics::give_physics(Physical *object){
 
 // Updates the positions of all objects 
 void Physics::update(double update_time){
-  double max_iterations = 500.0;
-  double standard_iterations = 10.0;
+  double max_iterations = 50.0;
+  double standard_iterations = 2.0;
   //Collision Detection
   bool too_close = check_reduce_timestep();
   //We use a smaller timestep when things get close together.
@@ -53,7 +53,7 @@ void Physics::update(double update_time){
       it = all_.begin();
       while (it != all_.end()) {
         velocity_verlet(update, *it); 
-        angular_verlet(update, *it); 
+        if (!(*it)->rotates()) angular_verlet(update, *it); 
         ++it;
       }
     }
@@ -194,20 +194,20 @@ void Physics::check_in_bounds(){
       std::list<Physical *>::iterator it;
       it = all_.begin();
       while (it != all_.end()) {
-
-        if ((*it)->pos_.x - (*it)->intersection_distance() < x_min_ && (*it)->vel_.x < 0){
-          (*it)->vel_.x = -(*it)->vel_.x;
-        }
-        else if ((*it)->pos_.x + (*it)->intersection_distance() > x_max_ && (*it)->vel_.x > 0){
-          (*it)->vel_.x = -(*it)->vel_.x;
-        }
-        if ((*it)->pos_.y - (*it)->intersection_distance() < y_min_ && (*it)->vel_.y < 0){
-          (*it)->vel_.y = -(*it)->vel_.y;
-        }
-        else if ((*it)->pos_.y + (*it)->intersection_distance() > y_max_ && (*it)->vel_.y > 0){
-          (*it)->vel_.y = -(*it)->vel_.y;
-        }
-
+        if ((*it)->has_collisions()){
+          if ((*it)->pos_.x - (*it)->intersection_distance() < x_min_ && (*it)->vel_.x < 0){
+            (*it)->vel_.x = -(*it)->vel_.x;
+          }
+          else if ((*it)->pos_.x + (*it)->intersection_distance() > x_max_ && (*it)->vel_.x > 0){
+            (*it)->vel_.x = -(*it)->vel_.x;
+          }
+          if ((*it)->pos_.y - (*it)->intersection_distance() < y_min_ && (*it)->vel_.y < 0){
+            (*it)->vel_.y = -(*it)->vel_.y;
+          }
+          else if ((*it)->pos_.y + (*it)->intersection_distance() > y_max_ && (*it)->vel_.y > 0){
+            (*it)->vel_.y = -(*it)->vel_.y;
+          }
+        } 
         ++it;
       }
     }

@@ -25,6 +25,7 @@ public:
   virtual void remove_attributes(void) = 0;  
   virtual void prepare_graphics(void) = 0;
   virtual void advance_time(double t){};
+  virtual void clean_up(){};
 };
 
 

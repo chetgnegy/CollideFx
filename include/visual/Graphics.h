@@ -2,7 +2,7 @@
   Author: Chet Gnegy
   chetgnegy@gmail.com
 
-  GraphicsBox.h
+  Graphics.h
   This is the object that interacts directly with OpenGL.
 */
 
@@ -24,23 +24,28 @@
 
 
 
-class GraphicsBox{
+class Graphics{
 public: 
-  GraphicsBox(int w, int h);
-  ~GraphicsBox();
-  //Creates the OpenGL instance
+  Graphics(int w, int h);
+  ~Graphics();
+  // Creates the OpenGL instance
   int initialize(int argc, char *argv[]);
   
-  //Starts the main loop
+  // Starts the main loop
   void start_graphics();
 
-  void add_drawable(Drawable *);
-  void add_moveable(Moveable *);
+  // Marks something to be drawn. Things without transparency
+  // should be pushed to the front of the list. 
+  static void add_drawable(Drawable *, bool push_to_front = false);
+  static bool remove_drawable(Drawable *);
+  static void add_moveable(Moveable *);
+
+  static std::list<Drawable *> draw_list_;
+  static std::list<Moveable *> move_list_;
 private:
   void display_function();
   int w_, h_;
-  std::list<Drawable *> draw_items_;
-  std::list<Moveable *> move_items_;
+
   
 };
 

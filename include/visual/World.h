@@ -79,7 +79,7 @@ private:
   GLuint texture_[2]; 
 
   // Ticks the graphics counter
-  double ticky_;
+  double ticky_, d_ticky_;
 };
 
 

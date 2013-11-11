@@ -18,6 +18,7 @@ public:
   virtual bool has_collisions() = 0;
   virtual bool uses_friction() = 0;
   virtual double intersection_distance() = 0;
+  virtual bool rotates() = 0;
   virtual Vector3d external_forces() = 0;
   virtual Vector3d external_torques() = 0;
   Vector3d pos_;

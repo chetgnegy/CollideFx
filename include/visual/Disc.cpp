@@ -24,6 +24,55 @@ Disc::~Disc(){
   delete ugen_;
 }
 
+
+// Creates a new orb to hang out around this disc
+void Disc::orb_create(){
+  Orb *roy_orbison = new Orb(&pos_, 2*r_);
+  orbs_.push_back(roy_orbison);
+  Graphics::add_drawable(roy_orbison);
+  Physics::give_physics(roy_orbison);
+}
+
+// Passes the orb to another disc, d.
+bool Disc::orb_handoff(Disc *d){
+  if (orbs_.size() > 0) {
+      d->orb_receive(*orbs_.begin());
+      orbs_.erase(orbs_.begin());  
+      return true;
+  }
+  return false;
+}
+
+// Receives an orb from another Disc
+void Disc::orb_receive(Orb *roy_orbison){
+  roy_orbison->reassign(&pos_);
+  roy_orbison->change_hover_distance(r_);
+  orbs_.push_back(roy_orbison);
+}
+
+// Deletes the orb after removing all instances of it
+bool Disc::orb_destroy(){
+  if (orbs_.size() > 0) {
+    Graphics::remove_drawable(*orbs_.begin());
+    Physics::take_physics(*orbs_.begin());
+    delete *orbs_.begin();
+    orbs_.erase(orbs_.begin());  
+    return true;
+  }
+  return false;
+}
+
+// Tells the particle to just fly away. It eventually deletes
+// itself. See Orb::self_destruct();
+void Disc::orb_abandon(){
+  if (orbs_.size() > 0) {
+    (*orbs_.begin())->unassign();
+    orbs_.erase(orbs_.begin());
+    return true;
+  }
+  return false;
+}
+
 // Places disc at certain location  
 void Disc::set_location(double x, double y){
   pos_.x = x;

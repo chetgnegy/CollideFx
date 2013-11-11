@@ -13,7 +13,7 @@ World::World(double sx, double sy, double x, double y){
   size_y_ = sy;
   x_ = x;
   y_ = y;
-  ticky_ = 0;
+  ticky_ = 0; d_ticky_ = 0;
 
   particles_ = new Particle[kNumParticles];
   for (int i = 0; i<kNumParticles; ++i){
@@ -149,7 +149,10 @@ void World::prepare_graphics(void){
 }
 
 // Advances the internal clock of the the world
-void World::advance_time(double time){ ticky_ += time; }
+void World::advance_time(double time){ 
+  ticky_ += time; 
+  d_ticky_ = time;
+}
 
 
 // Draws a wireframe wall and a pulsing interior
@@ -213,8 +216,8 @@ void World::draw_particles(){
       
       for (int k = 0; k < 10; ++k){
         
-        tempx = particles_[i].x - 400*particles_[i].dx * particle_size*k;
-        tempz = particles_[i].z - 400*particles_[i].dz * particle_size*k;
+        tempx = particles_[i].x - particles_[i].dx * particle_size*k;
+        tempz = particles_[i].z - particles_[i].dz * particle_size*k;
 
         if (fabs(tempx)<.5 && fabs(tempz)<.5){
           reduction = pow(10-k,2)/100.0;
@@ -241,16 +244,16 @@ void World::draw_particles(){
 
 // Advances the position of the particles, or possibly triggers new ones
 void World::advance_particles(){
-  double speed = 0.002;
+  double speed = 0.7;
   int k,j;
   for (int i = 0; i<kNumParticles; ++i)
     {
       if (particles_[i].active){
-        particles_[i].x += particles_[i].dx;
-        particles_[i].y += particles_[i].dy;
-        particles_[i].z += particles_[i].dz;
+        particles_[i].x += d_ticky_*particles_[i].dx;
+        particles_[i].y += d_ticky_*particles_[i].dy;
+        particles_[i].z += d_ticky_*particles_[i].dz;
       }
-      else if (rand()/(1.0*RAND_MAX) < .0005){
+      else if (rand()/(1.0*RAND_MAX) < .001){
         particles_[i].active = true;
         k = rand()%4;
         j = rand()%(kNumLines-1) + 1;

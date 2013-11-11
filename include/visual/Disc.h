@@ -10,6 +10,8 @@
 #define _DISC_H_
 
 #include "UnitGenerator.h"
+#include "Physics.h"
+#include "Graphics.h"
 #include "Drawable.h" //imports opengl stuff, too
 #include "Moveable.h"
 #include "Orb.h"
@@ -25,12 +27,32 @@ public:
   // Cleans up the unit generator
   ~Disc();
   
+  double get_radius(){return r_;} 
+
+  // Creates a new orb to hang out around this disc
+  void orb_create();
+
+  // Passes the orb to another disc, d.
+  bool orb_handoff(Disc *d);
+  
+  // Receives an orb from another Disc
+  void orb_receive(Orb *);
+  
+  // Deletes the orb after removing all references to it
+  bool orb_destroy();
+  
+  // Tells the particle to just fly away. It eventually deletes
+  // itself. See Orb::self_destruct();
+  bool orb_abandon();
+
   // Places disc at certain location
   void set_location(double x, double y);
 
   // Sets instantaneous velocity of the disc
   void set_velocity(double x, double y);
   
+  /* ----- Drawable ----- */
+
   // OpenGL instructions for drawing a unit disc centered at the origin
   void draw(void);
   
@@ -49,6 +71,8 @@ public:
   // initializes the textures
   void prepare_graphics(void);
 
+  /* ----- Moveable ----- */
+
   //Responds to the user moving in the interface
   void move(double x, double y, double z);
 
@@ -61,12 +85,16 @@ public:
   //Signals that the disc is no longer clicked.
   void unclicked();
 
+  /* ----- Physics ----- */
+
   //Discs can have collisions with other discs
   bool has_collisions(){ return true; }
 
   //The discs have friction with the ground below them
   bool uses_friction(){ return true; }
 
+  bool rotates(){return false;}
+  
   double intersection_distance(){ return r_; }
 
   // The forces are handled here. This is called from Physics.cpp during the numerical integration step.
@@ -89,7 +117,7 @@ private:
   //An object that is useful for drawing the cylinder
   GLUquadricObj *quadratic; 
 
-  std::list<Orb> orbs_;
+  std::list<Orb *> orbs_;
   
 };
 

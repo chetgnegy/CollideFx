@@ -16,7 +16,7 @@ FLAGS=-D__UNIX_JACK__ -c
 LIBS=-lasound -lpthread -ljack -lstdc++ -lm
 endif
 ifeq ($(UNAME), Darwin)
-FLAGS=-D__MACOSX_CORE__ -c
+FLAGS=-D__MACOSX_CORE__ -c -g
 LIBS=-framework CoreAudio -framework CoreMIDI -framework CoreFoundation \
 	-framework IOKit -framework Carbon -framework OpenGL \
 	-framework GLUT -framework Foundation -framework AppKit \
@@ -26,10 +26,10 @@ endif
 
 A_OBJS = DigitalFilter.o RtAudio.o UGenChain.o UnitGenerator.o
 P_OBJS = Physics.o vmath.o 
-V_OBJS = Disc.o GraphicsBox.o Orb.o World.o
+V_OBJS = Disc.o Graphics.o Orb.o World.o
 
 AudioHockeyTable: $(A_OBJS) $(P_OBJS) $(V_OBJS) AudioHockeyTable.o
-	$(CXX) -o  AudioHockeyTable $(INC) $(A_OBJS) $(P_OBJS) $(V_OBJS) AudioHockeyTable.o $(LIBS)
+	$(CXX) -o AudioHockeyTable $(INC) $(A_OBJS) $(P_OBJS) $(V_OBJS) AudioHockeyTable.o $(LIBS)
 
 AudioHockeyTable.o: AudioHockeyTable.cpp DigitalFilter.h
 	$(CXX) $(FLAGS) $(INC) AudioHockeyTable.cpp
@@ -61,8 +61,8 @@ vmath.o: vmath.cpp vmath.h
 Disc.o: Disc.cpp Disc.h Drawable.h Moveable.h Physical.h
 	$(CXX) $(FLAGS) $(INC) $(V_INCDIR)Disc.cpp
 
-GraphicsBox.o: GraphicsBox.cpp GraphicsBox.h
-	$(CXX) $(FLAGS) $(INC) $(V_INCDIR)GraphicsBox.cpp
+Graphics.o: Graphics.cpp Graphics.h
+	$(CXX) $(FLAGS) $(INC) $(V_INCDIR)Graphics.cpp
 
 Orb.o: Orb.cpp Orb.h
 	$(CXX) $(FLAGS) $(INC) $(V_INCDIR)Orb.cpp

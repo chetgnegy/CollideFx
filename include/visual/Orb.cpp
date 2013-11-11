@@ -8,68 +8,99 @@
 
 #include "Orb.h"
 
-Orb::Orb(Vector3d *v){
+
+// A constructor that links the orb to a disc
+Orb::Orb(Vector3d *v, double hover){
+  //We must give the orb a home or it will fly off and die
+  hover_dist_ = hover;
+  if (v == NULL) unassign();
+  else {
+    pos_ = Vector3d(v->x + hover_dist_, v->y, 0);
+  
+  }
   anchor_point_ = v;
   
-  hover_dist_ = 2.0;
   particle_size_ = 0.4;
   m_ = 1;
-  
+  angle_ = 360.0 * rand()/(1.0*RAND_MAX);
   wander_ = Vector3d(16.0*(rand()/(1.0*RAND_MAX)-.5),
                      16.0*(rand()/(1.0*RAND_MAX)-.5),
                      16.0*(rand()/(1.0*RAND_MAX)-.5) );
   time_ = 0;
   
-  r_ = rand()/(1.0*RAND_MAX); 
-  g_ = rand()/(1.0*RAND_MAX); 
-  b_ = rand()/(1.0*RAND_MAX);
+  double c[3] = {1.0, 1.0, 1.0}, o[3] = {0.0, 0.0, 0.0}; //Normal
+  //double c[3] = {1.0, .25, 1.0}, o[3] = {0.0, 0.0, 0.0}; //Fire
+  //double c[3] = {0.5, 0.5, 0.5}, o[3] = {0.5, 0.5, 0.5}; //Bright
+  //double c[3] = {0.9, 0.9, 0.0}, o[3] = {0.0, 0.0, 0.9}; //Ocean
+  
+  r_ = c[0]*rand()/(1.0*RAND_MAX) + o[0]; 
+  g_ = c[1]*rand()/(1.0*RAND_MAX) + o[1]; 
+  b_ = c[2]*rand()/(1.0*RAND_MAX) + o[2];
+  std::cout << "EVERYTHING WAS BEAUTIFUL " << this <<std::endl;
   
 }
 
-Orb::~Orb(){}
+Orb::~Orb(){
+  std::cout << "AND NOTHING HURT " << this <<std::endl;
+}
 
+
+void Orb::change_hover_distance(double dist){
+  hover_dist_ = dist;
+}
+  
+
+
+// Removes anchor point and schedules destruction.
+// Particles fly in all directions!
+void Orb::unassign(){
+  anchor_point_ = NULL;
+  scheduled_death_ = true;
+  death_timer_ = kDeathTime;
+}
+
+//Do not call this if the orb is associated with a Disc's list!!
+void Orb::self_destruct(){
+  Graphics::remove_drawable(this);
+  Physics::take_physics(this);
+  delete this;
+}
+
+// Changes the disc that the orb is assigned to
 void Orb::reassign(Vector3d *pos){
   anchor_point_ = pos;
 }
 
+// Draws the orb at location (0,0,0)
 void Orb::draw(){
   double x,y,z;
-    double  reduction;
-    x = pos_.x;
-    y = pos_.y;
-    z = pos_.z;
+  double  reduction;
+  x = pos_.x;
+  y = pos_.y;
+  z = pos_.z;
 
-    glColor4f(r_, g_, b_, 1);
-    glPushMatrix();
-    //glTranslatef(x,y,z);
-    //glRotatef(90,1,0,0);
-    //Draws the particles
-    
-    /*
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);   
-    glBindTexture (GL_TEXTURE_2D, texture_[0]);
+  double alpha = scheduled_death_ ? death_timer_/kDeathTime : 1; 
+  alpha = alpha < 0 ? 0 : alpha;
+  
+  glColor4f(r_, g_, b_, alpha);
+  glPushMatrix();
 
-    glBegin(GL_TRIANGLE_STRIP);
-    glTexCoord2d(1,1); glVertex3f(x + particle_size_, 0, z + particle_size_); // Top Right
-    glTexCoord2d(0,1); glVertex3f(x - particle_size_, 0, z + particle_size_); // Top Left
-    glTexCoord2d(1,0); glVertex3f(x + particle_size_, 0, z - particle_size_); // Bottom Right
-    glTexCoord2d(0,0); glVertex3f(x - particle_size_, 0, z - particle_size_); // Bottom Left
-    glEnd();
-   */
-    
-    glBlendFunc (GL_ONE, GL_ONE);//works //additive blending
-    glBindTexture (GL_TEXTURE_2D, texture_[1]);
   
-    glBegin(GL_TRIANGLE_STRIP);
-    glTexCoord2d(1,1); glVertex3f(particle_size_, particle_size_, 0); // Top Right
-    glTexCoord2d(0,1); glVertex3f(- particle_size_, particle_size_, 0); // Top Left
-    glTexCoord2d(1,0); glVertex3f(particle_size_, - particle_size_, 0); // Bottom Right
-    glTexCoord2d(0,0); glVertex3f(- particle_size_, - particle_size_, 0); // Bottom Left
-    glEnd();
-  
-  
-    glPopMatrix();
-  
+  glBlendFunc (GL_SRC_ALPHA, GL_ONE);
+  glBindTexture (GL_TEXTURE_2D, texture_);
+
+  glBegin(GL_TRIANGLE_STRIP);
+  glTexCoord2d(1,1); // Top Right
+  glVertex3f(particle_size_, particle_size_, 0); 
+  glTexCoord2d(0,1); // Top Left
+  glVertex3f(- particle_size_, particle_size_, 0); 
+  glTexCoord2d(1,0); // Bottom Right
+  glVertex3f(particle_size_, - particle_size_, 0); 
+  glTexCoord2d(0,0); // Bottom Left
+  glVertex3f(- particle_size_, - particle_size_, 0); 
+  glEnd();
+
+  glPopMatrix();
 }
 
 // The location of the particle center
@@ -79,7 +110,7 @@ void Orb::get_origin(double &x, double &y, double &z){
 
 // The current orientation of the particle
 void Orb::get_rotation(double &w, double &x, double &y, double &z){
-  w=ang_pos_.length(); x=ang_pos_.x; y=ang_pos_.y; z=ang_pos_.z;
+  w=angle_; x=0; y=0; z=1;
 }
 
 // Sets up the visual attributes for the Orb
@@ -90,7 +121,6 @@ void Orb::set_attributes(void){
   glDisable(GL_DEPTH_TEST);
   glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
   glHint(GL_POINT_SMOOTH_HINT, GL_NICEST);
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE);
   glEnable( GL_TEXTURE_2D );
   glEnable (GL_BLEND);
 }
@@ -100,52 +130,61 @@ void Orb::remove_attributes(void){
   glPopAttrib();
 }
 
+GLuint particle_texture; 
+bool set_particle_texture = false;
 // Loads the textures into the object
 void Orb::prepare_graphics(void){
-  GLubyte *tex = new GLubyte[256 * 256 * 3];
-  FILE *tf;
-  tf = fopen ( "graphics/dustbunny_mask.raw", "rb" );
-  fread ( tex, 256 * 256 * 3, 1, tf );
-  fclose ( tf );
-  
-  glGenTextures(1, &texture_[0]);
-  glBindTexture(GL_TEXTURE_2D, texture_[0]);
-  glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-  glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-  glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );
-  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST );
-  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-  gluBuild2DMipmaps(GL_TEXTURE_2D, 3, 256, 256, GL_RGB, GL_UNSIGNED_BYTE, tex);
-  delete [] tex;
+  if (!set_particle_texture){
+    GLubyte *tex = new GLubyte[256 * 256 * 3];
+    FILE *tf = fopen ( "graphics/dustbunny.raw", "rb" );
+    fread ( tex, 256 * 256 * 3, 1, tf );
+    fclose ( tf );
 
-  tex = new GLubyte[256 * 256 * 3];
-  tf = fopen ( "graphics/dustbunny.raw", "rb" );
-  fread ( tex, 256 * 256 * 3, 1, tf );
-  fclose ( tf );
+    glGenTextures(1, &particle_texture);
+    glBindTexture(GL_TEXTURE_2D, particle_texture);
+    glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+    gluBuild2DMipmaps(GL_TEXTURE_2D, 3, 256, 256, GL_RGB, GL_UNSIGNED_BYTE, tex);
+    delete [] tex;
+  }
+  texture_ = particle_texture;
+  set_particle_texture = true;
 
-  glGenTextures(1, &texture_[1]);
-  glBindTexture(GL_TEXTURE_2D, texture_[1]);
-  glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-  glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-  glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );
-  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST );
-  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-  gluBuild2DMipmaps(GL_TEXTURE_2D, 3, 256, 256, GL_RGB, GL_UNSIGNED_BYTE, tex);
-  
-  delete [] tex;
 }
 
 // Advances the internal clock of the particles. This
 // currently only adjusts the orientation of the particles
 void Orb::advance_time(double t){ 
   time_ += t; 
-  wander_.x += rand()/(1.0*RAND_MAX)-.5;
-  wander_.y += rand()/(1.0*RAND_MAX)-.5;
-  wander_.z += rand()/(1.0*RAND_MAX)-.5;
+    
+  if (scheduled_death_){ death_timer_ -= t;
+    // Flies up!
+    wander_.x += .6*rand()/(1.0*RAND_MAX)-.3;
+    wander_.y += .6*rand()/(1.0*RAND_MAX)-.3;
+    wander_.z += rand()/(1.0*RAND_MAX)-.45;  
+  }
+  else {
+    //Random
+    wander_.z += rand()/(1.0*RAND_MAX)-.5;
+    wander_.x += rand()/(1.0*RAND_MAX)-.5;
+    wander_.y += rand()/(1.0*RAND_MAX)-.5;
+  
+  }
 }
 
+// If a particle is unassigned, this could result in a call to 
+// self_destruct. Be careful with self_destruct.
+void Orb::clean_up(){
+  if (death_timer_ < 0) self_destruct();
+}
+
+
+// The forces are handled here and called from Physics.cpp during nunerical integration
 Vector3d Orb::external_forces(){
-  if (anchor_point_ == 0) 
+  if (anchor_point_ == NULL) 
     return wander_;
   // The vector pointing to the anchor point
   Vector3d axis = *anchor_point_ - pos_;

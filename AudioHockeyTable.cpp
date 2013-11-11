@@ -15,7 +15,7 @@
 #include "UGenChain.h"
 #include "Disc.h"
 #include "World.h"
-#include "GraphicsBox.h"
+#include "Graphics.h"
 #include "Physics.h"
 
 int main(int argc, char *argv[]) {
@@ -37,43 +37,31 @@ int main(int argc, char *argv[]) {
   Disc *myDisc2 = new Disc(d, 2);
   Disc *myDisc3 = new Disc(d, .5);
   
-  GraphicsBox *myGraphics = new GraphicsBox(960, 600);
+  Graphics *myGraphics = new Graphics(960, 600);
   
   myGraphics->initialize(argc, argv);
-  myGraphics->add_drawable(myWorld);
+  Graphics::add_drawable(myWorld);
   Physics::set_bounds(30*(1-2*World::kWallThickness), 30*(1-2*World::kWallThickness), 9, 0);
+  Graphics::add_drawable(myDisc);
+  Graphics::add_drawable(myDisc2);
+  Graphics::add_drawable(myDisc3);
   
-  for (int i = 0; i< 10; i++){
-  Orb *k = new Orb( &(myDisc->pos_) );
-  Physics::give_physics(k);
-  myGraphics->add_drawable(k);
-  }
-  for (int i = 0; i< 20; i++){
-  Orb *k = new Orb( &(myDisc2->pos_) );
-  Physics::give_physics(k);
-  myGraphics->add_drawable(k);
-  }
-  for (int i = 0; i< 40; i++){
-  Orb *k = new Orb( &(myDisc3->pos_) );
-  Physics::give_physics(k);
-  myGraphics->add_drawable(k);
-  k->reassign( &(myDisc->pos_));
-  }
+  myDisc2->set_location(8,-6);
+  myDisc->set_location(12,12);
+  myDisc3->set_location(10,4);
   
 
-  myGraphics->add_drawable(myDisc);
-  myGraphics->add_drawable(myDisc2);
-  myGraphics->add_drawable(myDisc3);
-  myGraphics->add_moveable(myDisc);
-  myGraphics->add_moveable(myDisc2);
-  myGraphics->add_moveable(myDisc3);
-  myDisc->set_location(-2,0);
-  myDisc2->set_location(0,12);
-  myDisc3->set_location(0,4);
+  Graphics::add_moveable(myDisc);
+  Graphics::add_moveable(myDisc2);
+  Graphics::add_moveable(myDisc3);
   Physics::give_physics(myDisc);
   Physics::give_physics(myDisc2);
   Physics::give_physics(myDisc3);
   
+  myDisc->orb_create();
+  myDisc->orb_handoff(myDisc2);
+  myDisc->orb_handoff(myDisc2);
+  myDisc2->orb_destroy();
   
   myGraphics->start_graphics();
   

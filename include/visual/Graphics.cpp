@@ -6,7 +6,7 @@
   This file the object that interacts with OpenGL.
 */
 #include <iostream>
-#include "GraphicsBox.h"
+#include "Graphics.h"
 #include "Physics.h"
 #include <sys/time.h>
 #include <time.h>
@@ -20,8 +20,8 @@ void mouseMotion(int, int);
 void recoverClick(int, int, double &, double &);
 void reshape(int width, int height);
 
-std::list<Drawable *> *draw_list;
-std::list<Moveable *> *move_list;
+std::list<Drawable *> Graphics::draw_list_;
+std::list<Moveable *> Graphics::move_list_;
 Moveable *clicked;
 bool valid_clicked;
 long time_now;
@@ -29,18 +29,14 @@ struct timeval timer;
 float distance = -20.0;
 float scale = .45;
 
-GraphicsBox::GraphicsBox(int w, int h){
+Graphics::Graphics(int w, int h){
   w_ = w;
   h_ = h;
-  draw_list = &draw_items_;
-  move_list = &move_items_;
 }
 
-GraphicsBox::~GraphicsBox(){
-  draw_list = NULL;
-}
+Graphics::~Graphics(){}
 
-int GraphicsBox::initialize(int argc, char *argv[]){
+int Graphics::initialize(int argc, char *argv[]){
   // initialize GLUT
   glutInit(&argc, argv);
   // initialize the window size
@@ -75,18 +71,40 @@ int GraphicsBox::initialize(int argc, char *argv[]){
 }
 
 //Starts the main loop
-void GraphicsBox::start_graphics(){ glutMainLoop(); }
+void Graphics::start_graphics(){ glutMainLoop(); }
 
-void GraphicsBox::add_drawable(Drawable *k){ 
+
+void Graphics::add_drawable(Drawable *k, bool push_to_front){ 
   k->prepare_graphics();
-  draw_items_.push_back(k); 
+  if (push_to_front){
+    Graphics::draw_list_.push_front(k); 
+  }
+  else{
+    Graphics::draw_list_.push_back(k); 
+  }
 }
 
-void GraphicsBox::add_moveable(Moveable *k){ move_items_.push_back(k); }
+// Removes an item from the draw list
+bool Graphics::remove_drawable(Drawable *k){ 
+  if (Graphics::draw_list_.size() > 0) {
+    std::list<Drawable *>::iterator it;
+    it = Graphics::draw_list_.begin();
+    while (it != Graphics::draw_list_.end()) {
+      if (*it == k){
+        Graphics::draw_list_.erase(it);
+        return true;
+      }
+      ++it;
+    }
+  }
+  return false;
+}
+
+void Graphics::add_moveable(Moveable *k){ move_list_.push_back(k); }
 
 //Is the main loop. Runs repeatedly.
 void display() {
-  usleep(1000);
+  usleep(500);
 
   gettimeofday(&timer, NULL);  
   long new_time = (long)(timer.tv_sec*1000000+timer.tv_usec);
@@ -94,7 +112,7 @@ void display() {
   if (time_now > 0){
     Physics::update(time_diff*1.0e-6);
   }
-  
+
   //char input;
   //std::cin.get(input);
   
@@ -115,17 +133,17 @@ void display() {
   
 
   //Draws every drawable that is on the list
-  std::list<Drawable *> items = *draw_list;
-  if (items.size() > 0) {
+  if (Graphics::draw_list_.size() > 0) {
     std::list<Drawable *>::iterator it;
-    it = items.begin();
+    std::list<Drawable *>::iterator backup;
+    it = Graphics::draw_list_.begin();
     //Process each effect in chain
-    while (it != items.end()) {
-      
-      glPushMatrix();
+    int count = 0;
+    while (it != Graphics::draw_list_.end()) {
       if (time_now > 0){
         (*it)->advance_time(time_diff*1.0e-6);
       }
+      glPushMatrix();
       (*it)->set_attributes();
       (*it)->get_origin(x,y,z);
       glTranslatef(x,y,z);
@@ -133,9 +151,11 @@ void display() {
       glRotatef(w,x,y,z);
       (*it)->draw();
       (*it)->remove_attributes();
+      // Handles the case where cleanup removes 
+      // the instance from the list
+      backup = it++;
+      (*backup)->clean_up();
       glPopMatrix();
-      
-      ++it;
     }
   }
   glPopMatrix();
@@ -159,29 +179,28 @@ void mouse(int button, int state, int x, int y) {
     // when left mouse button is down, move left
 
       if (state == GLUT_DOWN) {
-        std::list<Moveable *> items = *move_list;
-        if (items.size() > 0) {
+        if (Graphics::move_list_.size() > 0) {
           std::list<Moveable *>::iterator it;
-          it = items.begin();
-          while (it != items.end()) {
+          it = Graphics::move_list_.begin();
+          while (it != Graphics::move_list_.end()) {
             if ((*it)->check_clicked(coordX, coordY, -distance)){
                 valid_clicked = true;
                 clicked = *it;
                 clicked->prepare_move(coordX, coordY, -distance);
-            }
-            ++it;
+            } ++it;
           }
         }
       } else {
         if (valid_clicked) clicked->unclicked();
         valid_clicked = false;
-        clicked = 0;
+        clicked = NULL;
       }
 
 
     } else if (button == GLUT_RIGHT_BUTTON) {
       // when right mouse button down, move right
       if (state == GLUT_DOWN) {
+        
       } else {
       }
     } else {
@@ -232,7 +251,6 @@ void glInitialize() {
   glEnable(GL_DEPTH_TEST);
   glShadeModel (GL_SMOOTH);
   */
-
 }
 
 
