@@ -42,18 +42,38 @@ int main(int argc, char *argv[]) {
   
   myGraphics->initialize(argc, argv);
   myGraphics->add_drawable(myWorld);
+  Physics::set_bounds(30*(1-2*World::kWallThickness), 30*(1-2*World::kWallThickness), 9, 0);
+  
+  for (int i = 0; i< 10; i++){
+  Orb *k = new Orb( &(myDisc->pos_) );
+  Physics::give_physics(k);
+  myGraphics->add_drawable(k);
+  }
+  for (int i = 0; i< 20; i++){
+  Orb *k = new Orb( &(myDisc2->pos_) );
+  Physics::give_physics(k);
+  myGraphics->add_drawable(k);
+  }
+  for (int i = 0; i< 40; i++){
+  Orb *k = new Orb( &(myDisc3->pos_) );
+  Physics::give_physics(k);
+  myGraphics->add_drawable(k);
+  }
+  
 
   myGraphics->add_drawable(myDisc);
   myGraphics->add_drawable(myDisc2);
   myGraphics->add_drawable(myDisc3);
   myGraphics->add_moveable(myDisc);
   myGraphics->add_moveable(myDisc2);
-  myDisc->set_location(7,0);
+  myGraphics->add_moveable(myDisc3);
+  myDisc->set_location(-2,0);
+  myDisc2->set_location(0,12);
   myDisc3->set_location(0,4);
-  Physics::set_bounds(30, 30, 9, 0);
   Physics::give_physics(myDisc);
   Physics::give_physics(myDisc2);
   Physics::give_physics(myDisc3);
+  
   
   myGraphics->start_graphics();
   

@@ -18,8 +18,8 @@ World::World(double sx, double sy, double x, double y){
   for (int i = 0; i<kNumParticles; ++i)
     {
         particles_[i].active = false;
-        particles_[i].life = 0.5;// - float(rand()%100)/100.0f;
-        particles_[i].fade = 0;//float(rand()%50)/1000.0f;
+        particles_[i].life = 0.5;
+        particles_[i].fade = 0;
         particles_[i].r = 0;
         particles_[i].g = 0.8 +rand()/(5.0*RAND_MAX);
         particles_[i].b = 0.2 +rand()/(5.0*RAND_MAX);

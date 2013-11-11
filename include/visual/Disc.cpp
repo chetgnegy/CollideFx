@@ -15,29 +15,30 @@ Disc::Disc(UnitGenerator *u, double radius){
   m_ = 1 * radius * radius;
   x_offset_ = 0; 
   y_offset_ = 0;
-  particles_ = new Particle[kNumParticles];
+  pos_ = Vector3d(0,0,0);
+  //orbs_ = new Orb[kNumParticles];
   is_clicked_ = false;
   double theta;
+  /*
   for (int i = 0; i < kNumParticles; ++i){
       theta = 6.283185*rand()/(1.0*RAND_MAX);
-      particles_[i].active = false;
-      particles_[i].life = 0.5;
-      particles_[i].fade = 0;
-      particles_[i].r = 1.0;
-      particles_[i].g = 0.0;
-      particles_[i].b = 0.5;
-      particles_[i].x = 2 * cos(theta);
-      particles_[i].y = 0;
-      particles_[i].z = 2 * sin(theta);
-      particles_[i].dx = 0;
-      particles_[i].dy = 0;
-      particles_[i].dz = 0;
-  }
+      orbs_[i].p_.active = false;
+      orbs_[i].p_.life = 0.5;
+      orbs_[i].p_.fade = 0;
+      orbs_[i].p_.r = 1.0;
+      orbs_[i].p_.g = 0.0;
+      orbs_[i].p_.b = 0.5;
+      orbs_[i].p_.x = 2 * cos(theta);
+      orbs_[i].p_.y = 0;
+      orbs_[i].p_.z = 2 * sin(theta);
+      orbs_[i].p_.dx = 0;
+      orbs_[i].p_.dy = 0;
+      orbs_[i].p_.dz = 0;
+  }*/
 }
 
 // Cleans up the unit generator
 Disc::~Disc(){
-  delete[] particles_;
   delete ugen_;
 }
 
@@ -62,8 +63,7 @@ void Disc::draw(){
     glRotatef(90,1,0,0);//face up
     
     draw_particles();
-    glPopAttrib();//Pops after drawing particles
-
+    
     glRotatef(-90,1,0,0);//draw at old angle
     glScalef(r_, r_, 1);
 
@@ -105,6 +105,7 @@ void Disc::get_rotation(double &w, double &x, double &y, double &z){
   w=ang_pos_.length(); x=ang_pos_.x; y=ang_pos_.y; z=ang_pos_.z;
 }
 
+// Sets up the visual attributes for the Disc
 void Disc::set_attributes(){
   glPushAttrib(GL_ALL_ATTRIB_BITS);
   
@@ -126,15 +127,7 @@ void Disc::set_attributes(){
   glEnable(GL_COLOR_MATERIAL);
 
 
-  glPushAttrib(GL_ALL_ATTRIB_BITS);
-  glDisable(GL_LIGHTING);
-  glClearDepth(1.0f);
-  glDisable(GL_DEPTH_TEST);
-  glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
-  glHint(GL_POINT_SMOOTH_HINT, GL_NICEST);
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-  glEnable( GL_TEXTURE_2D );
-  glEnable (GL_BLEND);
+  
       
   
 }
@@ -145,37 +138,6 @@ void Disc::remove_attributes(){
 
 
 void Disc::prepare_graphics(void){
-  GLubyte *tex = new GLubyte[256 * 256 * 3];
-  FILE *tf;
-  tf = fopen ( "graphics/dustbunny_mask.raw", "rb" );
-  fread ( tex, 256 * 256 * 3, 1, tf );
-  fclose ( tf );
-  
-  glGenTextures(1, &texture_[0]);
-  glBindTexture(GL_TEXTURE_2D, texture_[0]);
-  glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-  glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-  glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );
-  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST );
-  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-  gluBuild2DMipmaps(GL_TEXTURE_2D, 3, 256, 256, GL_RGB, GL_UNSIGNED_BYTE, tex);
-  delete [] tex;
-
-  tex = new GLubyte[256 * 256 * 3];
-  tf = fopen ( "graphics/dustbunny.raw", "rb" );
-  fread ( tex, 256 * 256 * 3, 1, tf );
-  fclose ( tf );
-
-  glGenTextures(1, &texture_[1]);
-  glBindTexture(GL_TEXTURE_2D, texture_[1]);
-  glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-  glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-  glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );
-  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST );
-  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-  gluBuild2DMipmaps(GL_TEXTURE_2D, 3, 256, 256, GL_RGB, GL_UNSIGNED_BYTE, tex);
-  
-  delete [] tex;
 }
 
 //Responds to the user moving in the interface
@@ -204,81 +166,24 @@ void Disc::unclicked(){ is_clicked_ = false;}
 // Draws the glowing, moving orbs
 void Disc::draw_particles(){
   advance_particles();
-  double x,y,z;
-  double particle_size = 0.4;
-  for ( int i=0; i<kNumParticles; ++i ) {
-    if(particles_[i].active){
-      
-      double  reduction;
-      x = particles_[i].x ;
-      y = particles_[i].y;
-      z = particles_[i].z;
-
-      glColor4f(particles_[i].r,
-                particles_[i].g,
-                particles_[i].b,
-                1 );
-      glPushMatrix();
-      glTranslatef(x,y,z);
-      //Draws the particles
-      
-      /*
-      glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);   
-      glBindTexture (GL_TEXTURE_2D, texture_[0]);
-
-      glBegin(GL_TRIANGLE_STRIP);
-      glTexCoord2d(1,1); glVertex3f(x + particle_size, 0, z + particle_size); // Top Right
-      glTexCoord2d(0,1); glVertex3f(x - particle_size, 0, z + particle_size); // Top Left
-      glTexCoord2d(1,0); glVertex3f(x + particle_size, 0, z - particle_size); // Bottom Right
-      glTexCoord2d(0,0); glVertex3f(x - particle_size, 0, z - particle_size); // Bottom Left
-      glEnd();
-     */
-      
-
-      glBlendFunc (GL_ONE, GL_ONE);//works //additive blending
-      glBindTexture (GL_TEXTURE_2D, texture_[1]);
-    
-      glBegin(GL_TRIANGLE_STRIP);
-      glTexCoord2d(1,1); glVertex3f(x + particle_size, 0, z + particle_size); // Top Right
-      glTexCoord2d(0,1); glVertex3f(x - particle_size, 0, z + particle_size); // Top Left
-      glTexCoord2d(1,0); glVertex3f(x + particle_size, 0, z - particle_size); // Bottom Right
-      glTexCoord2d(0,0); glVertex3f(x - particle_size, 0, z - particle_size); // Bottom Left
-      glEnd();
-      
-    
-      glPopMatrix();
-    }
-  }
+  
+  
 }
 
 // Advances the position of the particles, or possibly triggers new ones
 void Disc::advance_particles(){
-  for (int i = 0; i<kNumParticles; ++i)
-    {
-      if (particles_[i].active){
-        particles_[i].x += particles_[i].dx;
-        particles_[i].y += particles_[i].dy;
-        particles_[i].z += particles_[i].dz;
-      }
-      else {
-        //Move them somewhere?
-        particles_[i].active = true;
-      }
-      //going out of bounds
-      if (fabs(particles_[i].x) > .5 && fabs(particles_[i].x) < fabs(particles_[i].x + particles_[i].dx)){
-        particles_[i].active = false;
-      }
-      if (fabs(particles_[i].z) > .5 && fabs(particles_[i].z) < fabs(particles_[i].z + particles_[i].dz)){
-        particles_[i].active = false;
-      }
-    }
+  
 }
 
 Vector3d Disc::external_forces(){
+  //.5 * 2 * r * Cd * p * v^2 ~= r * v^2
+  Vector3d drag = -vel_ * vel_.length() * .05 * r_;
   if (is_clicked_){
     Vector3d anchor(pos_.x + x_offset_, pos_.y + y_offset_, 0);
-    return (pull_point_-anchor)*75.0 - vel_*15; 
-  }return Vector3d(0,0,0);
+    //Drag, spring force and dampling
+    return drag + (pull_point_-anchor)*75.0 - vel_*10; 
+  }
+  return drag;
 }
 
 

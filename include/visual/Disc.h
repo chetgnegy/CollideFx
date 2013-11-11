@@ -91,8 +91,8 @@ private:
   //An object that is useful for drawing the cylinder
   GLUquadricObj *quadratic; 
 
-  Particle *particles_;
-  GLuint texture_[2]; 
+  std::list<Orb> orbs_;
+  
 };
 
 

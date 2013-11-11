@@ -10,7 +10,6 @@
 
 typedef std::pair< Physical *, Physical *> Collision;
 std::list<Physical *> Physics::all_;
-std::list<Collision *> Physics::recent_collisions_;
 double Physics::x_min_ = -10e10, Physics::x_max_ = 10e10;
 double Physics::y_min_ = -10e10, Physics::y_max_ = -10e10;
 
@@ -35,6 +34,7 @@ void Physics::give_physics(Physical *object){
   all_.push_back(object); 
 }
 
+
 // Updates the positions of all objects 
 void Physics::update(double update_time){
   double max_iterations = 500.0;
@@ -46,8 +46,8 @@ void Physics::update(double update_time){
   double iterations = too_close ? max_iterations : standard_iterations;
   
 
+  //Numerical Integration
   for (int i = 0; i < iterations; ++i){
-    
     if (all_.size() > 0) {
       std::list<Physical *>::iterator it;
       it = all_.begin();
@@ -68,7 +68,7 @@ void Physics::update(double update_time){
 // Uses Velocity Verlet integration to compute the next positions of the object
 void Physics::velocity_verlet(double timestep, Physical* obj){
   //kinetic friction
-  double mu_k = 3.99;
+  double mu_k = 0.99;
       
   Vector3d v_half = obj->vel_ + obj->acc_ * 0.5 * timestep ;
   obj->pos_ += v_half * timestep;
@@ -114,7 +114,7 @@ void Physics::angular_verlet(double timestep, Physical* obj){
 
 // Uses vector projections to make sure things don't get too close to each other
 void Physics::collision_prevention(){
-    int to_remove = recent_collisions_.size();
+    //int to_remove = recent_collisions_.size();
     
     if (all_.size() > 1) {
       std::list<Physical *>::iterator it_a;
@@ -134,16 +134,6 @@ void Physics::collision_prevention(){
       }
 
     }
-
-  std::list<Collision *>::iterator it;
-  int count = 0;
-  it = recent_collisions_.begin();
-  while (count < to_remove && it != recent_collisions_.end()){
-    delete *it;
-    it = recent_collisions_.erase(it);
-    ++it;
-    ++count;
-  }
 }
 
 // Handles a collision using conservation of linear momentum;
@@ -151,10 +141,8 @@ void Physics::collide(Physical* a, Physical* b){
   Vector3d between = b->pos_ - a->pos_;
               
   if (between.length() < b->intersection_distance() 
-    + a->intersection_distance()){
+    + a->intersection_distance() && (between.dotProduct(a->vel_)>0 || between.dotProduct(b->vel_)<0)){
 
-    // Checks to see if it has collided recently
-    if (!on_collision_list(a,b)){
       double d = between.lengthSq();
       // Project vectors onto vector connecting radii
       Vector3d b_proj = between * between.dotProduct(b->vel_)/d;
@@ -164,25 +152,15 @@ void Physics::collide(Physical* a, Physical* b){
       double term1_2 = (2*b->m_) / (a->m_ + b->m_);
       double term2_1 = (2*a->m_) / (a->m_ + b->m_);
       double term2_2 = (b->m_-a->m_) / (a->m_ + b->m_);
+      Vector3d a_tang = a->vel_ - a_proj;
+      Vector3d b_tang = b->vel_ - b_proj;
       a->vel_ = a->vel_ - a_proj + a_proj * term1_1 + b_proj * term1_2;
       b->vel_ = b->vel_ - b_proj + a_proj * term2_1 + b_proj * term2_2;
-      recent_collisions_.push_back( new Collision(a, b) );
-    }
+    //Other vector can be used for rotation!
+
   }
 }
 
-// Checks to see if a pair has collided recently
-bool Physics::on_collision_list(Physical* a, Physical* b){
-  std::list<Collision *>::iterator it;
-  it = recent_collisions_.begin();
-  while (it != recent_collisions_.end()){
-    if (a == (*it)->first && b == (*it)->second){
-      return true;
-    }
-    ++it;
-  }
-  return false;
-}
 
 // Check to see if two objects are so close that we should reduce the timestep
 bool Physics::check_reduce_timestep(){
@@ -200,8 +178,7 @@ bool Physics::check_reduce_timestep(){
             Vector3d between = (*it_b)->pos_ - (*it_a)->pos_;
             if (between.length() < 1.05*((*it_b)->intersection_distance() 
               + (*it_a)->intersection_distance())){
-              
-             return true;
+              return true;  
             }
             
           } ++it_b;
