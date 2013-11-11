@@ -12,29 +12,11 @@
 Disc::Disc(UnitGenerator *u, double radius){
   ugen_ = u;
   r_ = radius;
-  m_ = 1 * radius * radius;
+  m_ = radius * radius;
   x_offset_ = 0; 
   y_offset_ = 0;
-  pos_ = Vector3d(0,0,0);
-  //orbs_ = new Orb[kNumParticles];
   is_clicked_ = false;
-  double theta;
-  /*
-  for (int i = 0; i < kNumParticles; ++i){
-      theta = 6.283185*rand()/(1.0*RAND_MAX);
-      orbs_[i].p_.active = false;
-      orbs_[i].p_.life = 0.5;
-      orbs_[i].p_.fade = 0;
-      orbs_[i].p_.r = 1.0;
-      orbs_[i].p_.g = 0.0;
-      orbs_[i].p_.b = 0.5;
-      orbs_[i].p_.x = 2 * cos(theta);
-      orbs_[i].p_.y = 0;
-      orbs_[i].p_.z = 2 * sin(theta);
-      orbs_[i].p_.dx = 0;
-      orbs_[i].p_.dy = 0;
-      orbs_[i].p_.dz = 0;
-  }*/
+
 }
 
 // Cleans up the unit generator
@@ -58,11 +40,8 @@ void Disc::set_velocity(double x, double y){
 
 // OpenGL instructions for drawing a unit disc centered at the origin
 void Disc::draw(){
-
-  glPushMatrix();
+ glPushMatrix();
     glRotatef(90,1,0,0);//face up
-    
-    draw_particles();
     
     glRotatef(-90,1,0,0);//draw at old angle
     glScalef(r_, r_, 1);
@@ -124,19 +103,15 @@ void Disc::set_attributes(){
   glEnable(GL_LIGHTING);
   glEnable(GL_LIGHT0);
   glEnable(GL_DEPTH_TEST);
-  glEnable(GL_COLOR_MATERIAL);
-
-
-  
-      
-  
+  glEnable(GL_COLOR_MATERIAL);  
 }
 
+// Pops the most recent set of attributes off of the stack
 void Disc::remove_attributes(){
   glPopAttrib();
 }
 
-
+//We're just drawing cylinders, nothing needs to be done.
 void Disc::prepare_graphics(void){
 }
 
@@ -161,20 +136,11 @@ bool Disc::check_clicked(double x, double y, double z){
   return false;
 }
 
+//Signals that the disc is no longer clicked.
 void Disc::unclicked(){ is_clicked_ = false;}
 
-// Draws the glowing, moving orbs
-void Disc::draw_particles(){
-  advance_particles();
-  
-  
-}
 
-// Advances the position of the particles, or possibly triggers new ones
-void Disc::advance_particles(){
-  
-}
-
+// The forces are handled here. This is called from Physics.cpp during the numerical integration step.
 Vector3d Disc::external_forces(){
   //.5 * 2 * r * Cd * p * v^2 ~= r * v^2
   Vector3d drag = -vel_ * vel_.length() * .05 * r_;
@@ -186,7 +152,7 @@ Vector3d Disc::external_forces(){
   return drag;
 }
 
-
+// The torques are handled here. This is called from Physics.cpp during the numerical integration step.
 Vector3d Disc::external_torques(){
   return Vector3d(0,0,0) * 180.0 / 3.1415926535;
 }

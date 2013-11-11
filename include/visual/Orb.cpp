@@ -2,77 +2,74 @@
   Author: Chet Gnegy
   chetgnegy@gmail.com
 
-  Particle.cpp
-  Particles are classes for small drawable objects that glow!
+  Orb.cpp
+  Orb is a class for small drawable objects that glow!
 */
 
-#include "Particle.h"
+#include "Orb.h"
 
 Orb::Orb(Vector3d *v){
-  pull_point_ = v;
+  anchor_point_ = v;
   
-  angle_ = 0;
   hover_dist_ = 2.0;
   particle_size_ = 0.4;
   m_ = 1;
+  
   wander_ = Vector3d(16.0*(rand()/(1.0*RAND_MAX)-.5),
                      16.0*(rand()/(1.0*RAND_MAX)-.5),
                      16.0*(rand()/(1.0*RAND_MAX)-.5) );
   time_ = 0;
-  p_.active = true; p_.life = 0.5; p_.fade = 0;
-  p_.r = rand()/(1.0*RAND_MAX); 
-  p_.g = rand()/(1.0*RAND_MAX); 
-  p_.b = rand()/(1.0*RAND_MAX);
-  //These are not used at all inside of hte orbs
-  p_.x = 0; p_.y = 0; p_.z = 0;
-  p_.dx = 0; p_.dy = 0; p_.dz = 0;
+  
+  r_ = rand()/(1.0*RAND_MAX); 
+  g_ = rand()/(1.0*RAND_MAX); 
+  b_ = rand()/(1.0*RAND_MAX);
+  
 }
 
 Orb::~Orb(){}
 
 void Orb::reassign(Vector3d *pos){
-  pull_point_ = pos;
+  anchor_point_ = pos;
 }
 
 void Orb::draw(){
   double x,y,z;
-  if(p_.active){
-      double  reduction;
-      x = pos_.x;
-      y = pos_.y;
-      z = pos_.z;
+    double  reduction;
+    x = pos_.x;
+    y = pos_.y;
+    z = pos_.z;
 
-      glColor4f(p_.r, p_.g, p_.b, 1);
-      glPushMatrix();
-      //glTranslatef(x,y,z);
-      //glRotatef(90,1,0,0);
-      //Draws the particles
-      
-      /*
-      glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);   
-      glBindTexture (GL_TEXTURE_2D, texture_[0]);
+    glColor4f(r_, g_, b_, 1);
+    glPushMatrix();
+    //glTranslatef(x,y,z);
+    //glRotatef(90,1,0,0);
+    //Draws the particles
+    
+    /*
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);   
+    glBindTexture (GL_TEXTURE_2D, texture_[0]);
 
-      glBegin(GL_TRIANGLE_STRIP);
-      glTexCoord2d(1,1); glVertex3f(x + particle_size_, 0, z + particle_size_); // Top Right
-      glTexCoord2d(0,1); glVertex3f(x - particle_size_, 0, z + particle_size_); // Top Left
-      glTexCoord2d(1,0); glVertex3f(x + particle_size_, 0, z - particle_size_); // Bottom Right
-      glTexCoord2d(0,0); glVertex3f(x - particle_size_, 0, z - particle_size_); // Bottom Left
-      glEnd();
-     */
-      
-      glBlendFunc (GL_ONE, GL_ONE);//works //additive blending
-      glBindTexture (GL_TEXTURE_2D, texture_[1]);
+    glBegin(GL_TRIANGLE_STRIP);
+    glTexCoord2d(1,1); glVertex3f(x + particle_size_, 0, z + particle_size_); // Top Right
+    glTexCoord2d(0,1); glVertex3f(x - particle_size_, 0, z + particle_size_); // Top Left
+    glTexCoord2d(1,0); glVertex3f(x + particle_size_, 0, z - particle_size_); // Bottom Right
+    glTexCoord2d(0,0); glVertex3f(x - particle_size_, 0, z - particle_size_); // Bottom Left
+    glEnd();
+   */
     
-      glBegin(GL_TRIANGLE_STRIP);
-      glTexCoord2d(1,1); glVertex3f(particle_size_, particle_size_, 0); // Top Right
-      glTexCoord2d(0,1); glVertex3f(- particle_size_, particle_size_, 0); // Top Left
-      glTexCoord2d(1,0); glVertex3f(particle_size_, - particle_size_, 0); // Bottom Right
-      glTexCoord2d(0,0); glVertex3f(- particle_size_, - particle_size_, 0); // Bottom Left
-      glEnd();
-    
-    
-      glPopMatrix();
-    }
+    glBlendFunc (GL_ONE, GL_ONE);//works //additive blending
+    glBindTexture (GL_TEXTURE_2D, texture_[1]);
+  
+    glBegin(GL_TRIANGLE_STRIP);
+    glTexCoord2d(1,1); glVertex3f(particle_size_, particle_size_, 0); // Top Right
+    glTexCoord2d(0,1); glVertex3f(- particle_size_, particle_size_, 0); // Top Left
+    glTexCoord2d(1,0); glVertex3f(particle_size_, - particle_size_, 0); // Bottom Right
+    glTexCoord2d(0,0); glVertex3f(- particle_size_, - particle_size_, 0); // Bottom Left
+    glEnd();
+  
+  
+    glPopMatrix();
+  
 }
 
 // The location of the particle center
@@ -80,6 +77,7 @@ void Orb::get_origin(double &x, double &y, double &z){
   x = pos_.x; y = pos_.y; z = pos_.z;
 }
 
+// The current orientation of the particle
 void Orb::get_rotation(double &w, double &x, double &y, double &z){
   w=ang_pos_.length(); x=ang_pos_.x; y=ang_pos_.y; z=ang_pos_.z;
 }
@@ -102,7 +100,7 @@ void Orb::remove_attributes(void){
   glPopAttrib();
 }
 
-
+// Loads the textures into the object
 void Orb::prepare_graphics(void){
   GLubyte *tex = new GLubyte[256 * 256 * 3];
   FILE *tf;
@@ -136,6 +134,9 @@ void Orb::prepare_graphics(void){
   
   delete [] tex;
 }
+
+// Advances the internal clock of the particles. This
+// currently only adjusts the orientation of the particles
 void Orb::advance_time(double t){ 
   time_ += t; 
   wander_.x += rand()/(1.0*RAND_MAX)-.5;
@@ -144,9 +145,10 @@ void Orb::advance_time(double t){
 }
 
 Vector3d Orb::external_forces(){
-  if (pull_point_ == 0) 
+  if (anchor_point_ == 0) 
     return wander_;
-  Vector3d axis = *pull_point_ - pos_;
+  // The vector pointing to the anchor point
+  Vector3d axis = *anchor_point_ - pos_;
   double norm_distance = axis.length()/hover_dist_;
   double parabolic = -1.0/pow(norm_distance, 2)+ pow(norm_distance, 2);
   axis.normalize();

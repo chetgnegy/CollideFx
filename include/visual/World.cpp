@@ -13,22 +13,17 @@ World::World(double sx, double sy, double x, double y){
   size_y_ = sy;
   x_ = x;
   y_ = y;
-  particles_ = new Particle[kNumParticles];
   ticky_ = 0;
-  for (int i = 0; i<kNumParticles; ++i)
-    {
+
+  particles_ = new Particle[kNumParticles];
+  for (int i = 0; i<kNumParticles; ++i){
         particles_[i].active = false;
-        particles_[i].life = 0.5;
-        particles_[i].fade = 0;
         particles_[i].r = 0;
         particles_[i].g = 0.8 +rand()/(5.0*RAND_MAX);
         particles_[i].b = 0.2 +rand()/(5.0*RAND_MAX);
-        particles_[i].x = 0;
-        particles_[i].y = 0;
-        particles_[i].z = 0;
-        particles_[i].dx = 0;
-        particles_[i].dy = 0;
-        particles_[i].dz = 0;
+        particles_[i].x = 0; particles_[i].dx = 0;
+        particles_[i].y = 0; particles_[i].dy = 0;
+        particles_[i].z = 0; particles_[i].dz = 0;
     }
 }
 
@@ -153,14 +148,8 @@ void World::prepare_graphics(void){
 
 }
 
-void World::advance_time(double time){
-  ticky_ += time;
-  if (ticky_ > 1/kAnimationFrequency) {
-    ticky_ -= 1/kAnimationFrequency ;
-
-  }
-  
-};
+// Advances the internal clock of the the world
+void World::advance_time(double time){ ticky_ += time; }
 
 
 // Draws a wireframe wall and a pulsing interior
@@ -187,18 +176,25 @@ void World::draw_lines(){
     for (int i = 1 ; i < kNumLines; ++i){
       //Draws Horizontal Lines
       glBegin(GL_TRIANGLE_STRIP);
-      glTexCoord2d(1,1); glVertex3f(i/(1.0*kNumLines) - 0.49, 0.0,  0.5); // Top Right
-      glTexCoord2d(0,1); glVertex3f(i/(1.0*kNumLines) - 0.51, 0.0,  0.5); // Top Left
-      glTexCoord2d(1,0); glVertex3f(i/(1.0*kNumLines) - 0.49, 0.0, -0.5); // Bottom Right
-      glTexCoord2d(0,0); glVertex3f(i/(1.0*kNumLines) - 0.51, 0.0, -0.5); // Bottom Left
+      glTexCoord2d(1,1); // Top Right
+      glVertex3f(i/(1.0*kNumLines) - 0.49, 0.0,  0.5); 
+      glTexCoord2d(0,1); // Top Left
+      glVertex3f(i/(1.0*kNumLines) - 0.51, 0.0,  0.5); 
+      glTexCoord2d(1,0); // Bottom Right
+      glVertex3f(i/(1.0*kNumLines) - 0.49, 0.0, -0.5); 
+      glTexCoord2d(0,0); // Bottom Left
+      glVertex3f(i/(1.0*kNumLines) - 0.51, 0.0, -0.5); 
       glEnd();
       //Draws veritcal lines
       glBegin(GL_TRIANGLE_STRIP);
-      glTexCoord2d(1,1); glVertex3f( .5, 0, i/(1.0*kNumLines) - 0.49); // Top Right
-      glTexCoord2d(0,1); glVertex3f( .5, 0, i/(1.0*kNumLines) - 0.51); // Top Left
-      glTexCoord2d(1,0); glVertex3f(-.5, 0, i/(1.0*kNumLines) - 0.49); // Bottom Right
-      glTexCoord2d(0,0); glVertex3f(-.5, 0, i/(1.0*kNumLines) - 0.51); // Bottom Left
-  
+      glTexCoord2d(1,1); // Top Right
+      glVertex3f( .5, 0, i/(1.0*kNumLines) - 0.49); 
+      glTexCoord2d(0,1); // Top Left
+      glVertex3f( .5, 0, i/(1.0*kNumLines) - 0.51); 
+      glTexCoord2d(1,0); // Bottom Right
+      glVertex3f(-.5, 0, i/(1.0*kNumLines) - 0.49); 
+      glTexCoord2d(0,0); // Bottom Left
+      glVertex3f(-.5, 0, i/(1.0*kNumLines) - 0.51); 
       glEnd();
 
     }
@@ -211,10 +207,10 @@ void World::draw_particles(){
   advance_particles();
 
   double particle_size = .017;
+  double tempx, tempz, reduction;
   for ( int i=0; i<kNumParticles; ++i ) {
     if(particles_[i].active){
       
-      double tempx, tempz, reduction;
       for (int k = 0; k < 10; ++k){
         
         tempx = particles_[i].x - 400*particles_[i].dx * particle_size*k;
@@ -228,10 +224,14 @@ void World::draw_particles(){
                     reduction + .2*sin(ticky_));
           //Draws the particles
           glBegin(GL_TRIANGLE_STRIP);
-          glTexCoord2d(1,1); glVertex3f(tempx + particle_size, 0, tempz + particle_size); // Top Right
-          glTexCoord2d(0,1); glVertex3f(tempx - particle_size, 0, tempz + particle_size); // Top Left
-          glTexCoord2d(1,0); glVertex3f(tempx + particle_size, 0, tempz - particle_size); // Bottom Right
-          glTexCoord2d(0,0); glVertex3f(tempx - particle_size, 0, tempz - particle_size); // Bottom Left
+          glTexCoord2d(1,1); // Top Right
+          glVertex3f(tempx + particle_size, 0, tempz + particle_size); 
+          glTexCoord2d(0,1); // Top Left
+          glVertex3f(tempx - particle_size, 0, tempz + particle_size); 
+          glTexCoord2d(1,0); // Bottom Right
+          glVertex3f(tempx + particle_size, 0, tempz - particle_size); 
+          glTexCoord2d(0,0); // Bottom Left
+          glVertex3f(tempx - particle_size, 0, tempz - particle_size); 
           glEnd();
         }
       }
@@ -241,8 +241,8 @@ void World::draw_particles(){
 
 // Advances the position of the particles, or possibly triggers new ones
 void World::advance_particles(){
-
   double speed = 0.002;
+  int k,j;
   for (int i = 0; i<kNumParticles; ++i)
     {
       if (particles_[i].active){
@@ -252,51 +252,40 @@ void World::advance_particles(){
       }
       else if (rand()/(1.0*RAND_MAX) < .0005){
         particles_[i].active = true;
-        int k = rand()%4;
-        int j = rand()%(kNumLines-1) + 1;
-        particles_[i].r = 0.0;
+        k = rand()%4;
+        j = rand()%(kNumLines-1) + 1;
+        
         particles_[i].g = 0.5 +rand()/(2.0*RAND_MAX);
         particles_[i].b = 0.1 +rand()/(4.0*RAND_MAX);
-        
+               
         switch(k){
           case 1:
             particles_[i].x = - 0.5;
-            particles_[i].y = 0.0;
             particles_[i].z = j/(1.0*kNumLines) - 0.5;
             particles_[i].dx = speed*(1+rand()/(1.0*RAND_MAX));
-            particles_[i].dy = 0;
             particles_[i].dz = 0;
             break;
           case 2:
             particles_[i].x = 0.5;
-            particles_[i].y = 0.0;
             particles_[i].z = j/(1.0*kNumLines) - 0.5;
             particles_[i].dx = -speed*(1+rand()/(1.0*RAND_MAX));
-            particles_[i].dy = 0;
             particles_[i].dz = 0;
             break;
           case 3:
             particles_[i].x = j/(1.0*kNumLines) - 0.5;
-            particles_[i].y = 0.0;
             particles_[i].z = 0.5;
             particles_[i].dx = 0;
-            particles_[i].dz = 0;
             particles_[i].dz = -speed*(1+rand()/(1.0*RAND_MAX));
             break;
           case 0:
             particles_[i].x = j/(1.0*kNumLines) - 0.5;
-            particles_[i].y = 0.0;
             particles_[i].z = -0.5;
             particles_[i].dx = 0;
-            particles_[i].dy = 0;
             particles_[i].dz = speed*(1+rand()/(1.0*RAND_MAX));
             break;
         }
-        
-
       }
       //going out of bounds
-      
       if (fabs(particles_[i].x) > 0.8 && fabs(particles_[i].x) < fabs(particles_[i].x + particles_[i].dx)){
         particles_[i].active = false;
       }

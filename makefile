@@ -26,7 +26,7 @@ endif
 
 A_OBJS = DigitalFilter.o RtAudio.o UGenChain.o UnitGenerator.o
 P_OBJS = Physics.o vmath.o 
-V_OBJS = Disc.o GraphicsBox.o Particle.o World.o
+V_OBJS = Disc.o GraphicsBox.o Orb.o World.o
 
 AudioHockeyTable: $(A_OBJS) $(P_OBJS) $(V_OBJS) AudioHockeyTable.o
 	$(CXX) -o  AudioHockeyTable $(INC) $(A_OBJS) $(P_OBJS) $(V_OBJS) AudioHockeyTable.o $(LIBS)
@@ -64,8 +64,8 @@ Disc.o: Disc.cpp Disc.h Drawable.h Moveable.h Physical.h
 GraphicsBox.o: GraphicsBox.cpp GraphicsBox.h
 	$(CXX) $(FLAGS) $(INC) $(V_INCDIR)GraphicsBox.cpp
 
-Particle.o: Particle.cpp Particle.h
-	$(CXX) $(FLAGS) $(INC) $(V_INCDIR)Particle.cpp
+Orb.o: Orb.cpp Orb.h
+	$(CXX) $(FLAGS) $(INC) $(V_INCDIR)Orb.cpp
 
 World.o: World.cpp World.h Drawable.h graphicsutil.h
 	$(CXX) $(FLAGS) $(INC) $(V_INCDIR)World.cpp

@@ -3,10 +3,9 @@
  *
  *  Created on: Nov 2, 2013
  *      Author: Chet Gnegy - chetgnegy@gmail.com
- *      Assignment: https://ccrma.stanford.edu/wiki/256a-fall-2013/hw3
- *
  *      
- *      Uses RtAudio Library, and OpenGL
+ *      
+ *      Uses RtAudio Library and OpenGL
  */
 
 #include <stdio.h>
@@ -58,6 +57,7 @@ int main(int argc, char *argv[]) {
   Orb *k = new Orb( &(myDisc3->pos_) );
   Physics::give_physics(k);
   myGraphics->add_drawable(k);
+  k->reassign( &(myDisc->pos_));
   }
   
 

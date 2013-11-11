@@ -12,7 +12,13 @@
 #include <algorithm>
 #include <iostream>//remove
 #include "Drawable.h" //imports opengl stuff, too
-#include "Particle.h"
+
+typedef struct {
+    bool active;
+    float r, g, b;
+    float x, y, z;
+    float dx, dy, dz;
+} Particle;
 
 
 class World : public Drawable {
@@ -49,6 +55,8 @@ public:
   
   // size of the map
   double size_x_, size_y_;
+
+  // the position offset of the map
   double x_, y_;
   
 private:
@@ -64,9 +72,12 @@ private:
   // Advances the position of the particles, or possibly triggers new ones
   void advance_particles();
   
-  
+  // A couple particles to fly across the grid
   Particle *particles_;
+  
+  // The texture of the particles
   GLuint texture_[2]; 
+
   // Ticks the graphics counter
   double ticky_;
 };

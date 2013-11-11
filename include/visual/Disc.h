@@ -12,7 +12,7 @@
 #include "UnitGenerator.h"
 #include "Drawable.h" //imports opengl stuff, too
 #include "Moveable.h"
-#include "Particle.h"
+#include "Orb.h"
 #include "Physical.h"
 #include "vmath.h"
 
@@ -58,26 +58,24 @@ public:
   //Checks if positions are within radius of center of object
   bool check_clicked(double x, double y, double z);
   
+  //Signals that the disc is no longer clicked.
   void unclicked();
 
   //Discs can have collisions with other discs
   bool has_collisions(){ return true; }
 
+  //The discs have friction with the ground below them
   bool uses_friction(){ return true; }
 
   double intersection_distance(){ return r_; }
 
+  // The forces are handled here. This is called from Physics.cpp during the numerical integration step.
   Vector3d external_forces();
 
+  // The torques are handled here. This is called from Physics.cpp during the numerical integration step.
   Vector3d external_torques();
 
 private:
-  // Draws the glowing, moving orbs
-  void draw_particles();
-
-  // Advances the position of the particles, or possibly triggers new ones
-  void advance_particles();
-
   UnitGenerator *ugen_;
   
   //position offsets
