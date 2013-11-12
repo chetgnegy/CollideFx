@@ -29,20 +29,17 @@ Orb::Orb(Vector3d *v, double hover){
   time_ = 0;
   
   double c[3] = {1.0, 1.0, 1.0}, o[3] = {0.0, 0.0, 0.0}; //Normal
-  //double c[3] = {1.0, .25, 1.0}, o[3] = {0.0, 0.0, 0.0}; //Fire
+  //double c[3] = {1.0, .25, 0.0}, o[3] = {0.0, 0.0, 0.0}; //Fire
   //double c[3] = {0.5, 0.5, 0.5}, o[3] = {0.5, 0.5, 0.5}; //Bright
   //double c[3] = {0.9, 0.9, 0.0}, o[3] = {0.0, 0.0, 0.9}; //Ocean
   
   r_ = c[0]*rand()/(1.0*RAND_MAX) + o[0]; 
   g_ = c[1]*rand()/(1.0*RAND_MAX) + o[1]; 
   b_ = c[2]*rand()/(1.0*RAND_MAX) + o[2];
-  std::cout << "EVERYTHING WAS BEAUTIFUL " << this <<std::endl;
   
 }
 
-Orb::~Orb(){
-  std::cout << "AND NOTHING HURT " << this <<std::endl;
-}
+Orb::~Orb(){}
 
 
 void Orb::change_hover_distance(double dist){

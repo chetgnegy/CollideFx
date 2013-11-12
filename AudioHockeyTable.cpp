@@ -17,6 +17,7 @@
 #include "World.h"
 #include "Graphics.h"
 #include "Physics.h"
+#include "Menu.h"
 
 int main(int argc, char *argv[]) {
 
@@ -31,15 +32,18 @@ int main(int argc, char *argv[]) {
   //  d->set_params(.99*rand()/(1.0*RAND_MAX)+.01, .99*rand()/(1.0*RAND_MAX));
   //}
   
-  
+  Menu *myMenu = new Menu();
   World *myWorld = new World(30, 30, 9, 0);
   Disc *myDisc = new Disc(d, 1);
   Disc *myDisc2 = new Disc(d, 2);
   Disc *myDisc3 = new Disc(d, .5);
   
   Graphics *myGraphics = new Graphics(960, 600);
-  
   myGraphics->initialize(argc, argv);
+  
+  Graphics::add_drawable(myMenu);
+  
+
   Graphics::add_drawable(myWorld);
   Physics::set_bounds(30*(1-2*World::kWallThickness), 30*(1-2*World::kWallThickness), 9, 0);
   Graphics::add_drawable(myDisc);
@@ -58,10 +62,14 @@ int main(int argc, char *argv[]) {
   Physics::give_physics(myDisc2);
   Physics::give_physics(myDisc3);
   
-  myDisc->orb_create();
-  myDisc->orb_handoff(myDisc2);
-  myDisc->orb_handoff(myDisc2);
-  myDisc2->orb_destroy();
+  for (int i = 0; i < 200; i++){
+    myDisc->orb_create();
+    myDisc->orb_abandon();
+    myDisc2->orb_create();
+     myDisc2->orb_abandon();
+    myDisc3->orb_create();
+     myDisc3->orb_abandon();
+  }
   
   myGraphics->start_graphics();
   

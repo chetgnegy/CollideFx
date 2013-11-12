@@ -11,6 +11,7 @@
 #include <sys/time.h>
 #include <time.h>
 
+#include "Menu.h"
 
 void display();
 void glInitialize();
@@ -130,8 +131,6 @@ void display() {
   glScalef(scale,scale,scale);
   
   double w,x,y,z;
-  
-
   //Draws every drawable that is on the list
   if (Graphics::draw_list_.size() > 0) {
     std::list<Drawable *>::iterator it;
@@ -151,7 +150,7 @@ void display() {
       glRotatef(w,x,y,z);
       (*it)->draw();
       (*it)->remove_attributes();
-      // Handles the case where cleanup removes 
+      // Handles the case where clean_up removes 
       // the instance from the list
       backup = it++;
       (*backup)->clean_up();

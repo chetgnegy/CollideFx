@@ -64,7 +64,7 @@ bool Disc::orb_destroy(){
 
 // Tells the particle to just fly away. It eventually deletes
 // itself. See Orb::self_destruct();
-void Disc::orb_abandon(){
+bool Disc::orb_abandon(){
   if (orbs_.size() > 0) {
     (*orbs_.begin())->unassign();
     orbs_.erase(orbs_.begin());

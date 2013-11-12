@@ -16,10 +16,9 @@
 #include "vmath.h"
 
 
-
 class Orb : public Drawable, public Physical {
 public:
-  static const double kDeathTime = 6.0;
+  static const double kDeathTime = 15.0;
 
   // A constructor that links the orb to a disc. If we don't link it
   // it will fly off and die.
@@ -37,6 +36,8 @@ public:
 
   //Makes a call to delete self. Be careful with this!
   void self_destruct();
+
+  /* ----- Drawable ----- */
 
   // Draws the orb at location (0,0,0)
   void draw();
@@ -59,9 +60,12 @@ public:
   // If a particle is unassigned, this could result in a call to 
   // self_destruct. Be careful with self_destruct.
   void clean_up();
+
   // Advances the internal clock of the particles. This
   // adjusts the orientation of the particles. 
   void advance_time(double t);
+
+  /* ----- Physics ----- */
 
   //Particles don't interact with anything but their anchor point
   bool has_collisions(){return false;}

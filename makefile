@@ -1,13 +1,14 @@
 #!/bin/sh
 
 CXX=llvm-g++-4.2 
-INC=-I include/ -I include/audio -I include/physics -I include/visual
+INC=-I include/ -I include/audio -I include/physics/ -I include/visual/ -I include/visual/ui/
 
 INCDIR=./include/
 A_INCDIR=./include/audio/
 P_INCDIR=./include/physics/
 V_INCDIR=./include/visual/
-VPATH=$(INCDIR) $(A_INCDIR) $(P_INCDIR) $(V_INCDIR)
+U_INCDIR=./include/visual/ui/
+VPATH=$(INCDIR) $(A_INCDIR) $(P_INCDIR) $(V_INCDIR) $(U_INCDIR)
 
 UNAME := $(shell uname)
 
@@ -26,10 +27,11 @@ endif
 
 A_OBJS = DigitalFilter.o RtAudio.o UGenChain.o UnitGenerator.o
 P_OBJS = Physics.o vmath.o 
-V_OBJS = Disc.o Graphics.o Orb.o World.o
+V_OBJS = Disc.o Graphics.o Orb.o World.o 
+U_OBJS = Menu.o RgbImage.o
 
-AudioHockeyTable: $(A_OBJS) $(P_OBJS) $(V_OBJS) AudioHockeyTable.o
-	$(CXX) -o AudioHockeyTable $(INC) $(A_OBJS) $(P_OBJS) $(V_OBJS) AudioHockeyTable.o $(LIBS)
+AudioHockeyTable: $(A_OBJS) $(P_OBJS) $(V_OBJS) $(U_OBJS) AudioHockeyTable.o
+	$(CXX) -o AudioHockeyTable $(INC) $(A_OBJS) $(P_OBJS) $(V_OBJS) $(U_OBJS) AudioHockeyTable.o $(LIBS)
 
 AudioHockeyTable.o: AudioHockeyTable.cpp DigitalFilter.h
 	$(CXX) $(FLAGS) $(INC) AudioHockeyTable.cpp
@@ -70,6 +72,13 @@ Orb.o: Orb.cpp Orb.h
 World.o: World.cpp World.h Drawable.h graphicsutil.h
 	$(CXX) $(FLAGS) $(INC) $(V_INCDIR)World.cpp
 
+#------------------UI modules----------------#
+
+Menu.o: Menu.cpp Menu.h
+	$(CXX) $(FLAGS) $(INC) $(U_INCDIR)Menu.cpp
+
+RgbImage.o: RgbImage.cpp RgbImage.h
+	$(CXX) $(FLAGS) $(INC) $(U_INCDIR)RgbImage.cpp
 
 clean:
 	rm -f *~ *# *.o AudioHockeyTable
