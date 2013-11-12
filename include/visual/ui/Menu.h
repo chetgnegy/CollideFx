@@ -10,23 +10,17 @@
 #ifndef _MENU_H_
 #define _MENU_H_
 
-#import "RgbImage.h"
-#import "Drawable.h"
-#import "Moveable.h"
-#ifdef __MACOSX_CORE__
-  #include <GLUT/glut.h>
-#else
-  #include <GL/gl.h>
-  #include <GL/glu.h>
-  #include <GL/glut.h>
-#endif
+#include "RgbImage.h"
+#include "Drawable.h"
+#include "Moveable.h"
+#include <iostream> // delete
 
 
 class Menu : public Drawable, public Moveable {
 public:
   static const float kXShift = -16;
   static const float kScaleDimensions = 9.7;
-    
+  
   Menu();
   ~Menu();
 
@@ -53,12 +47,19 @@ public:
   bool check_clicked(double x, double y, double z);
   void unclicked();
 private:
+  void convert_coords(double x, double y, int &a, int &b);
   GLuint loadTextureFromFile( const char * filename );
-
+  void handle_click(int x, int y);
+  
   GLuint menu_texture_ctrl_;
   GLuint menu_texture_fft_;
   bool menu_texture_loaded_;
   bool ctrl_menu_shown_;
+
+  // Properties of the Menu bitmap
+  int menu_row_pixels_;
+  int menu_col_pixels_;
+  float height_to_width_;
 
 };
 

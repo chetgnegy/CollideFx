@@ -20,8 +20,12 @@
 #include "Menu.h"
 
 int main(int argc, char *argv[]) {
-
   srand (time(NULL));
+
+  Graphics *myGraphics = new Graphics(960, 600);
+  myGraphics->initialize(argc, argv);
+  
+
   UGenChain *myChain = new UGenChain();
   //myChain->initialize();
   
@@ -38,10 +42,9 @@ int main(int argc, char *argv[]) {
   Disc *myDisc2 = new Disc(d, 2);
   Disc *myDisc3 = new Disc(d, .5);
   
-  Graphics *myGraphics = new Graphics(960, 600);
-  myGraphics->initialize(argc, argv);
   
   Graphics::add_drawable(myMenu);
+  Graphics::add_moveable(myMenu);
   
 
   Graphics::add_drawable(myWorld);
