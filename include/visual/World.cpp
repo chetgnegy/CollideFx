@@ -253,7 +253,7 @@ void World::advance_particles(){
         particles_[i].y += d_ticky_*particles_[i].dy;
         particles_[i].z += d_ticky_*particles_[i].dz;
       }
-      else if (rand()/(1.0*RAND_MAX) < .001){
+      else if (rand()/(1.0*RAND_MAX) < .002){
         particles_[i].active = true;
         k = rand()%4;
         j = rand()%(kNumLines-1) + 1;

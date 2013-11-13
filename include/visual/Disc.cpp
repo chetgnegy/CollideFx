@@ -8,15 +8,23 @@
 
 #import "Disc.h"
 
+bool Disc::texture_loaded_ = false;
+GLuint *Disc::tex_ = new GLuint[15];
+
 // Pairs the disc with a unit generator
-Disc::Disc(UnitGenerator *u, double radius){
+Disc::Disc(UnitGenerator *u, double radius, bool ghost, int initial_orbs, int maintain_orbs){
   ugen_ = u;
   r_ = radius;
   m_ = radius * radius;
   x_offset_ = 0; 
   y_offset_ = 0;
   is_clicked_ = false;
-
+  texture_loaded_ = false;
+  initial_orbs_ = initial_orbs;
+  maintain_orbs_ = maintain_orbs;
+  color_ = Vector3d(0,0,1);
+  ghost_ = ghost;
+  which_texture_ = 0;
 }
 
 // Cleans up the unit generator
@@ -24,13 +32,22 @@ Disc::~Disc(){
   delete ugen_;
 }
 
+void Disc::set_color(float r, float  g, float b){
+  color_.x = r; color_.y = g; color_.z = b;
+}
+
+void Disc::set_texture(int i){
+  which_texture_ = i;
+}
 
 // Creates a new orb to hang out around this disc
-void Disc::orb_create(){
-  Orb *roy_orbison = new Orb(&pos_, 2*r_);
-  orbs_.push_back(roy_orbison);
-  Graphics::add_drawable(roy_orbison);
-  Physics::give_physics(roy_orbison);
+void Disc::orb_create(int num_orbs){
+  for (int i = 0; i < num_orbs; ++i){
+    Orb *roy_orbison = new Orb(&pos_, 2*r_);
+    orbs_.push_back(roy_orbison);
+    Graphics::add_drawable(roy_orbison);
+    Physics::give_physics(roy_orbison);
+  }
 }
 
 // Passes the orb to another disc, d.
@@ -89,37 +106,44 @@ void Disc::set_velocity(double x, double y){
 
 // OpenGL instructions for drawing a unit disc centered at the origin
 void Disc::draw(){
+ // Ghost mode makes it partially transparent
+ double alpha = ghost_? 0.3 : 1.0;
+
  glPushMatrix();
-    glRotatef(90,1,0,0);//face up
-    
-    glRotatef(-90,1,0,0);//draw at old angle
     glScalef(r_, r_, 1);
+
+    
+    int res = 16;
 
     quadratic=gluNewQuadric();          // Create A Pointer To The Quadric Object ( NEW )
     gluQuadricNormals(quadratic, GLU_SMOOTH);   // Create Smooth Normals ( NEW )
     gluQuadricTexture(quadratic, GL_TRUE);
     glPushMatrix();
-      glColor3f(0,0,0);
+      glColor4f(0,0,0, alpha);
       glTranslatef(0,0,.01);
-      gluDisk(quadratic,0.70f,1.0f,32,32);
+      gluDisk(quadratic,0.70f,1.0f,res,res);
       glPopMatrix();
-    glColor3f(1,0,0);
-    gluCylinder(quadratic,1.0f,1.0f,1.0f,32,32);
+    glColor4f(color_.x,color_.y,color_.z, alpha);
+    gluCylinder(quadratic,1.0f,1.0f,1.0f,res,res);
     //Draw the faces
-    gluDisk(quadratic,0.0f,1.0f,32,32);
+    gluDisk(quadratic,0.0f,1.0f,res,res);
     glTranslatef(0,0,1);
-    gluDisk(quadratic,0.0f,1.0f,32,32);
+    
+    // Prepare attributes for top face
+    glPushAttrib(GL_ALL_ATTRIB_BITS);
+    glEnable(GL_BLEND);
+    glShadeModel(GL_FLAT);
+    glDepthMask(GL_TRUE);  // disable writes to Z-Buffer
+    glDisable(GL_DEPTH_TEST);  // disable depth-testing
+    glEnable(GL_TEXTURE_2D);
+    glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+    glBindTexture(GL_TEXTURE_2D, tex_[which_texture_]);
+    glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    glPushMatrix();
-      glScalef(1,1,.4);
-      for (int i = 0; i < 6; ++i){
-        glRotatef(60,0,0,1);
-          glPushMatrix();
-          glTranslatef(.8,0,0);
-          glutSolidSphere(.2,6,6);
-          glPopMatrix();
-      }
-      glPopMatrix();
+    // Draw top design
+    gluDisk(quadratic,0.0f,1.0f,res,res);
+    glPopAttrib();
+
     glPopMatrix();
 }
 
@@ -135,12 +159,13 @@ void Disc::get_rotation(double &w, double &x, double &y, double &z){
 
 // Sets up the visual attributes for the Disc
 void Disc::set_attributes(){
-  glPushAttrib(GL_ALL_ATTRIB_BITS);
   
-  GLfloat mat_specular[] = { 0.256777, 0.137622,  0.086014, 1.0 };
-  GLfloat mat_diffuse[] = { 0.7038,  0.27048, 0.0828, 1.0 };
-  GLfloat mat_ambient[] = { 0.19125, 0.0735,  0.0225, 1.0 };
-  GLfloat mat_shininess[] = { .928};
+
+  glPushAttrib(GL_ALL_ATTRIB_BITS);
+  GLfloat mat_specular[] = { .5*color_.x, .5*color_.y,  .5*color_.z, 1.0 };
+  GLfloat mat_diffuse[] = { color_.x, color_.y,  color_.z, 1.0 };
+  GLfloat mat_ambient[] = { color_.x, color_.y,  color_.z, 1.0 };
+  GLfloat mat_shininess[] = { .0};
   glClearColor (0.0, 0.0, 0.0, 0.0);
   glShadeModel (GL_SMOOTH);
 
@@ -153,6 +178,13 @@ void Disc::set_attributes(){
   glEnable(GL_LIGHT0);
   glEnable(GL_DEPTH_TEST);
   glEnable(GL_COLOR_MATERIAL);  
+
+  glClearDepth(1.0f);
+  glEnable (GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+ 
+  
 }
 
 // Pops the most recent set of attributes off of the stack
@@ -160,8 +192,26 @@ void Disc::remove_attributes(){
   glPopAttrib();
 }
 
-//We're just drawing cylinders, nothing needs to be done.
+// Imports the textures for the icons
 void Disc::prepare_graphics(void){
+  if (!texture_loaded_){
+    tex_[0] = loadTextureFromFile( "graphics/input.bmp" );
+    tex_[1] = loadTextureFromFile( "graphics/sine.bmp" );
+    tex_[2] = loadTextureFromFile( "graphics/square.bmp" );
+    tex_[3] = loadTextureFromFile( "graphics/triangle.bmp" );
+    tex_[4] = loadTextureFromFile( "graphics/saw.bmp" );
+    tex_[5] = loadTextureFromFile( "graphics/bitcrusher.bmp" );
+    tex_[6] = loadTextureFromFile( "graphics/chorus.bmp" );
+    tex_[7] = loadTextureFromFile( "graphics/delay.bmp" );
+    tex_[8] = loadTextureFromFile( "graphics/distortion.bmp" );
+    tex_[9] = loadTextureFromFile( "graphics/filter.bmp" );
+    tex_[10] = loadTextureFromFile( "graphics/bandpass.bmp" );
+    tex_[11] = loadTextureFromFile( "graphics/looper.bmp" );
+    tex_[12] = loadTextureFromFile( "graphics/ringmod.bmp" );
+    tex_[13] = loadTextureFromFile( "graphics/reverb.bmp" );
+    tex_[14] = loadTextureFromFile( "graphics/tremolo.bmp" );
+    texture_loaded_ = true;
+  }
 }
 
 //Responds to the user moving in the interface
@@ -186,7 +236,13 @@ bool Disc::check_clicked(double x, double y, double z){
 }
 
 //Signals that the disc is no longer clicked.
-void Disc::unclicked(){ is_clicked_ = false;}
+void Disc::unclicked(){ 
+  is_clicked_ = false;
+  if (ghost_){ 
+    orb_create(initial_orbs_);
+    ghost_ = false;
+  }
+}
 
 
 // The forces are handled here. This is called from Physics.cpp during the numerical integration step.
@@ -195,6 +251,10 @@ Vector3d Disc::external_forces(){
   Vector3d drag = -vel_ * vel_.length() * .05 * r_;
   if (is_clicked_){
     Vector3d anchor(pos_.x + x_offset_, pos_.y + y_offset_, 0);
+    
+    // Before it is placed it should stick closely to the cursor
+    if (ghost_) return (pull_point_-anchor)*1200.0 - vel_*70;
+    
     //Drag, spring force and dampling
     return drag + (pull_point_-anchor)*75.0 - vel_*10; 
   }
@@ -206,3 +266,24 @@ Vector3d Disc::external_torques(){
   return Vector3d(0,0,0) * 180.0 / 3.1415926535;
 }
 
+
+// Loads a texture from a file, must be in bmp format
+GLuint Disc::loadTextureFromFile( const char * filename ){
+  GLuint texture;
+  glGenTextures( 1, &texture );
+  glBindTexture(GL_TEXTURE_2D, texture);
+
+  RgbImage theTexMap( filename ); // instantiation
+
+  // Set the interpolation settings to best quality.
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+  gluBuild2DMipmaps(GL_TEXTURE_2D, GL_RGB,
+  theTexMap.GetNumCols(), theTexMap.GetNumRows(),
+  GL_RGB, GL_UNSIGNED_BYTE, theTexMap.ImageData() );
+
+  return texture;
+}

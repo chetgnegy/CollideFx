@@ -83,9 +83,7 @@ void Orb::draw(){
   glPushMatrix();
 
   
-  glBlendFunc (GL_SRC_ALPHA, GL_ONE);
-  glBindTexture (GL_TEXTURE_2D, texture_);
-
+  
   glBegin(GL_TRIANGLE_STRIP);
   glTexCoord2d(1,1); // Top Right
   glVertex3f(particle_size_, particle_size_, 0); 
@@ -113,13 +111,14 @@ void Orb::get_rotation(double &w, double &x, double &y, double &z){
 // Sets up the visual attributes for the Orb
 void Orb::set_attributes(void){
   glPushAttrib(GL_ALL_ATTRIB_BITS);
-  glDisable(GL_LIGHTING);
   glClearDepth(1.0f);
-  glDisable(GL_DEPTH_TEST);
   glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
   glHint(GL_POINT_SMOOTH_HINT, GL_NICEST);
   glEnable( GL_TEXTURE_2D );
   glEnable (GL_BLEND);
+  glBlendFunc (GL_SRC_ALPHA, GL_ONE);
+  glBindTexture (GL_TEXTURE_2D, texture_);
+
 }
 
 //Pops the attributes stack in OpenGL

@@ -7,12 +7,14 @@
   the changing of parameters, and a specral display.
 */
 
-#include "math.h"
+
 #include "Menu.h"
 
 Menu::Menu(){
   menu_texture_loaded_ = false;
   ctrl_menu_shown_ = true;
+  valid_disc_ = false;
+  new_disc_ = NULL;
 }
 
 Menu::~Menu(){}
@@ -45,11 +47,10 @@ void Menu::set_attributes(void){
   glPushAttrib(GL_ALL_ATTRIB_BITS);
   glEnable(GL_BLEND);
   glShadeModel(GL_FLAT);
-  glDepthMask(GL_FALSE);  // disable writes to Z-Buffer
+  glDepthMask(GL_TRUE);  // disable writes to Z-Buffer
   glDisable(GL_DEPTH_TEST);  // disable depth-testing
   glEnable(GL_TEXTURE_2D);
   glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-
   if (ctrl_menu_shown_){
     glBindTexture(GL_TEXTURE_2D, menu_texture_ctrl_);
   }
@@ -72,23 +73,51 @@ void Menu::prepare_graphics(void){
   }
 }
 
-void Menu::move(double x, double y, double z){}
-void Menu::prepare_move(double x, double y, double z){}
+void Menu::move(double x, double y, double z){
+  if (valid_disc_){
+    new_disc_->move(x,y,z);
+  }
+}
+
+void Menu::prepare_move(double x, double y, double z){
+  int a, b;
+  convert_coords(x, y, a, b);
+  // Sees which button was clicked
+  handle_click(a, b);
+  if (valid_disc_){
+    // Delegates movement to the new disk
+    new_disc_->set_location(x,y);
+    new_disc_->prepare_move(x,y,z);
+  }
+}
 
 bool Menu::check_clicked(double x, double y, double z){
   //Check bounds of in
   if (abs(x - kXShift) < kScaleDimensions){
     if (y < kScaleDimensions * height_to_width_){
-      int a, b;
-      convert_coords(x, y, a, b);
-      handle_click(a, b);
       return true;
     }
   }
-
-  
+  return false;
 }
-void Menu::unclicked(){}
+
+void Menu::unclicked(){
+  if (valid_disc_){
+  
+    if(Physics::is_clear_area(new_disc_->pos_.x,new_disc_->pos_.y, new_disc_->get_radius()))
+    { // unclicks the disc, a new disc is finalized!
+      new_disc_->unclicked();
+    }
+    else{
+      Graphics::remove_drawable(new_disc_);
+      Graphics::remove_moveable(new_disc_);
+      Physics::take_physics(new_disc_);
+    }
+    
+  }
+  valid_disc_ = false;
+  new_disc_ = 0;
+}
 
 
 void Menu::convert_coords(double x, double y, int &a, int &b){
@@ -124,6 +153,7 @@ GLuint Menu::loadTextureFromFile( const char * filename ){
   return texture;
 }
 
+
 bool inSquare(int x, int y, int a, int b, int w){
   //  A---B   Tell if input (x,y) is in square ABCD
   //  |   |   A = (a,b)   B = (a+w,b)    
@@ -133,10 +163,11 @@ bool inSquare(int x, int y, int a, int b, int w){
   return true; 
 }
 
+// Requires image coordinates. Handles all button clicks
 void Menu::handle_click(int x, int y){
   // Coords for full size 942x1447 image buttons
   int but_size = 147, sm_but_size= 68;
-  int h_but_space = 24;
+  int h_but_space = 23;
   int y_but[3] = {180, 495, 671};
   int x_but = 53;
   int y_up_but = 914, y_down_but = 994;
@@ -147,58 +178,177 @@ void Menu::handle_click(int x, int y){
   if (y < y_but[2] + but_size){//Upper button
     //First row of buttons
     for (int i = 0; i < 5; ++i){
-      if (inSquare(x, y, x_but + i*(but_size+h_but_space), y_but[0], but_size)){
+      if (inSquare(x -32, y - 21, x_but + i*(but_size+h_but_space), y_but[0], but_size)){
         switch (i){
-          case 0: std::cout << "Clicked Input" << std::endl; return;
-          case 1: std::cout << "Clicked Sine" << std::endl; return;
-          case 2: std::cout << "Clicked Square" << std::endl; return;
-          case 3: std::cout << "Clicked Tri" << std::endl; return;
-          case 4: std::cout << "Clicked Saw" << std::endl; return;
+          case 0: make_disc(100); return; // Input
+          case 1: make_disc(101); return; // Sine
+          case 2: make_disc(102); return; // Square
+          case 3: make_disc(103); return; // Tri
+          case 4: make_disc(104); return; // Saw
         }
       }
     }
     //Second row of buttons
     for (int i = 0; i < 5; ++i){
-      if (inSquare(x, y, x_but + i*(but_size+h_but_space), y_but[1], but_size)){
+      if (inSquare(x - 32, y - 21, x_but + i*(but_size+h_but_space), y_but[1], but_size)){
         switch (i){
-          case 0: std::cout << "Clicked BitCrusher" << std::endl; return;
-          case 1: std::cout << "Clicked Chorus" << std::endl; return;
-          case 2: std::cout << "Clicked Delay" << std::endl; return;
-          case 3: std::cout << "Clicked Distortion" << std::endl; return;
-          case 4: std::cout << "Clicked Filter" << std::endl; return;
+          case 0: make_disc(200); return; // BitCrusher
+          case 1: make_disc(201); return; // Chorus
+          case 2: make_disc(202); return; // Delay
+          case 3: make_disc(203); return; // Distortion
+          case 4: make_disc(204); return; // Filter
         }
       }
     }
     //Third row of buttons
     for (int i = 0; i < 5; ++i){
-      if (inSquare(x, y, x_but + i*(but_size+h_but_space), y_but[2], but_size)){
+      if (inSquare(x - 32, y -21, x_but + i*(but_size+h_but_space), y_but[2], but_size)){
         switch (i){
-          case 0: std::cout << "Clicked BandPass" << std::endl; return;
-          case 1: std::cout << "Clicked Looper" << std::endl; return;
-          case 2: std::cout << "Clicked RingMod" << std::endl; return;
-          case 3: std::cout << "Clicked Reverb" << std::endl; return;
-          case 4: std::cout << "Clicked Tremolo" << std::endl; return;
+          case 0: make_disc(205); return; // Bandpass
+          case 1: make_disc(206); return; // Looper
+          case 2: make_disc(207); return; // RingMod
+          case 3: make_disc(208); return; // Reverb
+          case 4: make_disc(209); return; // Tremolo
         }
       }
     }
   }
   else {
-    if (inSquare(x, y, x_arrow_but, y_up_but, sm_but_size)){
+    if (inSquare(x - 16, y, x_arrow_but, y_up_but, sm_but_size)){
       std::cout << "Clicked Up" << std::endl; return;
     }
-    if (inSquare(x, y, x_arrow_but, y_down_but, sm_but_size)){
+    if (inSquare(x - 16, y, x_arrow_but, y_down_but, sm_but_size)){
       std::cout << "Clicked Down" << std::endl; return;
     }
-    if (inSquare(x, y, x_pane_but, y_up_but, sm_but_size)){
+    if (inSquare(x - 16, y, x_pane_but, y_up_but, sm_but_size)){
       std::cout << "Clicked CTRL" << std::endl; ctrl_menu_shown_ = true; return;
     }
-    if (inSquare(x, y, x_pane_but, y_down_but, sm_but_size)){
+    if (inSquare(x - 16, y, x_pane_but, y_down_but, sm_but_size)){
       std::cout << "Clicked FFT" << std::endl; ctrl_menu_shown_ = false; return;
     }
-    if (inSquare(x, y, x_pane_but, y_trash, sm_but_size)){
+    if (inSquare(x - 16, y, x_pane_but, y_trash, sm_but_size)){
       std::cout << "Clicked Trash" << std::endl; return;
     }
   }
 
 }
+
+
+void Menu::make_disc(int button){
+  double rad = 1.15;
+  switch (button){
+    // Input
+    case 100: 
+      new_disc_ = new Disc(NULL, rad, true, 200, 50);
+      new_disc_->set_color(0.5, 0.5, 0.5);
+      new_disc_->set_texture(0);
+      break; 
+
+    // Sine 
+    case 101: 
+      new_disc_ = new Disc(NULL, rad, true, 200, 50);
+      new_disc_->set_color(0.9, 0.9, 0.3);
+      new_disc_->set_texture(1);
+      break;
+
+    // Square
+    case 102: 
+      new_disc_ = new Disc(NULL, rad, true, 200, 50);
+      new_disc_->set_color(0.3, 0.9, 0.9);
+      new_disc_->set_texture(2);
+      break;
+
+    // Tri
+    case 103: 
+      new_disc_ = new Disc(NULL, rad, true, 200, 50);
+      new_disc_->set_color(0.9, 0.9, 0.3);
+      new_disc_->set_texture(3);
+      break; 
+
+    // Saw
+    case 104: 
+      new_disc_ = new Disc(NULL, rad, true, 200, 50);
+      new_disc_->set_color(0.9, 0.3, 0.9);
+      new_disc_->set_texture(4);
+      break;
+
+    // BitCrusher
+    case 200: 
+      new_disc_ = new Disc(NULL, rad, true);
+      new_disc_->set_color(0.3, 0.9, 0.3);
+      new_disc_->set_texture(5);
+      break; 
+    
+    // Chorus
+    case 201: 
+      new_disc_ = new Disc(NULL, rad, true);
+      new_disc_->set_color(0.3, 0.6, 0.9);
+      new_disc_->set_texture(6);
+      break; 
+
+    // Delay
+    case 202: 
+      new_disc_ = new Disc(NULL, rad, true);
+      new_disc_->set_color(0.7, 0.7, 0.3);
+      new_disc_->set_texture(7);
+      break; 
+
+    // Distortion
+    case 203: 
+      new_disc_ = new Disc(NULL, rad, true);
+      new_disc_->set_color(0.9, 0.6, 0.3);
+      new_disc_->set_texture(8);
+      break; 
+
+    // Filter
+    case 204:   
+      new_disc_ = new Disc(NULL, rad, true);
+      new_disc_->set_color(0.7, 0.7, 0.7);
+      new_disc_->set_texture(9);
+      break; 
+
+    // Bandpass
+    case 205: 
+      new_disc_ = new Disc(NULL, rad, true);
+      new_disc_->set_color(0.5, 0.5, 0.5);
+      new_disc_->set_texture(10);
+      break;
+
+    // Looper 
+    case 206: 
+      new_disc_ = new Disc(NULL, rad, true, 50, 50);
+      new_disc_->set_color(0.9, 0.0, 0.0);
+      new_disc_->set_texture(11);
+      break;
+
+    // RingMod 
+    case 207: 
+      new_disc_ = new Disc(NULL, rad, true);
+      new_disc_->set_color(0.9, 0.0, 0.7);
+      new_disc_->set_texture(12);
+      break; 
+
+    // Reverb
+    case 208: 
+      new_disc_ = new Disc(NULL, rad, true);
+      new_disc_->set_color(0.7, 0.0, 0.9);
+      new_disc_->set_texture(13);
+      break; 
+
+    // Tremolo
+    case 209: 
+      new_disc_ = new Disc(NULL, rad, true);
+      new_disc_->set_color(0.0, 0.6, 0.6);
+      new_disc_->set_texture(14);
+      break; 
+  }
+  
+  valid_disc_ = true;
+  // Add the disc to the front of the list. It will speed deletion times
+  // Chances are, it will be deleted anyhow.
+  Graphics::add_drawable(new_disc_, 10);
+  Graphics::add_moveable(new_disc_);
+  Physics::give_physics(new_disc_);
+}
+
 

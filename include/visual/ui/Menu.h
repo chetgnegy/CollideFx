@@ -13,8 +13,10 @@
 #include "RgbImage.h"
 #include "Drawable.h"
 #include "Moveable.h"
-#include <iostream> // delete
+#include "Disc.h"
+#include "math.h"
 
+#include <iostream> // delete
 
 class Menu : public Drawable, public Moveable {
 public:
@@ -27,8 +29,10 @@ public:
   // Draws the currently showing menu
   void draw();
 
+  void make_disc(int button);
+
   // Shifts the menu into the left side of the screen
-   void get_origin(double &x, double &y, double &z);
+  void get_origin(double &x, double &y, double &z);
 
   // The menu does not rotate. This always returns zero
   void get_rotation(double &w, double &x, double &y, double &z);
@@ -61,6 +65,8 @@ private:
   int menu_col_pixels_;
   float height_to_width_;
 
+  bool valid_disc_;
+  Disc *new_disc_;
 };
 
 #endif

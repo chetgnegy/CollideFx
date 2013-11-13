@@ -9,6 +9,7 @@
 #ifndef _DISC_H_
 #define _DISC_H_
 
+#include "RgbImage.h"
 #include "UnitGenerator.h"
 #include "Physics.h"
 #include "Graphics.h"
@@ -22,15 +23,19 @@ class Disc : public Drawable, public Moveable, public Physical{
 public:
   static const int kNumParticles = 5;
 
-  // Pairs the disc with a unit generator
-  Disc(UnitGenerator *u, double radius); 
+  // Pairs the disc with a unit generator, can be set to ghost mode
+  Disc(UnitGenerator *u, double radius, bool ghost, int initial_orbs = 0, int maintain_orbs = 0); 
   // Cleans up the unit generator
   ~Disc();
   
+  void set_color(float r, float g, float b);
+
   double get_radius(){return r_;} 
 
+  void set_texture(int i);
+
   // Creates a new orb to hang out around this disc
-  void orb_create();
+  void orb_create(int num_orbs = 1);
 
   // Passes the orb to another disc, d.
   bool orb_handoff(Disc *d);
@@ -88,10 +93,10 @@ public:
   /* ----- Physics ----- */
 
   //Discs can have collisions with other discs
-  bool has_collisions(){ return true; }
+  bool has_collisions(){ return !ghost_; }
 
   //The discs have friction with the ground below them
-  bool uses_friction(){ return true; }
+  bool uses_friction(){ return !ghost_; }
 
   bool rotates(){return false;}
   
@@ -104,6 +109,9 @@ public:
   Vector3d external_torques();
 
 private:
+
+  GLuint loadTextureFromFile( const char * filename );
+
   UnitGenerator *ugen_;
   
   //position offsets
@@ -118,7 +126,15 @@ private:
   GLUquadricObj *quadratic; 
 
   std::list<Orb *> orbs_;
-  
+  Vector3d color_;
+  int initial_orbs_;
+  int maintain_orbs_;
+
+  bool ghost_;
+
+  static GLuint *tex_;
+  static bool texture_loaded_;
+  int which_texture_;
 };
 
 

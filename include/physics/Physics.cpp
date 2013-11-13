@@ -37,8 +37,8 @@ void Physics::give_physics(Physical *object){
 
 // Updates the positions of all objects 
 void Physics::update(double update_time){
-  double max_iterations = 50.0;
-  double standard_iterations = 2.0;
+  double max_iterations = 500.0;
+  double standard_iterations = 50.0;
   //Collision Detection
   bool too_close = check_reduce_timestep();
   //We use a smaller timestep when things get close together.
@@ -218,5 +218,26 @@ void Physics::set_bounds(double size_x, double size_y, double x, double y){
   x_max_ = size_x/2.0 + x;
   y_min_ = -size_y/2.0 + y;
   y_max_ = size_y/2.0 + y;
+
+}
+
+
+bool Physics::is_clear_area(double x, double y, double r){
+  if (x-r<x_min_ || x+r>x_max_ || y+r>y_max_ || y-r<y_min_){
+    return false;
+  }
+  if (all_.size() > 1) {
+    std::list<Physical *>::iterator it_a;
+    it_a = all_.begin();
+    while (it_a != all_.end()) {
+      if ( (*it_a)->has_collisions()){
+        Vector3d between = Vector3d(x,y,0) - (*it_a)->pos_;
+        if (between.length() < 1.05*(r + (*it_a)->intersection_distance())){
+          return false;  
+        }
+      } ++it_a;
+    }
+  }
+  return true;
 
 }

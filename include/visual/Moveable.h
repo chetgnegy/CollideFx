@@ -15,6 +15,7 @@ public:
   virtual void prepare_move(double x, double y, double z) = 0;
   virtual bool check_clicked(double x, double y, double z) = 0;
   virtual void unclicked(){}
+ 
 };
 
 

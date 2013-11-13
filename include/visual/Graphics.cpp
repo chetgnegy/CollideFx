@@ -22,6 +22,7 @@ void recoverClick(int, int, double &, double &);
 void reshape(int width, int height);
 
 std::list<Drawable *> Graphics::draw_list_;
+std::list<int> Graphics::draw_priority_;
 std::list<Moveable *> Graphics::move_list_;
 Moveable *clicked;
 bool valid_clicked;
@@ -66,7 +67,6 @@ int Graphics::initialize(int argc, char *argv[]){
   // set the special function - called on special keys events (fn, arrows, pgDown, etc)
   //glutSpecialFunc(special);
 
-
   time_now = -1;
   return 0;
 }
@@ -75,24 +75,58 @@ int Graphics::initialize(int argc, char *argv[]){
 void Graphics::start_graphics(){ glutMainLoop(); }
 
 
-void Graphics::add_drawable(Drawable *k, bool push_to_front){ 
+void Graphics::add_drawable(Drawable *k, int priority){ 
   k->prepare_graphics();
-  if (push_to_front){
-    Graphics::draw_list_.push_front(k); 
+  if (priority < 999999){
+
+    std::list<Drawable *>::iterator it;
+    std::list<int>::iterator pri_it;
+    it = Graphics::draw_list_.begin();
+    pri_it = Graphics::draw_priority_.begin();
+    while (it != Graphics::draw_list_.end()) {
+      if (*pri_it >= priority){
+        Graphics::draw_list_.insert(it, k);
+        Graphics::draw_priority_.insert(pri_it, priority); 
+        return;
+      }
+      ++it; ++pri_it;
+    }
   }
-  else{
-    Graphics::draw_list_.push_back(k); 
-  }
+  Graphics::draw_list_.push_back(k); 
+  Graphics::draw_priority_.push_back(priority); 
+  
 }
 
 // Removes an item from the draw list
 bool Graphics::remove_drawable(Drawable *k){ 
   if (Graphics::draw_list_.size() > 0) {
     std::list<Drawable *>::iterator it;
+    std::list<int>::iterator pri_it;
     it = Graphics::draw_list_.begin();
+    pri_it = Graphics::draw_priority_.begin();
+    
     while (it != Graphics::draw_list_.end()) {
       if (*it == k){
         Graphics::draw_list_.erase(it);
+        Graphics::draw_priority_.erase(pri_it);
+        return true;
+      }
+      ++it; ++pri_it;
+    }
+  }
+  return false;
+}
+
+void Graphics::add_moveable(Moveable *k){ move_list_.push_back(k); }
+
+// Removes an item from the move list
+bool Graphics::remove_moveable(Moveable *k){ 
+  if (Graphics::move_list_.size() > 0) {
+    std::list<Moveable *>::iterator it;
+    it = Graphics::move_list_.begin();
+    while (it != Graphics::move_list_.end()) {
+      if (*it == k){
+        Graphics::move_list_.erase(it);
         return true;
       }
       ++it;
@@ -101,11 +135,9 @@ bool Graphics::remove_drawable(Drawable *k){
   return false;
 }
 
-void Graphics::add_moveable(Moveable *k){ move_list_.push_back(k); }
-
 //Is the main loop. Runs repeatedly.
 void display() {
-  usleep(500);
+  usleep(8000);
 
   gettimeofday(&timer, NULL);  
   long new_time = (long)(timer.tv_sec*1000000+timer.tv_usec);
@@ -186,6 +218,7 @@ void mouse(int button, int state, int x, int y) {
                 valid_clicked = true;
                 clicked = *it;
                 clicked->prepare_move(coordX, coordY, -distance);
+                break;
             } ++it;
           }
         }
@@ -244,12 +277,12 @@ void recoverClick(int iX, int iY, double &oX, double &oY){
 
 
 void glInitialize() {
-  /*GLfloat light_position[] = { 0.0, 0.0, 1.0, 0.0 };
+  GLfloat light_position[] = { -2.0, 1.0, 0.8, 0.0 };
   glLightfv(GL_LIGHT0, GL_POSITION, light_position);
   glLightModeli(GL_LIGHT_MODEL_AMBIENT, GL_TRUE);
-  glEnable(GL_DEPTH_TEST);
+
   glShadeModel (GL_SMOOTH);
-  */
+  
 }
 
 
