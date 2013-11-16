@@ -8,6 +8,9 @@
 
 #import "Disc.h"
 
+
+
+Disc* Disc::spotlight_disc_ = NULL;
 bool Disc::texture_loaded_ = false;
 GLuint *Disc::tex_ = new GLuint[15];
 
@@ -16,6 +19,7 @@ Disc::Disc(UnitGenerator *u, double radius, bool ghost, int initial_orbs, int ma
   ugen_ = u;
   r_ = radius;
   m_ = radius * radius;
+  I_ = 0.5 * m_ * m_; // 0.5*M*R^2
   x_offset_ = 0; 
   y_offset_ = 0;
   is_clicked_ = false;
@@ -25,6 +29,7 @@ Disc::Disc(UnitGenerator *u, double radius, bool ghost, int initial_orbs, int ma
   color_ = Vector3d(0,0,1);
   ghost_ = ghost;
   which_texture_ = 0;
+  orb_color_scheme_ = 0;
 }
 
 // Cleans up the unit generator
@@ -44,6 +49,7 @@ void Disc::set_texture(int i){
 void Disc::orb_create(int num_orbs){
   for (int i = 0; i < num_orbs; ++i){
     Orb *roy_orbison = new Orb(&pos_, 2*r_);
+    roy_orbison->use_color_scheme(orb_color_scheme_);
     orbs_.push_back(roy_orbison);
     Graphics::add_drawable(roy_orbison);
     Physics::give_physics(roy_orbison);
@@ -104,6 +110,16 @@ void Disc::set_velocity(double x, double y){
   vel_.z = 0;
 };
 
+
+// Forwards request for parameter values
+double Disc::get_ugen_params(int param){
+  return ugen_->get_normalized_param(param);
+}
+// Forwards request to set parameter values
+void Disc::set_ugen_params(double param1, double param2){
+  ugen_->set_normalized_param(param1, param2);
+}
+
 // OpenGL instructions for drawing a unit disc centered at the origin
 void Disc::draw(){
  // Ghost mode makes it partially transparent
@@ -111,8 +127,6 @@ void Disc::draw(){
 
  glPushMatrix();
     glScalef(r_, r_, 1);
-
-    
     int res = 16;
 
     quadratic=gluNewQuadric();          // Create A Pointer To The Quadric Object ( NEW )
@@ -154,13 +168,12 @@ void Disc::get_origin(double &x, double &y, double &z){
 
 // The current orientation of the disk
 void Disc::get_rotation(double &w, double &x, double &y, double &z){
-  w=ang_pos_.length(); x=ang_pos_.x; y=ang_pos_.y; z=ang_pos_.z;
+  w=ang_pos_.length()*180.0 / 3.1415926535; 
+  x=ang_pos_.x; y=ang_pos_.y; z=ang_pos_.z;
 }
 
 // Sets up the visual attributes for the Disc
 void Disc::set_attributes(){
-  
-
   glPushAttrib(GL_ALL_ATTRIB_BITS);
   GLfloat mat_specular[] = { .5*color_.x, .5*color_.y,  .5*color_.z, 1.0 };
   GLfloat mat_diffuse[] = { color_.x, color_.y,  color_.z, 1.0 };
@@ -225,6 +238,7 @@ void Disc::move(double x, double y, double z){
 void Disc::prepare_move(double x, double y, double z){
   x_offset_ = x - pos_.x;
   y_offset_ = y - pos_.y;
+  move(x,y,z);
 }
 
 //Checks if positions are within radius of center of object
@@ -244,6 +258,9 @@ void Disc::unclicked(){
   }
 }
 
+void Disc::right_clicked(){
+  spotlight_disc_ = this;
+}
 
 // The forces are handled here. This is called from Physics.cpp during the numerical integration step.
 Vector3d Disc::external_forces(){

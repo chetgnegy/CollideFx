@@ -29,8 +29,6 @@ public:
   // Draws the currently showing menu
   void draw();
 
-  void make_disc(int button);
-
   // Shifts the menu into the left side of the screen
   void get_origin(double &x, double &y, double &z);
 
@@ -46,15 +44,38 @@ public:
   // Loads the graphics, but only on the very first time
   void prepare_graphics(void);
 
+  // Menu doesn't need to move, but a disc might!
   void move(double x, double y, double z);
+
+  // Prepares any discs that are being created for motion
   void prepare_move(double x, double y, double z);
+
+  // Checks to see if the mouse is within the bounds of the menu
   bool check_clicked(double x, double y, double z);
+
+  // Is called when the menu is no longer clicked. Often this needs delegated to the
+  // disc that is being moved/created.
   void unclicked();
+
+  void right_clicked(){}
+
 private:
+  // Converts the coordinates (x,y) from screen coordinates to
+  // image coordinates (a,b)
   void convert_coords(double x, double y, int &a, int &b);
+
+  // Loads a texture from a file, must be in bmp format
   GLuint loadTextureFromFile( const char * filename );
+
+  // Requires image coordinates. Finds out if the clicker is located
+  // inside of a button.
   void handle_click(int x, int y);
   
+   // Creates a new disc whenever a disc button is pressed.
+  void make_disc(int button);
+
+  
+  // The textures for all of the menus.
   GLuint menu_texture_ctrl_;
   GLuint menu_texture_fft_;
   bool menu_texture_loaded_;
@@ -65,8 +86,16 @@ private:
   int menu_col_pixels_;
   float height_to_width_;
 
+  // The newly created disc.
   bool valid_disc_;
   Disc *new_disc_;
+
+  // The parameter slider
+  double slider1_, slider2_;
+  bool slider1_clicked_, slider2_clicked_;
+  bool slider_initial_; 
+  Disc *last_disc_;
+  bool show_slider_;
 };
 
 #endif

@@ -33,16 +33,16 @@ public:
   static void angular_verlet(double timestep, Physical* object);
 
   // Uses vector projections to make sure things don't get too close to each other
-  static void collision_prevention();
+  static void collision_prevention(double update_time);
 
   // Handles a collision using conservation of linear momentum
-  static void collide(Physical* a, Physical* b);
+  static void collide(Physical* a, Physical* b, double update_time);
 
   // Check to see if two objects are so close that we should reduce the timestep
   static bool check_reduce_timestep();
 
   // Handles collision detection with world
-  static void check_in_bounds();
+  static void check_in_bounds(double update_time);
 
   // Defines the bounds for the collision detection with the walls
   static void set_bounds(double size_x, double size_y, double x, double y);

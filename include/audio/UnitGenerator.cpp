@@ -36,6 +36,107 @@ float UnitGenerator::interpolate(float *array, int length, double index){
   return sample_one*(1-leftover) + sample_two*leftover;
 }
 
+double UnitGenerator::get_normalized_param(int param){
+if (param == 1){
+    return (param1_-min_param1_)/(max_param1_ - min_param1_);
+  }
+  return (param2_-min_param2_)/(max_param2_ - min_param2_);
+}
+
+void UnitGenerator::set_normalized_param(double param1, double param2){
+  set_params(
+    (1-param1)*min_param1_+(param1)*max_param1_,
+    (1-param2)*min_param2_+(param2)*max_param2_);
+}
+
+
+
+
+
+
+
+
+/*
+The sine wave listens to the midi controller
+param1 = attack
+param2 = sustain
+*/
+
+Sine::Sine(double p1, double p2){}
+Sine::~Sine(){}
+// Processes a single sample in the unit generator
+double Sine::tick(double in){}
+// casts the parameters to ints and restricts them to a certain value
+void Sine::set_params(double p1, double p2){}
+
+
+
+
+
+
+
+
+
+
+/*
+The square wave listens to the midi controller
+param1 = attack
+param2 = sustain
+*/
+
+Square::Square(double p1, double p2){}
+Square::~Square(){}
+// Processes a single sample in the unit generator
+double Square::tick(double in){}
+// casts the parameters to ints and restricts them to a certain value
+void Square::set_params(double p1, double p2){}
+
+
+
+
+
+
+
+
+/*
+The tri wave listens to the midi controller
+param1 = attack
+param2 = sustain
+*/
+
+Tri::Tri(double p1, double p2){}
+Tri::~Tri(){}
+// Processes a single sample in the unit generator
+double Tri::tick(double in){}
+// casts the parameters to ints and restricts them to a certain value
+void Tri::set_params(double p1, double p2){}
+
+
+
+
+
+
+
+
+
+
+/*
+The saw wave listens to the midi controller
+param1 = attack
+param2 = sustain
+*/
+
+Saw::Saw(double p1, double p2){}
+Saw::~Saw(){}
+// Processes a single sample in the unit generator
+double Saw::tick(double in){}
+void Saw::set_params(double p1, double p2){}
+
+
+
+
+
+
 
 
 
@@ -46,6 +147,11 @@ The bitcrusher effect quantizes and downsamples the input
   param2 = downsampling factor
 */
 BitCrusher::BitCrusher(int p1, int p2){
+  min_param1_ = 1;
+  min_param2_ = 1;
+  max_param1_ = 16;
+  max_param2_ = 16;
+
   set_params(p1, p2); 
   sample_ = 0;
   sample_count_ = 0;
@@ -61,14 +167,15 @@ double BitCrusher::tick(double in){
     //Quantization
     sample_ = quantize(in);
   }
+
   return sample_;
 }
 // casts the parameters to ints and restricts them to a certain value
 void BitCrusher::set_params(double p1, double p2){
-  p1 = p1 > 16 ? 16 : floor(p1); // bounded by 1 and 16
-  param1_ = p1 < 1 ? 1 : p1;  
-  p2 = p2 > 16 ? 16 : floor(p2); // bounded by 1 and 16
-  param2_ = p2 < 1? 1 : p2;
+  p1 = p1 > max_param1_ ? max_param1_ : floor(p1); // bounded by 1 and 16
+  param1_ = p1 < min_param1_ ? min_param1_ : p1;  
+  p2 = p2 > max_param2_ ? max_param2_ : floor(p2); // bounded by 1 and 16
+  param2_ = p2 < min_param2_ ? min_param2_ : p2;
 }
 
 //Quantizes the double to the number of bits specified by param1
@@ -89,9 +196,14 @@ The chorus effect delays the signal by a variable amount
   param1 = rate of the chorus LFO
   param2 = depth of the chorus effect
 */
-Chorus::Chorus(int sample_rate, double p1, double p2){
+Chorus::Chorus(double p1, double p2, int sample_rate){
   sample_rate_ = sample_rate;
+  min_param1_ = 0.0;
+  min_param2_ = 0.0;
+  max_param1_ = 1.0;
+  max_param2_ = 1.0;
   
+
   set_params(p1, p2);
   buffer_size_ = ceil((kMaxDelay + kDelayCenter)*sample_rate_);
   
@@ -101,6 +213,7 @@ Chorus::Chorus(int sample_rate, double p1, double p2){
   
   sample_count_ = 0;
   buf_write_ = 0;
+
 }
 Chorus::~Chorus(){
   delete[] buffer_;
@@ -138,15 +251,15 @@ double Chorus::tick(double in){
 }
 // restricts parameters to range (0,1) and calculates other params
 void Chorus::set_params(double p1, double p2){
-  p1 = p1 > 1 ? 1 : p1;
-  p1 = p1 < 0 ? 0 : p1;
+  p1 = p1 > max_param1_ ? max_param1_ : p1;
+  p1 = p1 < min_param1_ ? min_param1_ : p1;
   param1_ = p1;
   p1 = (kMaxFreq-kMinFreq) * pow( param1_, 4) + kMinFreq;
   //sets the rate of the chorusing
   rate_hz_ = 6.2831853 / (1.0 * sample_rate_) * p1;
-  
-  p2 = p2 > 1 ? 1 : p2;
-  param2_ = p2 < 0? 0 : p2;
+   
+  p2 = p2 > max_param2_ ? max_param2_ : p2;
+  param2_ = p2 < min_param2_ ? min_param2_ : p2;
   depth_ = kMaxDelay * param2_;
   
 }
@@ -163,9 +276,13 @@ The delay effect plays the signal back some time later
   param1 = time in seconds until delay repeats
   param2 = amount of feedback in delay buffer
 */
-Delay::Delay(int sample_rate, double p1, double p2){
+Delay::Delay(double p1, double p2, int sample_rate){
   sample_rate_ = sample_rate;
-  
+  min_param1_ = 0;
+  min_param2_ = 0;
+  max_param1_ = 2;
+  max_param2_ = 1;
+
   param1_ = p1; 
   param2_ = p2;
   buffer_size_ = ceil(sample_rate_ * param1_);
@@ -173,6 +290,8 @@ Delay::Delay(int sample_rate, double p1, double p2){
   buffer_ = new float[buffer_size_];
   for (int i = 0; i < buffer_size_; ++i) buffer_[i] = 0;
   buf_write_ = 0;
+
+
 }
 
 Delay::~Delay(){
@@ -190,8 +309,8 @@ double Delay::tick(double in){
 }
 
 void Delay::set_params(double p1, double p2){
-  p1 = p1 > 2 ? 2 : p1;
-  p1 = p1 < 0 ? 0 : p1;
+  p1 = p1 > max_param1_ ? max_param1_ : p1;
+  param1_ = p1 < min_param1_ ? min_param1_ : p1;
   
   //Reallocates delay buffer
   if (p1!=param1_){
@@ -228,8 +347,8 @@ void Delay::set_params(double p1, double p2){
     delete[] trash_buffer;
   }
   
-  p2 = p2 > 1 ? 1 : p2;
-  param2_ = p2 < 0 ? 0 : p2;
+    p2 = p2 > max_param2_ ? max_param2_ : p2;
+    param2_ = p2 < min_param2_ ? min_param2_ : p2;
   
 }
 
@@ -240,13 +359,23 @@ void Delay::set_params(double p1, double p2){
 
 
 
+
+
+
+
+
 /*
-The distortion effect clips the input to a speficied level
+The distortion effect clips the input to a specified level
   param1 = pre clip gain
   param2 = clipping level
 */
 Distortion::Distortion(double p1, double p2){
+  min_param1_ = 0;
+  min_param2_ = 0;
+  max_param1_ = 20;
+  max_param2_ = 20;
   set_params(p1, p2);
+  
 }
 Distortion::~Distortion(){}
 // Processes a single sample in the unit generator
@@ -264,22 +393,61 @@ double Distortion::tick(double in){
 
 
 /*
+A second order high or low pass filter
+  param1 = cutoff frequency
+  param2 = Q
+*/
+
+Filter::Filter(double p1, double p2){}
+Filter::~Filter(){}
+// Processes a single sample in the unit generator
+double Filter::tick(double in){}
+void Filter::set_params(double p1, double p2){}
+
+
+
+
+
+
+
+
+/*
+A second order bandpass filter
+param1 = cutoff frequency
+param2 = Q
+*/
+
+BandPass::BandPass(double p1, double p2){}
+BandPass::~BandPass(){}
+// Processes a single sample in the unit generator
+double BandPass::tick(double in){}
+void BandPass::set_params(double p1, double p2){}
+
+
+
+
+
+
+
+
+
+/*
 The looper effect keeps a section of the input in a buffer and loops it back
-  param1 = beats per second
+  param1 = beats per minute
   param2 = number of beats
 */
-Looper::Looper(int sample_rate, double param1, double param2){
+Looper::Looper(int sample_rate){
   //declare float buffer
   sample_rate_ = sample_rate;
   
-  param1_= static_cast<int>(param1); 
-  param2_ = static_cast<int>(param2);
-  buffer_size_ = ceil(60* sample_rate_ * param2_ / param1_);
-  //Makes two empty buffers
-  buffer_ = new float[buffer_size_];
-  for (int i = 0; i < buffer_size_; ++i) {
-    buffer_[i] = 0;
-  }
+  min_param1_ = 60;
+  min_param2_ = 1;
+  max_param1_ = 250;
+  max_param2_ = 60;
+
+  param1_ = 120;
+  param2_ = 16;
+  params_set_ = false;
   
   buf_write_ =0;
   buf_read_ = 0;
@@ -289,6 +457,8 @@ Looper::Looper(int sample_rate, double param1, double param2){
   counting_down_ = false;
   is_recording_ = false;
   has_recording_ = false;
+
+
 }
 Looper::~Looper(){
   //destroy float buffer
@@ -296,6 +466,7 @@ Looper::~Looper(){
 }
 // Processes a single sample in the unit generator
 double Looper::tick(double in){
+  if (!params_set_) return 0;
   //Keeps track of beats
   ++beat_count_;
   if (beat_count_ > 60 * sample_rate_ / param1_) {
@@ -326,7 +497,19 @@ double Looper::tick(double in){
 }
 
 void Looper::set_params(double a, double b){
-  printf("Loop cannot change parameters. Create new instance.");
+  if(params_set_){
+    printf("Loop cannot change parameters. Create new instance.");
+    return;
+  }
+  param1_= static_cast<int>(a); 
+  param2_ = static_cast<int>(b);
+  buffer_size_ = ceil(60* sample_rate_ * param2_ / param1_);
+  //Makes empty buffer
+  buffer_ = new float[buffer_size_];
+  for (int i = 0; i < buffer_size_; ++i) {
+    buffer_[i] = 0;
+  }
+  params_set_ = true;
 }
 
 void Looper::pulse(){
@@ -352,6 +535,7 @@ void Looper::pulse(){
 
 // Starts counting down beats until recording starts 
 void Looper::start_countdown(){
+  if (!params_set_) return;
   printf("Counting Down! \n");
   this_beat_ = 4;
   beat_count_ = 0;
@@ -388,6 +572,24 @@ void Looper::stop_recording(){
 
 
 
+/*
+A ring modulator. Multiplies the input by a sinusoid
+  param1 = cutoff frequency
+  param2 = Q
+*/
+RingMod::RingMod(double p1, double p2){}
+RingMod::~RingMod(){}
+// Processes a single sample in the unit generator
+double RingMod::tick(double in){}
+void RingMod::set_params(double p1, double p2){}
+
+
+
+
+
+
+
+
 
 /*
 The reverb effect convolves the signal with an impulse response
@@ -398,6 +600,11 @@ const int Reverb::kCombDelays[] = {1116,1188,1356,1277,1422,1491,1617,1557};
 const int Reverb::kAllPassDelays[] = {225, 556, 441, 341};
 
 Reverb::Reverb(double p1, double p2){
+  min_param1_ = 0;
+  min_param2_ = 0;
+  max_param1_ = 1;
+  max_param2_ = 1;
+
   param1_ = p1;
   param2_ = p2;
   // Comb filtering
@@ -410,6 +617,8 @@ Reverb::Reverb(double p1, double p2){
   for (int i = 0; i < 4; ++i){
     aaf_.push_back(new AllpassApproximationFilter(kAllPassDelays[i], 0.5));
   }  
+
+
 }
 
 Reverb::~Reverb(){
@@ -438,13 +647,11 @@ double Reverb::tick(double in){
 }  
 
 void Reverb::set_params(double p1, double p2){
-  p1 = p1 > 1 ? 1 : p1;
-  p1 = p1 < 0 ? 0 : p1;
-  param1_ = p1;
+  p1 = p1 > max_param1_ ? max_param1_ : p1;
+  param1_ = p1 < min_param1_ ? min_param1_ : p1;
   
-  p2 = p2 > 1 ? 1 : p2;
-  p2 = p2 < 0 ? 0 : p2;
-  param2_ = p2;
+  p2 = p2 > max_param2_ ? max_param2_ : p2;
+  param2_ = p2 < min_param2_ ? min_param2_ : p2;
   
   int i = 0;
   std::list<DigitalFilter *>::iterator it;
@@ -472,12 +679,19 @@ The Tremolo effect modulates the amplitude of the signal
   param1 = rate
   param2 = depth
 */
-Tremolo::Tremolo(int sample_rate, double p1, double p2){
+Tremolo::Tremolo(double p1, double p2, int sample_rate){
   sample_rate_ = sample_rate;
+  min_param1_ = 0;
+  min_param2_ = 0;
+  max_param1_ = 1;
+  max_param2_ = 1;
+
+
   set_params(p1, p2);
   sample_count_ = 0;
   mix_ = .5;
-}
+
+}  
 Tremolo::~Tremolo(){}
 
 double Tremolo::tick(double in){

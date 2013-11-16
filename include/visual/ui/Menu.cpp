@@ -8,13 +8,25 @@
 */
 
 
+
 #include "Menu.h"
+
 
 Menu::Menu(){
   menu_texture_loaded_ = false;
   ctrl_menu_shown_ = true;
+  menu_row_pixels_ = 0;
+  menu_col_pixels_ = 0;
+  height_to_width_ = 0;
   valid_disc_ = false;
   new_disc_ = NULL;
+  last_disc_ = NULL;
+  slider1_clicked_ = false;
+  slider2_clicked_ = false;
+  slider_initial_ = false;
+  show_slider_ = false;
+  slider1_ = 0;
+  slider2_ = 0;
 }
 
 Menu::~Menu(){}
@@ -30,6 +42,36 @@ void Menu::draw(){
   glTexCoord2f(1.0, 0.0); glVertex3f(width, -height, 0);
   glTexCoord2f(0.0, 0.0); glVertex3f(-width, -height, 0);
   glEnd();
+  glPopAttrib();
+  glTranslatef(0,-9,0);
+
+  // Checks to see if disc was JUST clicked
+  if (Disc::spotlight_disc_ != NULL && slider_initial_){
+    slider1_ = Disc::spotlight_disc_->get_ugen_params(1);
+    slider2_ = Disc::spotlight_disc_->get_ugen_params(2);
+    last_disc_ = Disc::spotlight_disc_;
+    slider_initial_ = false; 
+  }
+  // Disc just unclicked
+  if (Disc::spotlight_disc_ != last_disc_){
+    slider_initial_ = true;
+    show_slider_ = false;
+  }
+
+  // Disc clicked, show slider
+  if (Disc::spotlight_disc_ != NULL || show_slider_){
+    glPushMatrix();
+      //move down to first slider location
+      glTranslatef(-7 + slider1_ * 13.5, 0, 0);
+      glutSolidSphere(.6,20,20);
+      glPopMatrix();
+    glPushMatrix();
+      //move down to second slider location
+      glTranslatef(-7 + slider2_ * 13.5, 0, 0);
+      glTranslatef(0,-3.68,0);
+      glutSolidSphere(.6,20,20);
+      glPopMatrix();
+  }
 }
 
 // Shifts the menu into the left side of the screen
@@ -44,6 +86,8 @@ void Menu::get_rotation(double &w, double &x, double &y, double &z){
 
 //Sets the current texture and some special parameters for 2D drawing
 void Menu::set_attributes(void){
+  glPushAttrib(GL_ALL_ATTRIB_BITS);
+  
   glPushAttrib(GL_ALL_ATTRIB_BITS);
   glEnable(GL_BLEND);
   glShadeModel(GL_FLAT);
@@ -73,12 +117,26 @@ void Menu::prepare_graphics(void){
   }
 }
 
+// Menu doesn't need to move, but a disc might!
 void Menu::move(double x, double y, double z){
   if (valid_disc_){
     new_disc_->move(x,y,z);
   }
+  if (slider1_clicked_){
+    //World coordinates for sliders
+    x = fmin(x,-8.695);
+    x = fmax(x,-22.71);
+    slider1_ = (x+22.71)/(22.71 - 8.695);
+  }
+  if (slider2_clicked_){
+    x = fmin(x,-8.695);
+    x = fmax(x,-22.71);
+    slider2_ = (x+22.71)/(22.71 - 8.695); 
+  }
+    
 }
 
+// Prepares any discs that are being created for motion
 void Menu::prepare_move(double x, double y, double z){
   int a, b;
   convert_coords(x, y, a, b);
@@ -89,8 +147,10 @@ void Menu::prepare_move(double x, double y, double z){
     new_disc_->set_location(x,y);
     new_disc_->prepare_move(x,y,z);
   }
+  move(x,y,z);
 }
 
+// Checks to see if the mouse is within the bounds of the menu
 bool Menu::check_clicked(double x, double y, double z){
   //Check bounds of in
   if (abs(x - kXShift) < kScaleDimensions){
@@ -101,6 +161,8 @@ bool Menu::check_clicked(double x, double y, double z){
   return false;
 }
 
+// Is called when the menu is no longer clicked. Often this needs delegated to the
+// disc that is being moved/created.
 void Menu::unclicked(){
   if (valid_disc_){
   
@@ -117,9 +179,19 @@ void Menu::unclicked(){
   }
   valid_disc_ = false;
   new_disc_ = 0;
+
+
+  if (Disc::spotlight_disc_ != NULL && (slider1_clicked_ || slider2_clicked_)){
+    slider1_clicked_ = false;
+    slider2_clicked_ = false;
+    Disc::spotlight_disc_->set_ugen_params(slider1_, slider2_);
+  }
+  
 }
 
 
+// Converts the coordinates (x,y) from screen coordinates to
+// image coordinates (a,b)
 void Menu::convert_coords(double x, double y, int &a, int &b){
   double norm_x = 0.5 * (x - kXShift + kScaleDimensions)/kScaleDimensions;
   double norm_y = 0.5 * (1 - y/kScaleDimensions/height_to_width_);
@@ -153,7 +225,7 @@ GLuint Menu::loadTextureFromFile( const char * filename ){
   return texture;
 }
 
-
+// Determines if the mouse click happened within the bounds of some square
 bool inSquare(int x, int y, int a, int b, int w){
   //  A---B   Tell if input (x,y) is in square ABCD
   //  |   |   A = (a,b)   B = (a+w,b)    
@@ -174,6 +246,9 @@ void Menu::handle_click(int x, int y){
   int x_arrow_but = 579;
   int x_pane_but = 823;
   int y_trash = 1341;
+
+  int x_slider = 147, slider_length = 680;
+  int y_slider1 = 1158, y_slider2 = 1330;
 
   if (y < y_but[2] + but_size){//Upper button
     //First row of buttons
@@ -227,117 +302,142 @@ void Menu::handle_click(int x, int y){
       std::cout << "Clicked FFT" << std::endl; ctrl_menu_shown_ = false; return;
     }
     if (inSquare(x - 16, y, x_pane_but, y_trash, sm_but_size)){
-      std::cout << "Clicked Trash" << std::endl; return;
+      if (Disc::spotlight_disc_ != NULL){
+        while(Disc::spotlight_disc_->orb_abandon()){}
+        Graphics::remove_drawable(Disc::spotlight_disc_);
+        Graphics::remove_moveable(Disc::spotlight_disc_);
+        Physics::take_physics(Disc::spotlight_disc_);
+        delete Disc::spotlight_disc_;
+        Disc::spotlight_disc_ = NULL;
+      }
+      return;
+    }
+    //Clicked a slider?
+    if (x > x_slider && x < x_slider + slider_length && Disc::spotlight_disc_ != NULL){
+      if (abs(y - y_slider1) < 30){
+        slider1_clicked_ = true;
+        return;
+      }
+      if (abs(y - y_slider2) < 30){
+        slider2_clicked_ = true;
+        return;
+      }
     }
   }
 
 }
 
-
+// Creates a new disc whenever a disc button is pressed.
 void Menu::make_disc(int button){
   double rad = 1.15;
   switch (button){
     // Input
     case 100: 
-      new_disc_ = new Disc(NULL, rad, true, 200, 50);
+      new_disc_ = new Disc(new Input(), rad, true, 200, 50);
       new_disc_->set_color(0.5, 0.5, 0.5);
       new_disc_->set_texture(0);
-      break; 
-
+      new_disc_->delegate_orb_color_scheme(0);
+      break;
+      
     // Sine 
     case 101: 
-      new_disc_ = new Disc(NULL, rad, true, 200, 50);
+      new_disc_ = new Disc(new Sine(), rad, true, 200, 50);
       new_disc_->set_color(0.9, 0.9, 0.3);
       new_disc_->set_texture(1);
+      new_disc_->delegate_orb_color_scheme(6);
       break;
 
     // Square
     case 102: 
-      new_disc_ = new Disc(NULL, rad, true, 200, 50);
+      new_disc_ = new Disc(new Square(), rad, true, 200, 50);
       new_disc_->set_color(0.3, 0.9, 0.9);
       new_disc_->set_texture(2);
+      new_disc_->delegate_orb_color_scheme(2);
       break;
 
     // Tri
     case 103: 
-      new_disc_ = new Disc(NULL, rad, true, 200, 50);
+      new_disc_ = new Disc(new Tri(), rad, true, 200, 50);
       new_disc_->set_color(0.9, 0.9, 0.3);
       new_disc_->set_texture(3);
+      new_disc_->delegate_orb_color_scheme(3);
       break; 
 
     // Saw
     case 104: 
-      new_disc_ = new Disc(NULL, rad, true, 200, 50);
+      new_disc_ = new Disc(new Saw(), rad, true, 200, 50);
       new_disc_->set_color(0.9, 0.3, 0.9);
       new_disc_->set_texture(4);
+      new_disc_->delegate_orb_color_scheme(4);
       break;
 
     // BitCrusher
     case 200: 
-      new_disc_ = new Disc(NULL, rad, true);
+      new_disc_ = new Disc(new BitCrusher(), rad, true);
       new_disc_->set_color(0.3, 0.9, 0.3);
       new_disc_->set_texture(5);
       break; 
     
     // Chorus
     case 201: 
-      new_disc_ = new Disc(NULL, rad, true);
+      new_disc_ = new Disc(new Chorus(), rad, true);
       new_disc_->set_color(0.3, 0.6, 0.9);
       new_disc_->set_texture(6);
       break; 
 
     // Delay
     case 202: 
-      new_disc_ = new Disc(NULL, rad, true);
+      new_disc_ = new Disc(new Delay(), rad, true);
       new_disc_->set_color(0.7, 0.7, 0.3);
       new_disc_->set_texture(7);
       break; 
 
     // Distortion
     case 203: 
-      new_disc_ = new Disc(NULL, rad, true);
+      new_disc_ = new Disc(new Distortion(), rad, true);
       new_disc_->set_color(0.9, 0.6, 0.3);
       new_disc_->set_texture(8);
       break; 
 
     // Filter
     case 204:   
-      new_disc_ = new Disc(NULL, rad, true);
+      new_disc_ = new Disc(new Filter(), rad, true);
       new_disc_->set_color(0.7, 0.7, 0.7);
       new_disc_->set_texture(9);
       break; 
 
     // Bandpass
     case 205: 
-      new_disc_ = new Disc(NULL, rad, true);
+      new_disc_ = new Disc(new BandPass(), rad, true);
       new_disc_->set_color(0.5, 0.5, 0.5);
       new_disc_->set_texture(10);
       break;
 
     // Looper 
     case 206: 
-      new_disc_ = new Disc(NULL, rad, true, 50, 50);
+      new_disc_ = new Disc(new Looper(), rad, true, 200, 50);
       new_disc_->set_color(0.9, 0.0, 0.0);
       new_disc_->set_texture(11);
+      new_disc_->delegate_orb_color_scheme(1);
       break;
 
     // RingMod 
     case 207: 
-      new_disc_ = new Disc(NULL, rad, true);
+      new_disc_ = new Disc(new RingMod(), rad, true);
       new_disc_->set_color(0.9, 0.0, 0.7);
       new_disc_->set_texture(12);
       break; 
 
     // Reverb
     case 208: 
-      new_disc_ = new Disc(NULL, rad, true);
+      new_disc_ = new Disc(new Reverb(), rad, true);
       new_disc_->set_color(0.7, 0.0, 0.9);
       new_disc_->set_texture(13);
       break; 
 
     // Tremolo
     case 209: 
-      new_disc_ = new Disc(NULL, rad, true);
+      new_disc_ = new Disc(new Tremolo(), rad, true);
       new_disc_->set_color(0.0, 0.6, 0.6);
       new_disc_->set_texture(14);
       break; 

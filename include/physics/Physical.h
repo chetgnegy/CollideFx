@@ -24,7 +24,8 @@ public:
   Vector3d pos_;
   Vector3d vel_;
   Vector3d acc_;
-  double m_;
+  double m_; // mass
+  double I_; // Moment of Inertia
   Vector3d ang_pos_;
   Vector3d ang_vel_;
   Vector3d ang_acc_;

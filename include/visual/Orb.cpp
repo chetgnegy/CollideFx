@@ -14,39 +14,64 @@ Orb::Orb(Vector3d *v, double hover){
   //We must give the orb a home or it will fly off and die
   hover_dist_ = hover;
   if (v == NULL) unassign();
-  else {
-    pos_ = Vector3d(v->x + hover_dist_, v->y, 0);
+  else pos_ = Vector3d(v->x + hover_dist_, v->y, 0);
   
-  }
   anchor_point_ = v;
   
   particle_size_ = 0.4;
-  m_ = 1;
+  m_ = 1; I_ = 0;
+  scheduled_death_ = false;
+  death_timer_ = 99;
   angle_ = 360.0 * rand()/(1.0*RAND_MAX);
   wander_ = Vector3d(16.0*(rand()/(1.0*RAND_MAX)-.5),
                      16.0*(rand()/(1.0*RAND_MAX)-.5),
                      16.0*(rand()/(1.0*RAND_MAX)-.5) );
   time_ = 0;
   
-  double c[3] = {1.0, 1.0, 1.0}, o[3] = {0.0, 0.0, 0.0}; //Normal
-  //double c[3] = {1.0, .25, 0.0}, o[3] = {0.0, 0.0, 0.0}; //Fire
-  //double c[3] = {0.5, 0.5, 0.5}, o[3] = {0.5, 0.5, 0.5}; //Bright
-  //double c[3] = {0.9, 0.9, 0.0}, o[3] = {0.0, 0.0, 0.9}; //Ocean
-  
-  r_ = c[0]*rand()/(1.0*RAND_MAX) + o[0]; 
-  g_ = c[1]*rand()/(1.0*RAND_MAX) + o[1]; 
-  b_ = c[2]*rand()/(1.0*RAND_MAX) + o[2];
+  use_color_scheme(0);
+
   
 }
 
 Orb::~Orb(){}
 
-
+// Changes the equilibrium distance of the orb to its anchor point
 void Orb::change_hover_distance(double dist){
   hover_dist_ = dist;
 }
-  
 
+// Forces the orb's color scheme to be from the list. Out of range goes to normal
+void Orb::use_color_scheme(int color_scheme){
+  // case 0   Normal
+  float rr = 1.0, gr = 1.0, br = 1.0, ro = 0.0, go = 0.0, bo = 0.0; 
+  
+  switch (color_scheme){
+    case 1:  //Fire
+      rr = 0.6, gr = .5, br = 0.0, ro = 0.4, go = 0.0, bo = 0.0;
+      break;
+    case 2:  //Ocean
+      rr = 0.9, gr = 0.9, br = 0.0, ro = 0.0, go = 0.0, bo = 1.0;
+      break;
+    case 3:  //Yellow Jacket
+      rr = 0.15, gr = 0.15, br = 0.7, ro = 0.5, go = 0.3, bo = 0.0;
+      break;
+    case 4:  //Purple Rain
+      rr = 0.4, gr = 0.9, br = 0.3, ro = 0.6, go = 0.0, bo = 0.7;
+      break;
+    case 5:  //Monochrome
+      rr = 1.0,  ro = 0.0;
+      r_ = rr*rand()/(1.0*RAND_MAX) + ro; g_ = r_; b_ = r_; 
+      return;
+    case 6:  //Bright
+      rr = 0.5, gr = 0.5, br = 0.5, ro = 0.5, go = 0.5, bo = 0.5;
+      break;
+  
+  }
+  // Uses the ranges and offsets to make new color schemes
+  r_ = rr*rand()/(1.0*RAND_MAX) + ro; 
+  g_ = gr*rand()/(1.0*RAND_MAX) + go; 
+  b_ = br*rand()/(1.0*RAND_MAX) + bo;
+}
 
 // Removes anchor point and schedules destruction.
 // Particles fly in all directions!
@@ -81,18 +106,16 @@ void Orb::draw(){
   
   glColor4f(r_, g_, b_, alpha);
   glPushMatrix();
-
-  
   
   glBegin(GL_TRIANGLE_STRIP);
   glTexCoord2d(1,1); // Top Right
   glVertex3f(particle_size_, particle_size_, 0); 
   glTexCoord2d(0,1); // Top Left
-  glVertex3f(- particle_size_, particle_size_, 0); 
+  glVertex3f(-particle_size_, particle_size_, 0); 
   glTexCoord2d(1,0); // Bottom Right
-  glVertex3f(particle_size_, - particle_size_, 0); 
+  glVertex3f(particle_size_, -particle_size_, 0); 
   glTexCoord2d(0,0); // Bottom Left
-  glVertex3f(- particle_size_, - particle_size_, 0); 
+  glVertex3f(-particle_size_, -particle_size_, 0); 
   glEnd();
 
   glPopMatrix();
@@ -157,6 +180,7 @@ void Orb::advance_time(double t){
   time_ += t; 
     
   if (scheduled_death_){ death_timer_ -= t;
+
     // Flies up!
     wander_.x += .6*rand()/(1.0*RAND_MAX)-.3;
     wander_.y += .6*rand()/(1.0*RAND_MAX)-.3;
@@ -180,8 +204,9 @@ void Orb::clean_up(){
 
 // The forces are handled here and called from Physics.cpp during nunerical integration
 Vector3d Orb::external_forces(){
-  if (anchor_point_ == NULL) 
+  if (anchor_point_ == NULL) {
     return wander_;
+  }
   // The vector pointing to the anchor point
   Vector3d axis = *anchor_point_ - pos_;
   double norm_distance = axis.length()/hover_dist_;

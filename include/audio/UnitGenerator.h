@@ -30,10 +30,12 @@ public:
   double interpolate(double *array, int length, double index);
   float interpolate(float *array, int length, double index);
   
+  double get_normalized_param(int param);
+  void set_normalized_param(double param1, double param2);
   // generic parameters for the unit generator. It is up 
   // to the subclass to define these and make them meaningful
-  double param1_;
-  double param2_;
+  double param1_, max_param1_, min_param1_;
+  double param2_, max_param2_, min_param2_;
   double mix_;
   
 };
@@ -55,8 +57,67 @@ public:
 };
 
 
+/*
+The sine wave listens to the midi controller
+  param1 = attack
+  param2 = sustain
+*/
+class Sine : public UnitGenerator {
+public:
+  Sine(double p1 = 15, double p2 = 2);
+  ~Sine();
+  // Processes a single sample in the unit generator
+  double tick(double in);
+  // casts the parameters to ints and restricts them to a certain value
+  void set_params(double p1, double p2);
+};
 
 
+/*
+The square wave listens to the midi controller
+  param1 = attack
+  param2 = sustain
+*/
+class Square : public UnitGenerator {
+public:
+  Square(double p1 = 15, double p2 = 2);
+  ~Square();
+  // Processes a single sample in the unit generator
+  double tick(double in);
+  // casts the parameters to ints and restricts them to a certain value
+  void set_params(double p1, double p2);
+};
+
+
+/*
+The tri wave listens to the midi controller
+  param1 = attack
+  param2 = sustain
+*/
+class Tri : public UnitGenerator {
+public:
+  Tri(double p1 = 15, double p2 = 2);
+  ~Tri();
+  // Processes a single sample in the unit generator
+  double tick(double in);
+  // casts the parameters to ints and restricts them to a certain value
+  void set_params(double p1, double p2);
+};
+
+
+/*
+The saw wave listens to the midi controller
+  param1 = attack
+  param2 = sustain
+*/
+class Saw : public UnitGenerator {
+public:
+  Saw(double p1 = 15, double p2 = 2);
+  ~Saw();
+  // Processes a single sample in the unit generator
+  double tick(double in);
+  void set_params(double p1, double p2);
+};
 
 
 
@@ -74,7 +135,7 @@ public:
   // casts the parameters to ints and restricts them to a certain value
   void set_params(double p1, double p2);
 private:
-  //Quantizes the double to the number of bits specified by param1
+  // Quantizes the double to the number of bits specified by param1
   double quantize(double in);
   
   double sample_;
@@ -98,7 +159,7 @@ public:
   static const double kMaxFreq = 10.0;// Hz
   static const double kMinFreq = .020;// Hz
   
-  Chorus(int sample_rate, double p1 = 0.5, double p2 = 0.5);
+  Chorus(double p1 = 0.5, double p2 = 0.5, int sample_rate = 44100);
   ~Chorus();
   // Processes a single sample in the unit generator
   double tick(double in);  
@@ -127,7 +188,7 @@ class Delay : public UnitGenerator {
 public:
   static const int kShortestDelay = 50;
   
-  Delay(int sample_rate, double p1 = 0.5, double p2 = 0.5);
+  Delay(double p1 = 0.5, double p2 = 0.5, int sample_rate = 44100);
   ~Delay();
   // Processes a single sample in the unit generator
   double tick(double in);  
@@ -160,7 +221,36 @@ public:
 };
 
 
+/*
+A high or low pass filter
+  param1 = cutoff frequency
+  param2 = Q
+*/
+class Filter : public UnitGenerator {
+public:
+  Filter(double p1 = 15, double p2 = 2);
+  ~Filter();
+  // Processes a single sample in the unit generator
+  double tick(double in);
+  // casts the parameters to ints and restricts them to a certain value
+  void set_params(double p1, double p2);
+};
 
+
+/*
+A second order bandpass filter
+  param1 = cutoff frequency
+  param2 = Q
+*/
+class BandPass : public UnitGenerator {
+public:
+  BandPass(double p1 = 15, double p2 = 2);
+  ~BandPass();
+  // Processes a single sample in the unit generator
+  double tick(double in);
+  // casts the parameters to ints and restricts them to a certain value
+  void set_params(double p1, double p2);
+};
 
 
 /*
@@ -171,7 +261,7 @@ The looper effect keeps a section of the input in a buffer and loops it back
 class Looper : public UnitGenerator {
 public:
   
-  Looper(int sample_rate, double param1, double param2);
+  Looper(int sample_rate = 44100);
   ~Looper();
   
   // Processes a single sample in the unit generator
@@ -182,7 +272,8 @@ public:
   
   // Starts counting down beats until recording starts 
   void start_countdown();
-  
+
+private:
   // Cue Loop to start recording
   void start_recording();
   
@@ -192,7 +283,7 @@ public:
   // Cue for a single beat
   void pulse();
 
-private:
+  bool params_set_;
   float *buffer_;
   int buf_write_, buf_read_;
   int buffer_size_;
@@ -204,7 +295,20 @@ private:
 };
 
 
-
+/*
+A ring modulator. Multiplies the input by a sinusoid
+  param1 = cutoff frequency
+  param2 = Q
+*/
+class RingMod : public UnitGenerator {
+public:
+  RingMod(double p1 = 15, double p2 = 2);
+  ~RingMod();
+  // Processes a single sample in the unit generator
+  double tick(double in);
+  // casts the parameters to ints and restricts them to a certain value
+  void set_params(double p1, double p2);
+};
 
 
 /*
@@ -243,7 +347,7 @@ public:
   static const double kMaxFreq = 10.0;// Hz
   static const double kMinFreq = .020;// Hz
   
-  Tremolo(int sample_rate, double p1 = 0.5, double p2 = 0.5);
+  Tremolo( double p1 = 0.5, double p2 = 0.5, int sample_rate = 44100);
   ~Tremolo();
   
   // Processes a single sample in the unit generator

@@ -137,7 +137,7 @@ bool Graphics::remove_moveable(Moveable *k){
 
 //Is the main loop. Runs repeatedly.
 void display() {
-  usleep(8000);
+  usleep(2000);
 
   gettimeofday(&timer, NULL);  
   long new_time = (long)(timer.tv_sec*1000000+timer.tv_usec);
@@ -232,8 +232,16 @@ void mouse(int button, int state, int x, int y) {
     } else if (button == GLUT_RIGHT_BUTTON) {
       // when right mouse button down, move right
       if (state == GLUT_DOWN) {
-        
-      } else {
+        if (Graphics::move_list_.size() > 0) {
+          std::list<Moveable *>::iterator it;
+          it = Graphics::move_list_.begin();
+          while (it != Graphics::move_list_.end()) {
+            if ((*it)->check_clicked(coordX, coordY, -distance)){
+                (*it)->right_clicked();
+                break;
+            } ++it;
+          }
+        }
       }
     } else {
     }

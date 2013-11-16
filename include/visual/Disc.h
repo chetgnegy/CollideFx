@@ -19,6 +19,7 @@
 #include "Physical.h"
 #include "vmath.h"
 
+
 class Disc : public Drawable, public Moveable, public Physical{
 public:
   static const int kNumParticles = 5;
@@ -33,6 +34,10 @@ public:
   double get_radius(){return r_;} 
 
   void set_texture(int i);
+
+  void delegate_orb_color_scheme(int color_scheme){
+    orb_color_scheme_ = color_scheme;
+  }
 
   // Creates a new orb to hang out around this disc
   void orb_create(int num_orbs = 1);
@@ -55,6 +60,10 @@ public:
 
   // Sets instantaneous velocity of the disc
   void set_velocity(double x, double y);
+
+  // Forwards request for parameter values
+  double get_ugen_params(int param);
+  void set_ugen_params(double param1, double param2);
   
   /* ----- Drawable ----- */
 
@@ -90,6 +99,8 @@ public:
   //Signals that the disc is no longer clicked.
   void unclicked();
 
+  void right_clicked();
+
   /* ----- Physics ----- */
 
   //Discs can have collisions with other discs
@@ -108,6 +119,7 @@ public:
   // The torques are handled here. This is called from Physics.cpp during the numerical integration step.
   Vector3d external_torques();
 
+  static Disc *spotlight_disc_;
 private:
 
   GLuint loadTextureFromFile( const char * filename );
@@ -135,6 +147,10 @@ private:
   static GLuint *tex_;
   static bool texture_loaded_;
   int which_texture_;
+
+  int orb_color_scheme_;
+
+
 };
 
 

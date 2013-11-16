@@ -29,12 +29,6 @@ int main(int argc, char *argv[]) {
   UGenChain *myChain = new UGenChain();
   //myChain->initialize();
   
-  Chorus *d = new Chorus(44100);
-  //myChain->add_effect(d);
-  //while (true){
-  //  usleep(1000000);
-  //  d->set_params(.99*rand()/(1.0*RAND_MAX)+.01, .99*rand()/(1.0*RAND_MAX));
-  //}
   
   Menu *myMenu = new Menu();
   World *myWorld = new World(30, 30, 9, 0);

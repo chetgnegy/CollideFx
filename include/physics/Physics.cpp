@@ -37,7 +37,7 @@ void Physics::give_physics(Physical *object){
 
 // Updates the positions of all objects 
 void Physics::update(double update_time){
-  double max_iterations = 500.0;
+  double max_iterations = 50.0;
   double standard_iterations = 50.0;
   //Collision Detection
   bool too_close = check_reduce_timestep();
@@ -45,9 +45,25 @@ void Physics::update(double update_time){
   double update = too_close ? update_time/max_iterations : update_time/standard_iterations;
   double iterations = too_close ? max_iterations : standard_iterations;
   
-
+  
   //Numerical Integration
   for (int i = 0; i < iterations; ++i){
+
+    if (all_.size() > 0) {
+      std::list<Physical *>::iterator it;
+      it = all_.begin();
+      while (it != all_.end()) {
+        (*it)->acc_ = (*it)->external_forces()/(*it)->m_;
+        (*it)->ang_acc_ = (*it)->external_torques()/(*it)->I_;
+        ++it;
+      }
+    }
+
+    //only need to prevent collisions if things got close
+    if (too_close) collision_prevention(update_time);
+    check_in_bounds(update_time);
+
+
     if (all_.size() > 0) {
       std::list<Physical *>::iterator it;
       it = all_.begin();
@@ -58,9 +74,7 @@ void Physics::update(double update_time){
       }
     }
 
-    //only need to prevent collisions if things got close
-    if (too_close) collision_prevention();
-    check_in_bounds();
+
     
   }
 }
@@ -68,52 +82,38 @@ void Physics::update(double update_time){
 // Uses Velocity Verlet integration to compute the next positions of the object
 void Physics::velocity_verlet(double timestep, Physical* obj){
   //kinetic friction
-  double mu_k = 0.99;
-      
-  Vector3d v_half = obj->vel_ + obj->acc_ * 0.5 * timestep ;
-  obj->pos_ += v_half * timestep;
-  Vector3d acc_next = obj->external_forces()/obj->m_;
-  
+  double mu_loss = 0.99;
+   
   // Friction
   if (obj->uses_friction()){
-      if ( obj->vel_.length() > timestep * mu_k * timestep){
-        Vector3d v_norm = obj->vel_ / obj->vel_.length();
-        acc_next += - v_norm * mu_k;
-      }
-      else {
-        obj->vel_ = Vector3d(0,0,0);
-      }
+    if (obj->vel_.length() > 0){
+      obj->acc_ += - obj->vel_ / obj->vel_.length() * mu_loss;
+    }
   }
-  obj->vel_ += acc_next * 0.5 * timestep;   
 
+  obj->vel_ += obj->acc_ * timestep;   
+  obj->pos_ += obj->vel_ * timestep;
 }
 
 // Velocity Verlet algorithm applied to the angular motion
 void Physics::angular_verlet(double timestep, Physical* obj){
   //kinetic friction
-  double mu_k = 3.99;
-      
-  Vector3d w_half = obj->ang_vel_ + obj->ang_acc_ * 0.5 * timestep ;
-  obj->ang_pos_ += w_half * timestep;
-  Vector3d ang_acc_next = obj->external_torques();
-  /*
+  double mu_loss = 0.7;
+     
   // Friction
   if (obj->uses_friction()){
-      if ( obj->ang_vel_.length() > timestep * mu_k * timestep){
-        Vector3d w_norm = obj->ang_vel_ / obj->ang_vel_.length();
-        ang_acc_next += - w_norm * mu_k;
-      }
-      else {
-        obj->ang_vel_ = Vector3d(0,0,0);
-      }
-  }*/
-  obj->ang_vel_ += ang_acc_next * 0.5 * timestep;   
+    if (obj->ang_vel_.length() > 0){
+      obj->ang_acc_ += - obj->ang_vel_ / obj->ang_vel_.length() * mu_loss;
+    }
+  }
 
+  obj->ang_vel_ += obj->ang_acc_ * timestep;   
+  obj->ang_pos_ += obj->ang_vel_ * timestep; 
 }
 
 
 // Uses vector projections to make sure things don't get too close to each other
-void Physics::collision_prevention(){
+void Physics::collision_prevention(double update_time){
     //int to_remove = recent_collisions_.size();
     
     if (all_.size() > 1) {
@@ -126,7 +126,7 @@ void Physics::collision_prevention(){
           ++it_b;
           while (it_b != all_.end()) {
             if ((*it_b)->has_collisions()) { // Only if B can collide
-              collide(*it_a, *it_b);
+              collide(*it_a, *it_b, update_time);
               
             } ++it_b;
           } 
@@ -137,7 +137,7 @@ void Physics::collision_prevention(){
 }
 
 // Handles a collision using conservation of linear momentum;
-void Physics::collide(Physical* a, Physical* b){
+void Physics::collide(Physical* a, Physical* b, double update_time){
   Vector3d between = b->pos_ - a->pos_;
               
   if (between.length() < b->intersection_distance() 
@@ -156,8 +156,13 @@ void Physics::collide(Physical* a, Physical* b){
       Vector3d b_tang = b->vel_ - b_proj;
       a->vel_ = a->vel_ - a_proj + a_proj * term1_1 + b_proj * term1_2;
       b->vel_ = b->vel_ - b_proj + a_proj * term2_1 + b_proj * term2_2;
-    //Other vector can be used for rotation!
-
+        
+      double mu = 3;
+      double impulse   = 2 * a->m_ * a->intersection_distance() / update_time / a->I_;
+      //a->ang_acc_.z += a_proj.length() / a->vel_.length() * impulse   * mu * a_proj.length();
+      double impulse_b = 2 * b->m_ * b->intersection_distance() / update_time / b->I_;
+      //b->ang_acc_.z += b_proj.length() / b->vel_.length() * impulse_b * mu * b_proj.length();
+      
   }
 }
 
@@ -179,8 +184,7 @@ bool Physics::check_reduce_timestep(){
             if (between.length() < 1.05*((*it_b)->intersection_distance() 
               + (*it_a)->intersection_distance())){
               return true;  
-            }
-            
+            }  
           } ++it_b;
         }
       } ++it_a;
@@ -189,24 +193,47 @@ bool Physics::check_reduce_timestep(){
   return false;
 }
 
-void Physics::check_in_bounds(){
+void Physics::check_in_bounds(double update_time){
   if (all_.size() > 0) {
+      double mu = 3;
       std::list<Physical *>::iterator it;
       it = all_.begin();
       while (it != all_.end()) {
         if ((*it)->has_collisions()){
+          double impulse = 2 * (*it)->m_ * (*it)->intersection_distance() / update_time / (*it)->I_;
+            
+          //Left Wall
           if ((*it)->pos_.x - (*it)->intersection_distance() < x_min_ && (*it)->vel_.x < 0){
+            (*it)->pos_.x =  x_min_ + (*it)->intersection_distance();
             (*it)->vel_.x = -(*it)->vel_.x;
+            if((*it)->acc_.x < 0) (*it)->acc_.x = 0;
+            (*it)->ang_acc_.z +=  (*it)->vel_.x * (*it)->vel_.y / (*it)->vel_.length() * impulse * mu;
           }
+
+          //Right Wall
           else if ((*it)->pos_.x + (*it)->intersection_distance() > x_max_ && (*it)->vel_.x > 0){
+            (*it)->pos_.x =  x_max_ - (*it)->intersection_distance();
             (*it)->vel_.x = -(*it)->vel_.x;
+            if((*it)->acc_.x > 0) (*it)->acc_.x = 0;
+            (*it)->ang_acc_.z +=  (*it)->vel_.x * (*it)->vel_.y / (*it)->vel_.length() * impulse * mu;
           }
+
+          //Bottom Wall
           if ((*it)->pos_.y - (*it)->intersection_distance() < y_min_ && (*it)->vel_.y < 0){
+            (*it)->pos_.y =  y_min_ + (*it)->intersection_distance();
             (*it)->vel_.y = -(*it)->vel_.y;
+            if((*it)->acc_.y < 0) (*it)->acc_.y = 0;
+            (*it)->ang_acc_.z +=  (*it)->vel_.x * (*it)->vel_.y / (*it)->vel_.length() * impulse * mu;
           }
+
+          //Top Wall
           else if ((*it)->pos_.y + (*it)->intersection_distance() > y_max_ && (*it)->vel_.y > 0){
+            (*it)->pos_.y =  y_max_ - (*it)->intersection_distance();
             (*it)->vel_.y = -(*it)->vel_.y;
+            if((*it)->acc_.y > 0) (*it)->acc_.y = 0;
+            (*it)->ang_acc_.z +=  (*it)->vel_.x * (*it)->vel_.y / (*it)->vel_.length() * impulse * mu;
           }
+          
         } 
         ++it;
       }

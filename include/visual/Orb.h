@@ -25,7 +25,11 @@ public:
   Orb(Vector3d *v = NULL, double hover = 2.0);
   ~Orb();
 
+  // Changes the equilibrium distance of the orb to its anchor point
   void change_hover_distance(double dist);
+
+  // Forces the orb's color scheme to be from the list. Out of range goes to normal
+  void use_color_scheme(int color_scheme);
 
   // Changes the disc that the orb is assigned to
   void reassign(Vector3d *v);
