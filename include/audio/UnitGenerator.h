@@ -34,6 +34,9 @@ public:
   // and minimum parameters to be set
   void set_normalized_param(double param1, double param2);
 
+  // Can things lead into is unit generator or is it the first
+  // in the chain?
+  bool is_input();
 protected:
   // Sets the bounds on the parameters of the ugen
   void set_limits(double min1, double max1, double min2, double max2);
@@ -64,6 +67,7 @@ public:
   // A wrapper for the UnitGenerator's tick function
   double tick(double in){ return tick(); }
 
+  bool is_input(){ return true; }
 protected:
   ClassicWaveform *myCW_;
 };
@@ -79,7 +83,12 @@ public:
   Input(){}
   ~Input(){}
   // Processes a single sample in the unit generator
-  double tick(double in){return in;}  
+  double tick(double in){ return current_value_; }  
+  bool is_input(){ return true; }
+  double set_sample(double val){ current_value_ = val; }
+
+private:
+  double current_value_;
 };
 
 
@@ -149,6 +158,8 @@ public:
   double tick(double in);
   // casts the parameters to ints and restricts them to a certain value
   void set_params(double p1, double p2);
+
+  bool is_input(){ return false; }
 private:
   // Quantizes the double to the number of bits specified by param1
   double quantize(double in);
@@ -182,6 +193,8 @@ public:
   // restricts parameters to range (0,1) and calculates other parameters,
   // including the rate in Hz and the max delay change
   void set_params(double p1, double p2);
+
+  bool is_input(){ return false; }
 private:
   double *buffer_;
   int buf_write_;
@@ -210,6 +223,8 @@ public:
   double tick(double in);  
   // reallocates the buffer if the delay length changes
   void set_params(double p1, double p2);
+
+  bool is_input(){ return false; }
 private:
   float *buffer_;
   int buf_write_;
@@ -232,8 +247,11 @@ public:
   Distortion(double p1 = 18.0, double p2 = 0.6);
   ~Distortion();
   // Processes a single sample in the unit generator
+
+
   double tick(double in);  
   
+  bool is_input(){ return false; }
 };
 
 
@@ -254,6 +272,8 @@ public:
 
   // True for lowpass, False for highpass
   void set_lowpass(bool lowpass);
+
+  bool is_input(){ return false; }
 private:
   DigitalFilter *f_;
   bool currently_lowpass_;
@@ -273,6 +293,8 @@ public:
   double tick(double in);
   // casts the parameters to ints and restricts them to a certain value
   void set_params(double p1, double p2);
+
+  bool is_input(){ return false; }
 private:
   DigitalBandpassFilter *f_;
 
@@ -298,6 +320,8 @@ public:
   
   // Starts counting down beats until recording starts 
   void start_countdown();
+
+  bool is_input(){ return false; }
 
 private:
   // Cue Loop to start recording
@@ -337,6 +361,8 @@ public:
   double tick(double in);
   // casts the parameters to ints and restricts them to a certain value
   void set_params(double p1, double p2);
+
+  bool is_input(){ return false; }
 private:
   int sample_count_;
   int sample_rate_;
@@ -360,6 +386,8 @@ public:
   double tick(double in);  
   //Updates the filter variables
   void set_params(double p1, double p2);
+
+  bool is_input(){ return false; }
 private:
   FilterBank *fb_;
   std::list<AllpassApproximationFilter *> aaf_;
@@ -388,6 +416,8 @@ public:
   
   //Updates the parameters
   void set_params(double p1, double p2);
+
+  bool is_input(){ return false; }
   
 private:
   int sample_count_;

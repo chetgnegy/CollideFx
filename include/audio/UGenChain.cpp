@@ -7,9 +7,7 @@
 */
 
 #include "UGenChain.h"
-#include <iostream>//remove
 
-double globaltime = 0; //remove
 bool UGenChain::audio_initialized_ = false;
 bool UGenChain::midi_initialized_ = false;
 
@@ -46,21 +44,15 @@ int audioCallback(void *outputBuffer, void *inputBuffer, unsigned int num_frames
 
   double newVal = 0, lastVal;
   for (unsigned int i = 0; i < num_frames; ++i) {
-    newVal = chain->tick(input_buffer[i] / UGenChain::kMaxOutput);
-    //double out = .3 * sin(2*3.141*400/44100*(++globaltime));
-    //newVal = chain->tick(out);
-    //std::cout << newVal << std::endl;
-    
-    
+    // Pass sample to the inputs of the UGenChain
+    chain->handoff_audio(input_buffer[i] / UGenChain::kMaxOutput);
+
+    newVal = chain->tick();
+ 
     //Output limiting
     /*
-    if (fabs(newVal) > 1.001){
-      newVal = lastVal;
-      printf("Clipping has occured!\n");
-    }
-    else{
-      lastVal = newVal;
-    }
+    if (fabs(newVal) > 1.001) newVal = lastVal;
+    else lastVal = newVal;
     */
     output_buffer[i * numChannels] =  newVal;
   }
@@ -72,8 +64,6 @@ int audioCallback(void *outputBuffer, void *inputBuffer, unsigned int num_frames
     }
   }
   
-  //char input;
-  //std::cin.get(input); //Pause after a single frame
   return 0;
 }
 
@@ -93,6 +83,8 @@ UGenChain::UGenChain(){
 UGenChain::~UGenChain(){
   //Make sure we close things gracefully
   stop_audio();
+  
+  /*
   std::list<UnitGenerator *>::iterator list_iterator;
   list_iterator = chain_.begin();
   //Deletes all filters
@@ -100,6 +92,7 @@ UGenChain::~UGenChain(){
     delete (*list_iterator);
     ++list_iterator;
   }
+  */
   delete anti_aliasing_;
   delete low_pass_;  
   delete midi_;
@@ -186,47 +179,55 @@ void UGenChain::handoff_midi(int MIDI_pitch, int velocity){
   while (i < midi_modules_.size()) {
     // Stops the note
     if (velocity == 0){
-      midi_modules_.at(i)->stop_note(MIDI_pitch);
+      midi_modules_.at(i)->first->stop_note(MIDI_pitch);
     }
     // Starts the note
     else{
-      midi_modules_.at(i)->play_note(MIDI_pitch, velocity);
+      midi_modules_.at(i)->first->play_note(MIDI_pitch, velocity);
     }
     ++i;
   }
 }
 
-// HANDLE AUDIO IN PROPERLY
+// Passes any audio samples to the Input ugens. 
+void UGenChain::handoff_audio(double sample){
+  int i = 0;
+  //Process each effect in chain
+  while (i < inputs_.size()) {
+    inputs_.at(i)->first->set_sample( sample );
+    ++i;
+  }
+}
+
 
 // Process the next sample in the UGenChain
-double UGenChain::tick(double in){
-  if (chain_.size() > 0) {
-    std::list<UnitGenerator *>::iterator it;
-    it = chain_.begin();
-    //Process each effect in chain
-    while (it != chain_.end()) {
-      in = (*it)->tick(in);
-      ++it;
-    }
-  }
+double UGenChain::tick(){
+
+  // I don't know what to do here yet...
+
   //Filters the signal to remove HF and DC components
-  low_pass_->tick(in);
+  double output = 0;
+  low_pass_->tick(output);
   anti_aliasing_->tick(low_pass_->most_recent_sample());
   return anti_aliasing_->most_recent_sample().re();
 }
 
 
 // Adds a unit generator to the signal chain
-void UGenChain::add_ugen(UnitGenerator *ugen){
-    chain_.push_back(ugen);
+void UGenChain::add_effect(FxUGenNode *ugen){
+  chain_.push_back(ugen);
 }
-
 
 // Adds midi unit generator to a list of objects that must be checked
 // when new midi event is created
-void UGenChain::add_midi_ugen(MidiUnitGenerator *mugen){
-    chain_.push_back(mugen);
-    midi_modules_.push_back(mugen);
+void UGenChain::add_input(InputUGenNode *input){
+  inputs_.push_back(input);
+}
+
+// Adds midi unit generator to a list of objects that must be checked
+// when new midi event is created
+void UGenChain::add_midi_ugen(MidiUGenNode *mugen){
+  midi_modules_.push_back(mugen);
 }
 
 // Check to see if the audio and midi has been set up properly

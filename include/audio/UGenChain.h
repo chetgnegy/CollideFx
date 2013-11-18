@@ -17,7 +17,11 @@
 #include "RtAudio.h"
 #include "RtMidi.h"
 #include "RtError.h"
+#include "vmath.h"
 
+typedef std::pair<Input *, Vector3d *> InputUGenNode;
+typedef std::pair<MidiUnitGenerator *, Vector3d *> MidiUGenNode;
+typedef std::pair<UnitGenerator *, Vector3d *> FxUGenNode;
  
 class UGenChain {
 
@@ -46,15 +50,23 @@ public:
   // value of velocity whether the event is a note on or a note off
   void handoff_midi(int MIDI_pitch, int velocity);
 
-  // Process the next sample in the UGenChain
-  double tick(double in);
+  // Passes any audio samples to the Input ugens. 
+  void handoff_audio(double samples);
+
+  // Process the next sample in the UGenChain. For anything interesting
+  // to happen, be sure to handoff a sample or a midi event to the UGenChain
+  double tick();
  
   // Adds a unit generator to the signal chain
-  void add_ugen(UnitGenerator *ugen);
+  void add_effect(FxUGenNode *ugen);
   
   // Adds midi unit generator to a list of objects that must be checked
   // when new midi event is created
-  void add_midi_ugen(MidiUnitGenerator *mugen);
+  void add_input(InputUGenNode *input);
+
+  // Adds midi unit generator to a list of objects that must be checked
+  // when new midi event is created
+  void add_midi_ugen(MidiUGenNode *mugen);
 
   // Check to see if the audio and midi has been set up properly
   static bool has_audio();
@@ -65,10 +77,13 @@ private:
   static bool audio_initialized_, midi_initialized_;
 
   // The chain of effects that is processed before being sent to the output
-  std::list<UnitGenerator *> chain_;
+  std::list<FxUGenNode *> chain_;
+  
+  // The list of audio inputs that receive samples
+  std::vector<InputUGenNode *> inputs_;
   
   // The list of unit generators that require midi events to work
-  std::vector<MidiUnitGenerator *> midi_modules_;
+  std::vector<MidiUGenNode *> midi_modules_;
   
   // The RtAudio object that interacts with the soundcard.
   RtAudio *adac_;

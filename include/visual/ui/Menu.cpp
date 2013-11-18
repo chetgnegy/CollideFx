@@ -311,6 +311,7 @@ void Menu::handle_click(int x, int y){
     if (inSquare(x - 16, y, x_pane_but, y_trash, sm_but_size)){
       if (Disc::spotlight_disc_ != NULL){
         while(Disc::spotlight_disc_->orb_abandon()){}
+        std::cout << "Remember to remove deleted discs from the UGenChain, too." << std::endl;
         Graphics::remove_drawable(Disc::spotlight_disc_);
         Graphics::remove_moveable(Disc::spotlight_disc_);
         Physics::take_physics(Disc::spotlight_disc_);
@@ -334,120 +335,159 @@ void Menu::handle_click(int x, int y){
 
 }
 
+
+
+// Links the menu to the audio module
+void Menu::link_ugen_chain(UGenChain *u){
+  chain_= u;
+}
+
+
+
 // Creates a new disc whenever a disc button is pressed.
 void Menu::make_disc(int button){
   double rad = 1.15;
   switch (button){
     // Input
-    case 100: 
-      new_disc_ = new Disc(new Input(), rad, true, 200, 50);
-      new_disc_->set_color(0.5, 0.5, 0.5);
-      new_disc_->set_texture(0);
-      new_disc_->delegate_orb_color_scheme(0);
-      break;
-      
+    case 100: {
+          Input *u_input = new Input();
+          new_disc_ = new Disc(u_input, rad, true, 200, 50);
+          new_disc_->set_color(0.5, 0.5, 0.5);
+          new_disc_->set_texture(0);
+          new_disc_->delegate_orb_color_scheme(0);
+          chain_->add_input(new InputUGenNode(u_input, &new_disc_->pos_));
+          break;
+          }
     // Sine 
-    case 101: 
-      new_disc_ = new Disc(new Sine(), rad, true, 200, 50);
-      new_disc_->set_color(0.9, 0.9, 0.3);
-      new_disc_->set_texture(1);
-      new_disc_->delegate_orb_color_scheme(6);
-      break;
+    case 101:{ 
+          Sine *u_sine = new Sine();
+          new_disc_ = new Disc(u_sine, rad, true, 200, 50);
+          new_disc_->set_color(0.9, 0.9, 0.3);
+          new_disc_->set_texture(1);
+          new_disc_->delegate_orb_color_scheme(6);
+          chain_->add_midi_ugen(new MidiUGenNode(u_sine, &new_disc_->pos_));
+          break;}
 
     // Square
-    case 102: 
-      new_disc_ = new Disc(new Square(), rad, true, 200, 50);
-      new_disc_->set_color(0.3, 0.9, 0.9);
-      new_disc_->set_texture(2);
-      new_disc_->delegate_orb_color_scheme(2);
-      break;
+    case 102: {
+          Square *u_square = new Square();
+          new_disc_ = new Disc(u_square, rad, true, 200, 50);
+          new_disc_->set_color(0.3, 0.9, 0.9);
+          new_disc_->set_texture(2);
+          new_disc_->delegate_orb_color_scheme(2);
+          chain_->add_midi_ugen(new MidiUGenNode(u_square, &new_disc_->pos_));
+          break;}
 
     // Tri
-    case 103: 
-      new_disc_ = new Disc(new Tri(), rad, true, 200, 50);
-      new_disc_->set_color(0.9, 0.9, 0.3);
-      new_disc_->set_texture(3);
-      new_disc_->delegate_orb_color_scheme(3);
-      break; 
-
+    case 103: {
+          Tri *u_tri = new Tri();
+          new_disc_ = new Disc(u_tri, rad, true, 200, 50);
+          new_disc_->set_color(0.9, 0.9, 0.3);
+          new_disc_->set_texture(3);
+          new_disc_->delegate_orb_color_scheme(3);
+          chain_->add_midi_ugen(new MidiUGenNode(u_tri, &new_disc_->pos_));
+          break; 
+    }
     // Saw
-    case 104: 
-      new_disc_ = new Disc(new Saw(), rad, true, 200, 50);
-      new_disc_->set_color(0.9, 0.3, 0.9);
-      new_disc_->set_texture(4);
-      new_disc_->delegate_orb_color_scheme(4);
-      break;
-
+    case 104: {
+          Saw *u_saw = new Saw();
+          new_disc_ = new Disc(u_saw, rad, true, 200, 50);
+          new_disc_->set_color(0.9, 0.3, 0.9);
+          new_disc_->set_texture(4);
+          new_disc_->delegate_orb_color_scheme(4);
+          chain_->add_midi_ugen(new MidiUGenNode(u_saw, &new_disc_->pos_));
+          break;
+    }
     // BitCrusher
-    case 200: 
-      new_disc_ = new Disc(new BitCrusher(), rad, true);
-      new_disc_->set_color(0.3, 0.9, 0.3);
-      new_disc_->set_texture(5);
-      break; 
-    
+    case 200: {
+          BitCrusher *u_bc = new BitCrusher();
+          new_disc_ = new Disc(u_bc, rad, true);
+          new_disc_->set_color(0.3, 0.9, 0.3);
+          new_disc_->set_texture(5);
+          chain_->add_effect(new FxUGenNode(u_bc, &new_disc_->pos_));
+          break; 
+        }
     // Chorus
-    case 201: 
-      new_disc_ = new Disc(new Chorus(), rad, true);
-      new_disc_->set_color(0.3, 0.6, 0.9);
-      new_disc_->set_texture(6);
-      break; 
-
+    case 201: {
+          Chorus *u_chorus = new Chorus();
+          new_disc_ = new Disc(u_chorus, rad, true);
+          new_disc_->set_color(0.3, 0.6, 0.9);
+          new_disc_->set_texture(6);
+          chain_->add_effect(new FxUGenNode(u_chorus, &new_disc_->pos_));
+          break; 
+    }
     // Delay
-    case 202: 
-      new_disc_ = new Disc(new Delay(), rad, true);
-      new_disc_->set_color(0.7, 0.7, 0.3);
-      new_disc_->set_texture(7);
-      break; 
-
+    case 202: {
+          Delay *u_delay = new Delay();
+          new_disc_ = new Disc(u_delay, rad, true);
+          new_disc_->set_color(0.7, 0.7, 0.3);
+          new_disc_->set_texture(7);
+          chain_->add_effect(new FxUGenNode(u_delay, &new_disc_->pos_));
+          break; 
+    }
     // Distortion
-    case 203: 
-      new_disc_ = new Disc(new Distortion(), rad, true);
-      new_disc_->set_color(0.9, 0.6, 0.3);
-      new_disc_->set_texture(8);
-      break; 
-
+    case 203: {
+          Distortion *u_dist = new Distortion();
+          new_disc_ = new Disc(u_dist, rad, true);
+          new_disc_->set_color(0.9, 0.6, 0.3);
+          new_disc_->set_texture(8);
+          chain_->add_effect(new FxUGenNode(u_dist, &new_disc_->pos_));
+          break; 
+    }
     // Filter
-    case 204:   
-      new_disc_ = new Disc(new Filter(), rad, true);
-      new_disc_->set_color(0.7, 0.7, 0.7);
-      new_disc_->set_texture(9);
-      break; 
-
+    case 204: {
+          Filter *u_filt = new Filter();
+          new_disc_ = new Disc(u_filt, rad, true);
+          new_disc_->set_color(0.7, 0.7, 0.7);
+          new_disc_->set_texture(9);
+          chain_->add_effect(new FxUGenNode(u_filt, &new_disc_->pos_));
+          break; 
+    }
     // Bandpass
-    case 205: 
-      new_disc_ = new Disc(new Bandpass(), rad, true);
-      new_disc_->set_color(0.5, 0.5, 0.5);
-      new_disc_->set_texture(10);
-      break;
-
+    case 205: {
+          Bandpass *u_bp = new Bandpass();
+          new_disc_ = new Disc(u_bp, rad, true);
+          new_disc_->set_color(0.5, 0.5, 0.5);
+          new_disc_->set_texture(10);
+          chain_->add_effect(new FxUGenNode(u_bp, &new_disc_->pos_));
+          break;
+    }
     // Looper 
-    case 206: 
-      new_disc_ = new Disc(new Looper(), rad, true, 200, 50);
-      new_disc_->set_color(0.9, 0.0, 0.0);
-      new_disc_->set_texture(11);
-      new_disc_->delegate_orb_color_scheme(1);
-      break;
-
+    case 206: {
+          Looper *u_loop = new Looper();
+          new_disc_ = new Disc(u_loop, rad, true, 200, 50);
+          new_disc_->set_color(0.9, 0.0, 0.0);
+          new_disc_->set_texture(11);
+          new_disc_->delegate_orb_color_scheme(1);
+          chain_->add_effect(new FxUGenNode(u_loop, &new_disc_->pos_));
+          break;
+    }
     // RingMod 
-    case 207: 
-      new_disc_ = new Disc(new RingMod(), rad, true);
-      new_disc_->set_color(0.9, 0.0, 0.7);
-      new_disc_->set_texture(12);
-      break; 
-
+    case 207: {
+          RingMod *u_rm = new RingMod();
+          new_disc_ = new Disc(u_rm, rad, true);
+          new_disc_->set_color(0.9, 0.0, 0.7);
+          new_disc_->set_texture(12);
+          chain_->add_effect(new FxUGenNode(u_rm, &new_disc_->pos_));
+          break; 
+    }
     // Reverb
-    case 208: 
-      new_disc_ = new Disc(new Reverb(), rad, true);
-      new_disc_->set_color(0.7, 0.0, 0.9);
-      new_disc_->set_texture(13);
-      break; 
-
+    case 208: {
+          Reverb *u_rev = new Reverb();
+          new_disc_ = new Disc(u_rev, rad, true);
+          new_disc_->set_color(0.7, 0.0, 0.9);
+          new_disc_->set_texture(13);
+          chain_->add_effect(new FxUGenNode(u_rev, &new_disc_->pos_));
+          break; 
+    }
     // Tremolo
-    case 209: 
-      new_disc_ = new Disc(new Tremolo(), rad, true);
-      new_disc_->set_color(0.0, 0.6, 0.6);
-      new_disc_->set_texture(14);
-      break; 
+    case 209: {
+          Tremolo *u_trem = new Tremolo();
+          new_disc_ = new Disc(u_trem, rad, true);
+          new_disc_->set_color(0.0, 0.6, 0.6);
+          new_disc_->set_texture(14);
+          chain_->add_effect(new FxUGenNode(u_trem, &new_disc_->pos_));
+          break; }
   }
   
   valid_disc_ = true;
@@ -457,5 +497,3 @@ void Menu::make_disc(int button){
   Graphics::add_moveable(new_disc_);
   Physics::give_physics(new_disc_);
 }
-
-

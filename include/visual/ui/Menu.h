@@ -10,11 +10,13 @@
 #ifndef _MENU_H_
 #define _MENU_H_
 
-#include "RgbImage.h"
+#include "math.h"
+
+#include "Disc.h"
 #include "Drawable.h"
 #include "Moveable.h"
-#include "Disc.h"
-#include "math.h"
+#include "RgbImage.h"
+#include "UGenChain.h"
 
 #include <iostream> // delete
 
@@ -60,6 +62,9 @@ public:
   // The menu doesn't do anything when right clicked.
   void right_clicked(){}
 
+  // Links the menu to the audio module
+  void link_ugen_chain(UGenChain *u);
+  
 private:
   // Converts the coordinates (x,y) from screen coordinates to
   // image coordinates (a,b)
@@ -72,7 +77,7 @@ private:
   // inside of a button.
   void handle_click(int x, int y);
   
-   // Creates a new disc whenever a disc button is pressed.
+  // Creates a new disc whenever a disc button is pressed.
   void make_disc(int button);
 
   
@@ -81,6 +86,9 @@ private:
   GLuint menu_texture_fft_;
   bool menu_texture_loaded_;
   bool ctrl_menu_shown_;
+
+  // The chain of unit generators that we are linked with
+  UGenChain *chain_;
 
   // Properties of the Menu bitmap
   int menu_row_pixels_;

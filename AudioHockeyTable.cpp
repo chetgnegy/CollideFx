@@ -36,6 +36,7 @@ int main(int argc, char *argv[]) {
   
   Graphics::add_drawable(myMenu, 1);
   Graphics::add_moveable(myMenu);
+  myMenu->link_ugen_chain(myChain);
   
   Graphics::add_drawable(myWorld, 2);
   Physics::set_bounds(30*(1-2*World::kWallThickness), 30*(1-2*World::kWallThickness), 9, 0);
