@@ -25,7 +25,7 @@ LIBS=-framework CoreAudio -framework CoreMIDI -framework CoreFoundation \
 endif
 
 
-A_OBJS = DigitalFilter.o RtAudio.o UGenChain.o UnitGenerator.o
+A_OBJS = ClassicWaveform.o DigitalFilter.o RtAudio.o RtMidi.o Thread.o Stk.o UGenChain.o UnitGenerator.o
 P_OBJS = Physics.o vmath.o 
 V_OBJS = Disc.o Graphics.o Orb.o World.o 
 U_OBJS = Menu.o RgbImage.o
@@ -38,11 +38,23 @@ AudioHockeyTable.o: AudioHockeyTable.cpp DigitalFilter.h
 
 #------------------Audio modules-----------------#
 
+ClassicWaveform.o: ClassicWaveform.cpp ClassicWaveform.h
+	$(CXX) $(FLAGS) $(INC) $(A_INCDIR)ClassicWaveform.cpp
+
 DigitalFilter.o: DigitalFilter.cpp DigitalFilter.h
 	$(CXX) $(FLAGS) $(INC) $(A_INCDIR)DigitalFilter.cpp
 
 RtAudio.o: RtAudio.h RtError.h RtAudio.cpp
 	$(CXX) $(FLAGS) $(INC) $(A_INCDIR)RtAudio.cpp
+
+RtMidi.o: RtMidi.h RtError.h RtMidi.cpp
+	$(CXX) $(FLAGS) $(INC) $(A_INCDIR)RtMidi.cpp
+
+Stk.o: Stk.h Stk.cpp
+	$(CXX) $(FLAGS) $(INC) $(A_INCDIR)Stk.cpp
+
+Thread.o: Thread.h Thread.cpp
+	$(CXX) $(FLAGS) $(INC) $(A_INCDIR)Thread.cpp
 
 UGenChain.o: UGenChain.cpp UGenChain.h
 	$(CXX) $(FLAGS) $(INC) $(A_INCDIR)UGenChain.cpp

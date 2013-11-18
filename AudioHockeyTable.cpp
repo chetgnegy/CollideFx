@@ -27,7 +27,8 @@ int main(int argc, char *argv[]) {
   
 
   UGenChain *myChain = new UGenChain();
-  //myChain->initialize();
+  myChain->initialize_audio();
+  myChain->initialize_midi();
   
   
   Menu *myMenu = new Menu();
@@ -51,8 +52,6 @@ int main(int argc, char *argv[]) {
   myGraphics->start_graphics();
   
   
-  delete myWorld;
-  delete myChain;
   return 1;
 
 }

@@ -32,7 +32,7 @@ class DigitalFilter {
   ~DigitalFilter();
   
   // Must be overridden by subclass
-  virtual void calculate_coefficients();
+  virtual void calculate_coefficients() = 0;
 
   // Advances the filter by a single sample, in. The new value is returned.
   virtual complex tick(complex in);
@@ -45,6 +45,8 @@ class DigitalFilter {
   double dc_gain(void);
   double gain_;
 
+  // Changes the parameters. For some filters, this still might do 
+  // nothing (because it may be overridden), depends on filter implementation
   virtual void change_parameters(double center_frequency, double Q, double gain);
   
  protected:
@@ -72,6 +74,7 @@ class DigitalBandpassFilter : public DigitalFilter {
   };
   //Calculates the bandpass filter coefficients
   void calculate_coefficients();
+
   
 };
 
@@ -138,7 +141,10 @@ class FilteredFeedbackCombFilter : public DigitalFilter {
   
   //This filter is a bit different
   void change_parameters(int samples, double roomsize, double damping);
+
 private:
+  // With this type of filter, we don't need to compute anything
+  void calculate_coefficients(){}
   int samples_;
   complex *buffer_;
   int buf_index_;
@@ -153,6 +159,8 @@ class AllpassApproximationFilter : public DigitalFilter {
   // Computes a new value and adds it to a sample from the filtered delay line
   complex tick(complex in);
 private:
+  // With this type of filter, we don't need to compute anything
+  void calculate_coefficients(){}
   int samples_;
   double g_;
   complex *output_buffer_;

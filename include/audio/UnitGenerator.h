@@ -13,34 +13,60 @@
 
 
 #include <cmath>
-#include <stdio.h>//remove
 #include <list>
+#include <algorithm>
+#include "ClassicWaveform.h"
 #include "DigitalFilter.h"
+#include "complex.h"
 
 class UnitGenerator{
 public: 
   // Processes a single sample in the unit generator
   virtual double tick(double in){};
   
-  // Allows user to set the generic parameters. Override this for more
-  // complex behavior.  Parameters are forced to be positive by default
+  // Allows user to set the generic parameters, bounds must already be set
   virtual void set_params(double p1, double p2);
 
-  // Gets the interpolated value between two samples of array
-  double interpolate(double *array, int length, double index);
-  float interpolate(float *array, int length, double index);
-  
+  // Scales the input to the range 0 - 1
   double get_normalized_param(int param);
+
+  // Sets the input using the range 0 - 1, requires maximum 
+  // and minimum parameters to be set
   void set_normalized_param(double param1, double param2);
+
+protected:
+  // Sets the bounds on the parameters of the ugen
+  void set_limits(double min1, double max1, double min2, double max2);
+
+  // Uses the specified minimum and maximum bounds to restrict parameter to
+  // valid range
+  double clamp(double param_in);
+
   // generic parameters for the unit generator. It is up 
   // to the subclass to define these and make them meaningful
   double param1_, max_param1_, min_param1_;
   double param2_, max_param2_, min_param2_;
-  double mix_;
   
 };
 
+class MidiUnitGenerator: public UnitGenerator{
+public:
 
+  // Adds a single note to the instruent's play list
+  void play_note(int MIDI_pitch, int velocity);
+
+  // Searches for a note of the same pitch and stops it.
+  void stop_note(int MIDI_pitch);
+
+  // Gets the next sample from the instrument
+  double tick();
+
+  // A wrapper for the UnitGenerator's tick function
+  double tick(double in){ return tick(); }
+
+protected:
+  ClassicWaveform *myCW_;
+};
 
 
 
@@ -62,13 +88,10 @@ The sine wave listens to the midi controller
   param1 = attack
   param2 = sustain
 */
-class Sine : public UnitGenerator {
+class Sine : public MidiUnitGenerator {
 public:
-  Sine(double p1 = 15, double p2 = 2);
+  Sine(double p1 = 0.001, double p2 = .2, int sample_rate = 44100);
   ~Sine();
-  // Processes a single sample in the unit generator
-  double tick(double in);
-  // casts the parameters to ints and restricts them to a certain value
   void set_params(double p1, double p2);
 };
 
@@ -78,13 +101,10 @@ The square wave listens to the midi controller
   param1 = attack
   param2 = sustain
 */
-class Square : public UnitGenerator {
+class Square : public MidiUnitGenerator  {
 public:
-  Square(double p1 = 15, double p2 = 2);
+  Square(double p1 = 0.25, double p2 = 2, int sample_rate = 44100);
   ~Square();
-  // Processes a single sample in the unit generator
-  double tick(double in);
-  // casts the parameters to ints and restricts them to a certain value
   void set_params(double p1, double p2);
 };
 
@@ -94,13 +114,10 @@ The tri wave listens to the midi controller
   param1 = attack
   param2 = sustain
 */
-class Tri : public UnitGenerator {
+class Tri : public MidiUnitGenerator  {
 public:
-  Tri(double p1 = 15, double p2 = 2);
+  Tri(double p1 = 0.25, double p2 = 2, int sample_rate = 44100);
   ~Tri();
-  // Processes a single sample in the unit generator
-  double tick(double in);
-  // casts the parameters to ints and restricts them to a certain value
   void set_params(double p1, double p2);
 };
 
@@ -110,12 +127,10 @@ The saw wave listens to the midi controller
   param1 = attack
   param2 = sustain
 */
-class Saw : public UnitGenerator {
+class Saw : public MidiUnitGenerator  {
 public:
-  Saw(double p1 = 15, double p2 = 2);
+  Saw(double p1 = 0.25, double p2 = 2, int sample_rate = 44100);
   ~Saw();
-  // Processes a single sample in the unit generator
-  double tick(double in);
   void set_params(double p1, double p2);
 };
 
@@ -164,7 +179,8 @@ public:
   // Processes a single sample in the unit generator
   double tick(double in);  
 
-  // restricts parameters to range (0,1) and calculates other params
+  // restricts parameters to range (0,1) and calculates other parameters,
+  // including the rate in Hz and the max delay change
   void set_params(double p1, double p2);
 private:
   double *buffer_;
@@ -228,12 +244,19 @@ A high or low pass filter
 */
 class Filter : public UnitGenerator {
 public:
-  Filter(double p1 = 15, double p2 = 2);
+  // Makes a lowpass by default
+  Filter(double p1 = 1000, double p2 = 1);
   ~Filter();
   // Processes a single sample in the unit generator
   double tick(double in);
   // casts the parameters to ints and restricts them to a certain value
   void set_params(double p1, double p2);
+
+  // True for lowpass, False for highpass
+  void set_lowpass(bool lowpass);
+private:
+  DigitalFilter *f_;
+  bool currently_lowpass_;
 };
 
 
@@ -242,14 +265,17 @@ A second order bandpass filter
   param1 = cutoff frequency
   param2 = Q
 */
-class BandPass : public UnitGenerator {
+class Bandpass : public UnitGenerator {
 public:
-  BandPass(double p1 = 15, double p2 = 2);
-  ~BandPass();
+  Bandpass(double p1 = 1000, double p2 = 1);
+  ~Bandpass();
   // Processes a single sample in the unit generator
   double tick(double in);
   // casts the parameters to ints and restricts them to a certain value
   void set_params(double p1, double p2);
+private:
+  DigitalBandpassFilter *f_;
+
 };
 
 
@@ -297,17 +323,24 @@ private:
 
 /*
 A ring modulator. Multiplies the input by a sinusoid
-  param1 = cutoff frequency
-  param2 = Q
+  param1 = modulation frequency
+  param2 = Not used
 */
 class RingMod : public UnitGenerator {
 public:
-  RingMod(double p1 = 15, double p2 = 2);
+  static const double kMaxFreq = 5000.0;// Hz
+  static const double kMinFreq = 100;// Hz
+
+  RingMod(double p1 = .1, double p2 = 0, int sample_rate = 44100);
   ~RingMod();
   // Processes a single sample in the unit generator
   double tick(double in);
   // casts the parameters to ints and restricts them to a certain value
   void set_params(double p1, double p2);
+private:
+  int sample_count_;
+  int sample_rate_;
+  double rate_hz_;
 };
 
 

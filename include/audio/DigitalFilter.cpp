@@ -19,9 +19,7 @@ DigitalFilter::~DigitalFilter() {
 
 }
 
-//Must be overridden by subclass
-void DigitalFilter::calculate_coefficients() {  
-}
+
 
 
 //Advances the filter by a single sample, in.
@@ -201,8 +199,6 @@ void FilteredFeedbackCombFilter::change_parameters(int samples, double roomsize,
 
 
 
-
-
 //One zero, one pole approximation of an allpass filter
 //https://ccrma.stanford.edu/~jos/pasp/Freeverb_Allpass_Approximation.html
 AllpassApproximationFilter::AllpassApproximationFilter(int samples, double g): DigitalFilter(0.0, 0.0, 1.0){
@@ -232,6 +228,7 @@ complex AllpassApproximationFilter::tick(complex in){
   buf_index_ %= samples_;
   return out;    
 }
+
 
 
 // Creates a bank that is capable of holding parallel filters.

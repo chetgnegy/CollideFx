@@ -37,10 +37,12 @@ Disc::~Disc(){
   delete ugen_;
 }
 
+// Sets the color of the disc -- changes material properties
 void Disc::set_color(float r, float  g, float b){
   color_.x = r; color_.y = g; color_.z = b;
 }
 
+// Changes the image on the face of the disc
 void Disc::set_texture(int i){
   which_texture_ = i;
 }
@@ -238,7 +240,6 @@ void Disc::move(double x, double y, double z){
 void Disc::prepare_move(double x, double y, double z){
   x_offset_ = x - pos_.x;
   y_offset_ = y - pos_.y;
-  move(x,y,z);
 }
 
 //Checks if positions are within radius of center of object
@@ -258,6 +259,8 @@ void Disc::unclicked(){
   }
 }
 
+
+// Broadcasts the disc that has been selected so the menu can see it.
 void Disc::right_clicked(){
   spotlight_disc_ = this;
 }

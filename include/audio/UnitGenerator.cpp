@@ -9,33 +9,29 @@
 */
 
 #include "UnitGenerator.h"
-#include "complex.h"
 #include <iostream>//remove
-#include <algorithm>
 
-// Allows user to set the generic parameters, parameters are forced to be positive
+
+
+
+double interpolate(double *array, int length, double index);
+float interpolate(float *array, int length, double index);
+
+
+
+// #--------------Unit Generator Base Classes ----------------#
+
+
+
+// Allows user to set the generic parameters, bounds must already be set
 void UnitGenerator::set_params(double p1, double p2){
-  param1_ = p1>=0 ? p1 : 0;
-  param2_ = p2>=0 ? p2 : 0;
+  param1_ = clamp(p1);
+  param2_ = clamp(p2);
 }
 
-double UnitGenerator::interpolate(double *array, int length, double index){
-  int trunc_index = static_cast<int>(floor(index));
-  double leftover = index-1.0*trunc_index;
-  double sample_one = array[(trunc_index + length)%length];
-  double sample_two = array[(trunc_index + length + 1)%length];
-  double output = sample_one*(1-leftover) + sample_two*leftover;
-  return output;
-}
 
-float UnitGenerator::interpolate(float *array, int length, double index){
-  int trunc_index = floor(index);
-  float leftover = index-trunc_index;
-  float sample_one = array[(trunc_index + length)%length];
-  float sample_two = array[(trunc_index + length + 1)%length];
-  return sample_one*(1-leftover) + sample_two*leftover;
-}
 
+// Scales the input to the range 0 - 1
 double UnitGenerator::get_normalized_param(int param){
 if (param == 1){
     return (param1_-min_param1_)/(max_param1_ - min_param1_);
@@ -43,33 +39,77 @@ if (param == 1){
   return (param2_-min_param2_)/(max_param2_ - min_param2_);
 }
 
+// Sets the input using the range 0 - 1, requires maximum 
+// and minimum parameters to be set
 void UnitGenerator::set_normalized_param(double param1, double param2){
   set_params(
     (1-param1)*min_param1_+(param1)*max_param1_,
     (1-param2)*min_param2_+(param2)*max_param2_);
 }
 
+// Sets the bounds on the parameters of the ugen
+void UnitGenerator::set_limits(double min1, double max1, double min2, double max2){
+  min_param1_ = min1;
+  min_param2_ = min2;
+  max_param1_ = max1;
+  max_param2_ = max2;
+}
+
+// Uses the specified minimum and maximum bounds to restrict parameter to
+// valid range
+double UnitGenerator::clamp(double param_in){
+  param_in = param_in > max_param1_ ? max_param1_ : param_in;
+  return param_in < min_param1_ ? min_param1_ : param_in;
+}
 
 
 
 
+
+// Adds a single note to the instruent's play list
+void MidiUnitGenerator::play_note(int MIDI_Pitch, int velocity){
+  myCW_->play_note(MIDI_Pitch, velocity);
+}
+
+// Searches for a note of the same pitch and stops it.
+void MidiUnitGenerator::stop_note(int MIDI_Pitch){
+  myCW_->stop_note(MIDI_Pitch);
+}
+
+// Gets the next sample from the instrument
+double MidiUnitGenerator::tick(){
+  return myCW_->tick();
+}
+
+
+
+// #------------Unit Generator Inherited Classes --------------#
 
 
 
 /*
 The sine wave listens to the midi controller
-param1 = attack
-param2 = sustain
+param1 = attack (seconds)
+param2 = sustain (seconds)
 */
 
-Sine::Sine(double p1, double p2){}
-Sine::~Sine(){}
-// Processes a single sample in the unit generator
-double Sine::tick(double in){}
+Sine::Sine(double p1, double p2, int sample_rate){
+  myCW_ = new ClassicWaveform("sine", 44100);
+  set_limits(0.001, 10, 0.001, 10);
+  set_params(p1, p2);
+}
+
+Sine::~Sine(){
+  delete myCW_;
+}
+
 // casts the parameters to ints and restricts them to a certain value
-void Sine::set_params(double p1, double p2){}
-
-
+void Sine::set_params(double p1, double p2){
+  param1_ = clamp(p1);
+  param2_ = clamp(p2);
+  myCW_->set_attack(param1_);
+  myCW_->set_sustain(param2_);
+}
 
 
 
@@ -84,12 +124,22 @@ param1 = attack
 param2 = sustain
 */
 
-Square::Square(double p1, double p2){}
-Square::~Square(){}
+Square::Square(double p1, double p2, int sample_rate){
+  myCW_ = new ClassicWaveform("square", 44100);
+  set_limits(0.001, 10, 0.001, 10);
+  set_params(p1, p2);
+}
+Square::~Square(){
+  delete myCW_;
+}
 // Processes a single sample in the unit generator
-double Square::tick(double in){}
 // casts the parameters to ints and restricts them to a certain value
-void Square::set_params(double p1, double p2){}
+void Square::set_params(double p1, double p2){
+  param1_ = clamp(p1);
+  param2_ = clamp(p2);
+  myCW_->set_attack(param1_);
+  myCW_->set_sustain(param2_);
+}
 
 
 
@@ -104,15 +154,21 @@ param1 = attack
 param2 = sustain
 */
 
-Tri::Tri(double p1, double p2){}
-Tri::~Tri(){}
-// Processes a single sample in the unit generator
-double Tri::tick(double in){}
+Tri::Tri(double p1, double p2, int sample_rate){
+  myCW_ = new ClassicWaveform("tri", 44100);
+  set_limits(0.001, 10, 0.001, 10);
+  set_params(p1, p2);
+}
+Tri::~Tri(){
+  delete myCW_;
+}
 // casts the parameters to ints and restricts them to a certain value
-void Tri::set_params(double p1, double p2){}
-
-
-
+void Tri::set_params(double p1, double p2){
+  param1_ = clamp(p1);
+  param2_ = clamp(p2);
+  myCW_->set_attack(param1_);
+  myCW_->set_sustain(param2_);
+}
 
 
 
@@ -126,13 +182,21 @@ param1 = attack
 param2 = sustain
 */
 
-Saw::Saw(double p1, double p2){}
-Saw::~Saw(){}
-// Processes a single sample in the unit generator
-double Saw::tick(double in){}
-void Saw::set_params(double p1, double p2){}
-
-
+Saw::Saw(double p1, double p2, int sample_rate){
+  myCW_ = new ClassicWaveform("saw", 44100);
+  set_limits(0.001, 10, 0.001, 10);
+  set_params(p1, p2);
+}
+Saw::~Saw(){
+  delete myCW_;
+}
+// casts the parameters to ints and restricts them to a certain value
+void Saw::set_params(double p1, double p2){
+  param1_ = clamp(p1);
+  param2_ = clamp(p2);
+  myCW_->set_attack(param1_);
+  myCW_->set_sustain(param2_);
+}
 
 
 
@@ -147,11 +211,7 @@ The bitcrusher effect quantizes and downsamples the input
   param2 = downsampling factor
 */
 BitCrusher::BitCrusher(int p1, int p2){
-  min_param1_ = 1;
-  min_param2_ = 1;
-  max_param1_ = 16;
-  max_param2_ = 16;
-
+  set_limits(1, 16, 1, 16);
   set_params(p1, p2); 
   sample_ = 0;
   sample_count_ = 0;
@@ -172,10 +232,8 @@ double BitCrusher::tick(double in){
 }
 // casts the parameters to ints and restricts them to a certain value
 void BitCrusher::set_params(double p1, double p2){
-  p1 = p1 > max_param1_ ? max_param1_ : floor(p1); // bounded by 1 and 16
-  param1_ = p1 < min_param1_ ? min_param1_ : p1;  
-  p2 = p2 > max_param2_ ? max_param2_ : floor(p2); // bounded by 1 and 16
-  param2_ = p2 < min_param2_ ? min_param2_ : p2;
+  param1_ = clamp(floor(p1));
+  param2_ = clamp(floor(p2));
 }
 
 //Quantizes the double to the number of bits specified by param1
@@ -198,12 +256,7 @@ The chorus effect delays the signal by a variable amount
 */
 Chorus::Chorus(double p1, double p2, int sample_rate){
   sample_rate_ = sample_rate;
-  min_param1_ = 0.0;
-  min_param2_ = 0.0;
-  max_param1_ = 1.0;
-  max_param2_ = 1.0;
-  
-
+  set_limits(0, 1, 0, 1);
   set_params(p1, p2);
   buffer_size_ = ceil((kMaxDelay + kDelayCenter)*sample_rate_);
   
@@ -249,17 +302,15 @@ double Chorus::tick(double in){
   
   return output;
 }
-// restricts parameters to range (0,1) and calculates other params
+// restricts parameters to range (0,1) and calculates other parameters,
+// including the rate in Hz and the max delay change
 void Chorus::set_params(double p1, double p2){
-  p1 = p1 > max_param1_ ? max_param1_ : p1;
-  p1 = p1 < min_param1_ ? min_param1_ : p1;
-  param1_ = p1;
+  param1_ = clamp(p1);
   p1 = (kMaxFreq-kMinFreq) * pow( param1_, 4) + kMinFreq;
   //sets the rate of the chorusing
   rate_hz_ = 6.2831853 / (1.0 * sample_rate_) * p1;
    
-  p2 = p2 > max_param2_ ? max_param2_ : p2;
-  param2_ = p2 < min_param2_ ? min_param2_ : p2;
+  param2_ = clamp(p2);
   depth_ = kMaxDelay * param2_;
   
 }
@@ -278,11 +329,8 @@ The delay effect plays the signal back some time later
 */
 Delay::Delay(double p1, double p2, int sample_rate){
   sample_rate_ = sample_rate;
-  min_param1_ = 0;
-  min_param2_ = 0;
-  max_param1_ = 2;
-  max_param2_ = 1;
-
+  set_limits(0, 1, 0, 1);
+  
   param1_ = p1; 
   param2_ = p2;
   buffer_size_ = ceil(sample_rate_ * param1_);
@@ -309,9 +357,8 @@ double Delay::tick(double in){
 }
 
 void Delay::set_params(double p1, double p2){
-  p1 = p1 > max_param1_ ? max_param1_ : p1;
-  param1_ = p1 < min_param1_ ? min_param1_ : p1;
-  
+  param1_ = clamp(p1);
+
   //Reallocates delay buffer
   if (p1!=param1_){
     param1_ = p1;
@@ -347,8 +394,7 @@ void Delay::set_params(double p1, double p2){
     delete[] trash_buffer;
   }
   
-    p2 = p2 > max_param2_ ? max_param2_ : p2;
-    param2_ = p2 < min_param2_ ? min_param2_ : p2;
+    param2_ = clamp(p2);
   
 }
 
@@ -370,12 +416,8 @@ The distortion effect clips the input to a specified level
   param2 = clipping level
 */
 Distortion::Distortion(double p1, double p2){
-  min_param1_ = 0;
-  min_param2_ = 0;
-  max_param1_ = 20;
-  max_param2_ = 20;
+  set_limits(0, 20, 0, 20);
   set_params(p1, p2);
-  
 }
 Distortion::~Distortion(){}
 // Processes a single sample in the unit generator
@@ -390,20 +432,52 @@ double Distortion::tick(double in){
 
 
 
-
-
 /*
 A second order high or low pass filter
   param1 = cutoff frequency
   param2 = Q
 */
 
-Filter::Filter(double p1, double p2){}
-Filter::~Filter(){}
-// Processes a single sample in the unit generator
-double Filter::tick(double in){}
-void Filter::set_params(double p1, double p2){}
+Filter::Filter(double p1, double p2){
+  set_limits(100, 10000, 1, 10);
+  param1_ = p1;
+  param2_ = p2;
+  f_ = new DigitalLowpassFilter(param1_, param2_, 1);
+  f_->calculate_coefficients();
+  currently_lowpass_ = true;
+}
 
+
+Filter::~Filter(){
+  delete f_;
+}
+
+// Processes a single sample in the unit generator
+double Filter::tick(double in){
+  return f_->tick(in).re();
+}
+
+// Tells the filter to change parameters
+void Filter::set_params(double p1, double p2){
+  param1_ = clamp(p1);
+  param2_ = clamp(p2);
+  f_->change_parameters(param1_, param2_, 1);
+}
+
+// The filter can be either high or low pass.
+// True for lowpass, False for highpass
+void Filter::set_lowpass(bool lowpass){
+  if (lowpass && !currently_lowpass_){
+    delete f_;
+    f_ = new DigitalLowpassFilter(param1_, param2_, 1);
+    f_->calculate_coefficients();
+  }
+  else if (!lowpass && currently_lowpass_){
+    delete f_;
+    f_ = new DigitalHighpassFilter(param1_, param2_, 1);
+    f_->calculate_coefficients();
+  }
+}
 
 
 
@@ -417,11 +491,25 @@ param1 = cutoff frequency
 param2 = Q
 */
 
-BandPass::BandPass(double p1, double p2){}
-BandPass::~BandPass(){}
+Bandpass::Bandpass(double p1, double p2){
+  set_limits(100, 10000, 1, 10);
+  param1_ = p1;
+  param2_ = p2;
+
+  f_ = new DigitalBandpassFilter(param1_, param2_, 1);
+  f_->calculate_coefficients();
+}
+
+Bandpass::~Bandpass(){}
 // Processes a single sample in the unit generator
-double BandPass::tick(double in){}
-void BandPass::set_params(double p1, double p2){}
+double Bandpass::tick(double in){
+  return f_->tick(in).re();
+}
+void Bandpass::set_params(double p1, double p2){
+  param1_ = clamp(p1);
+  param2_ = clamp(p2);
+  f_->change_parameters(param1_, param2_, 1);
+}
 
 
 
@@ -439,21 +527,15 @@ The looper effect keeps a section of the input in a buffer and loops it back
 Looper::Looper(int sample_rate){
   //declare float buffer
   sample_rate_ = sample_rate;
-  
-  min_param1_ = 60;
-  min_param2_ = 1;
-  max_param1_ = 250;
-  max_param2_ = 60;
+  set_limits(60, 250, 1, 60);
 
   param1_ = 120;
   param2_ = 16;
   params_set_ = false;
   
-  buf_write_ =0;
-  buf_read_ = 0;
-  this_beat_ = 0;
-  buf_write_ = 0;
-  beat_count_ = 0;
+  buf_write_ =0; buf_read_ = 0;
+  this_beat_ = 0; beat_count_ = 0;
+  // Sets initial state of module
   counting_down_ = false;
   is_recording_ = false;
   has_recording_ = false;
@@ -574,14 +656,36 @@ void Looper::stop_recording(){
 
 /*
 A ring modulator. Multiplies the input by a sinusoid
-  param1 = cutoff frequency
-  param2 = Q
+  param1 = frequency
+  param2 = Not Used
 */
-RingMod::RingMod(double p1, double p2){}
+RingMod::RingMod(double p1, double p2, int sample_rate){
+  sample_rate_ = sample_rate;
+  set_limits(0, 1, 0, 1);
+  set_params(p1, p2);
+  sample_count_ = 0;
+}
+
 RingMod::~RingMod(){}
 // Processes a single sample in the unit generator
-double RingMod::tick(double in){}
-void RingMod::set_params(double p1, double p2){}
+double RingMod::tick(double in){
+  double out = in * sin(rate_hz_ * sample_count_);
+  //Wrap variables to prevent out-of-bounds/overflow
+  ++sample_count_;
+  if (rate_hz_ * sample_count_ > 6.2831853) {
+    sample_count_ = fmod(sample_count_, 6.2831853/rate_hz_);
+  }
+  return out;
+}
+
+void RingMod::set_params(double p1, double p2){
+  param1_ = clamp(p1);
+  param2_ = clamp(p2);
+  // Non linear scaling
+  p1 = (kMaxFreq - kMinFreq) * pow( param1_, 4) + kMinFreq;
+  //sets the rate of the tremolo
+  rate_hz_ = 6.2831853 / (1.0 * sample_rate_) * p1;
+}
 
 
 
@@ -600,10 +704,8 @@ const int Reverb::kCombDelays[] = {1116,1188,1356,1277,1422,1491,1617,1557};
 const int Reverb::kAllPassDelays[] = {225, 556, 441, 341};
 
 Reverb::Reverb(double p1, double p2){
-  min_param1_ = 0;
-  min_param2_ = 0;
-  max_param1_ = 1;
-  max_param2_ = 1;
+  set_limits(0, 1, 0, 1);
+  
 
   param1_ = p1;
   param2_ = p2;
@@ -642,16 +744,12 @@ double Reverb::tick(double in){
     sample = (*it)->tick(sample);
     ++it;
   }
-  
   return sample.re();
 }  
 
 void Reverb::set_params(double p1, double p2){
-  p1 = p1 > max_param1_ ? max_param1_ : p1;
-  param1_ = p1 < min_param1_ ? min_param1_ : p1;
-  
-  p2 = p2 > max_param2_ ? max_param2_ : p2;
-  param2_ = p2 < min_param2_ ? min_param2_ : p2;
+  param1_ = clamp(p1);
+  param2_ = clamp(p2);
   
   int i = 0;
   std::list<DigitalFilter *>::iterator it;
@@ -671,9 +769,6 @@ void Reverb::set_params(double p1, double p2){
 
 
 
-
-
-
 /*
 The Tremolo effect modulates the amplitude of the signal
   param1 = rate
@@ -681,15 +776,9 @@ The Tremolo effect modulates the amplitude of the signal
 */
 Tremolo::Tremolo(double p1, double p2, int sample_rate){
   sample_rate_ = sample_rate;
-  min_param1_ = 0;
-  min_param2_ = 0;
-  max_param1_ = 1;
-  max_param2_ = 1;
-
-
+  set_limits(0, 1, 0, 1);
   set_params(p1, p2);
   sample_count_ = 0;
-  mix_ = .5;
 
 }  
 Tremolo::~Tremolo(){}
@@ -705,14 +794,40 @@ double Tremolo::tick(double in){
 }
 // restricts parameters to range (0,1) and calculates other params
 void Tremolo::set_params(double p1, double p2){
-  p1 = p1 > 1 ? 1 : p1;
-  p1 = p1 < 0 ? 0 : p1;
-  param1_ = p1;
-  p1 = (kMaxFreq-kMinFreq) * pow( param1_, 4) + kMinFreq;
+  param1_ = clamp(p1);
+  param2_ = clamp(p2);
+  // Non linear scaling
+  p1 = (kMaxFreq - kMinFreq) * pow( param1_, 4) + kMinFreq;
   //sets the rate of the tremolo
   rate_hz_ = 6.2831853 / (1.0 * sample_rate_) * p1;
   
-  p2 = p2 > 1 ? 1 : p2;
-  param2_ = p2 < 0? 0 : p2;
-  
 }
+
+
+
+
+
+// #-------Useful functions for sound buffer operations --------#
+
+
+
+
+// Gets the interpolated value between two samples of array
+double interpolate(double *array, int length, double index){
+  int trunc_index = static_cast<int>(floor(index));
+  double leftover = index-1.0*trunc_index;
+  double sample_one = array[(trunc_index + length)%length];
+  double sample_two = array[(trunc_index + length + 1)%length];
+  double output = sample_one*(1-leftover) + sample_two*leftover;
+  return output;
+}
+
+// Gets the interpolated value between two samples of array
+float interpolate(float *array, int length, double index){
+  int trunc_index = floor(index);
+  float leftover = index-trunc_index;
+  float sample_one = array[(trunc_index + length)%length];
+  float sample_two = array[(trunc_index + length + 1)%length];
+  return sample_one*(1-leftover) + sample_two*leftover;
+}
+

@@ -28,7 +28,7 @@ Moveable *clicked;
 bool valid_clicked;
 long time_now;
 struct timeval timer; 
-float distance = -20.0;
+float z_distance = -20.0;
 float scale = .45;
 
 Graphics::Graphics(int w, int h){
@@ -159,7 +159,7 @@ void display() {
   glPushMatrix();
   
   //The world scaling that is applied to everything.
-  glTranslatef(0, 0, distance);
+  glTranslatef(0, 0, z_distance);
   glScalef(scale,scale,scale);
   
   double w,x,y,z;
@@ -214,15 +214,18 @@ void mouse(int button, int state, int x, int y) {
           std::list<Moveable *>::iterator it;
           it = Graphics::move_list_.begin();
           while (it != Graphics::move_list_.end()) {
-            if ((*it)->check_clicked(coordX, coordY, -distance)){
+            if ((*it)->check_clicked(coordX, coordY, -z_distance)){
+                // Found the right object under the cursor
                 valid_clicked = true;
                 clicked = *it;
-                clicked->prepare_move(coordX, coordY, -distance);
+                clicked->prepare_move(coordX, coordY, -z_distance);
+                clicked->move(coordX, coordY, -z_distance);
                 break;
             } ++it;
           }
         }
       } else {
+        // Object is no longer clicked
         if (valid_clicked) clicked->unclicked();
         valid_clicked = false;
         clicked = NULL;
@@ -236,7 +239,7 @@ void mouse(int button, int state, int x, int y) {
           std::list<Moveable *>::iterator it;
           it = Graphics::move_list_.begin();
           while (it != Graphics::move_list_.end()) {
-            if ((*it)->check_clicked(coordX, coordY, -distance)){
+            if ((*it)->check_clicked(coordX, coordY, -z_distance)){
                 (*it)->right_clicked();
                 break;
             } ++it;
@@ -253,7 +256,7 @@ void mouseMotion(int x, int y){
     double oX, oY;
     recoverClick(x,y, oX, oY); 
     if (valid_clicked){
-      clicked->move(oX, oY, -distance);
+      clicked->move(oX, oY, -z_distance);
     }
     glutPostRedisplay();
 }
@@ -274,7 +277,7 @@ void recoverClick(int iX, int iY, double &oX, double &oY){
 
   // This is a little bit hacky. The top of the discs is .5 above the board. 
   //This offset keeps the mouse in the plane of the top of the disc.
-  GLfloat t = (posZ1 - distance - 0.5) / (posZ1 - posZ2);
+  GLfloat t = (posZ1 - z_distance - 0.5) / (posZ1 - posZ2);
 
   // so here are the desired (x, y) coordinates
   oX = (posX1 + (posX2 - posX1) * t) / scale;

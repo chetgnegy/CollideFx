@@ -29,12 +29,15 @@ public:
   // Cleans up the unit generator
   ~Disc();
   
+  // Sets the color of the disc -- changes material properties
   void set_color(float r, float g, float b);
 
   double get_radius(){return r_;} 
 
+  // Changes the image on the face of the disc
   void set_texture(int i);
 
+  // Changes the color scheme of any orbs that are created
   void delegate_orb_color_scheme(int color_scheme){
     orb_color_scheme_ = color_scheme;
   }
@@ -121,7 +124,7 @@ public:
 
   static Disc *spotlight_disc_;
 private:
-
+  // Reads in a bitmap file and uses it as a texture.
   GLuint loadTextureFromFile( const char * filename );
 
   UnitGenerator *ugen_;

@@ -57,6 +57,7 @@ public:
   // disc that is being moved/created.
   void unclicked();
 
+  // The menu doesn't do anything when right clicked.
   void right_clicked(){}
 
 private:

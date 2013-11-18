@@ -45,7 +45,9 @@ void Menu::draw(){
   glPopAttrib();
   glTranslatef(0,-9,0);
 
-  // Checks to see if disc was JUST clicked
+
+  // Checks to see if disc was JUST clicked, sets initial
+  // slider positions
   if (Disc::spotlight_disc_ != NULL && slider_initial_){
     slider1_ = Disc::spotlight_disc_->get_ugen_params(1);
     slider2_ = Disc::spotlight_disc_->get_ugen_params(2);
@@ -147,7 +149,6 @@ void Menu::prepare_move(double x, double y, double z){
     new_disc_->set_location(x,y);
     new_disc_->prepare_move(x,y,z);
   }
-  move(x,y,z);
 }
 
 // Checks to see if the mouse is within the bounds of the menu
@@ -289,18 +290,24 @@ void Menu::handle_click(int x, int y){
     }
   }
   else {
+    // UP ARROW BUTTON
     if (inSquare(x - 16, y, x_arrow_but, y_up_but, sm_but_size)){
       std::cout << "Clicked Up" << std::endl; return;
     }
+    // DOWN ARROW BUTTON
     if (inSquare(x - 16, y, x_arrow_but, y_down_but, sm_but_size)){
       std::cout << "Clicked Down" << std::endl; return;
     }
+    // CTRL BUTTON
     if (inSquare(x - 16, y, x_pane_but, y_up_but, sm_but_size)){
       std::cout << "Clicked CTRL" << std::endl; ctrl_menu_shown_ = true; return;
     }
+    // FFT BUTTON
     if (inSquare(x - 16, y, x_pane_but, y_down_but, sm_but_size)){
       std::cout << "Clicked FFT" << std::endl; ctrl_menu_shown_ = false; return;
     }
+
+    // DELETE BUTTON
     if (inSquare(x - 16, y, x_pane_but, y_trash, sm_but_size)){
       if (Disc::spotlight_disc_ != NULL){
         while(Disc::spotlight_disc_->orb_abandon()){}
@@ -312,7 +319,7 @@ void Menu::handle_click(int x, int y){
       }
       return;
     }
-    //Clicked a slider?
+    // PARAMETER SLIDER
     if (x > x_slider && x < x_slider + slider_length && Disc::spotlight_disc_ != NULL){
       if (abs(y - y_slider1) < 30){
         slider1_clicked_ = true;
@@ -408,7 +415,7 @@ void Menu::make_disc(int button){
 
     // Bandpass
     case 205: 
-      new_disc_ = new Disc(new BandPass(), rad, true);
+      new_disc_ = new Disc(new Bandpass(), rad, true);
       new_disc_->set_color(0.5, 0.5, 0.5);
       new_disc_->set_texture(10);
       break;
