@@ -45,37 +45,76 @@ void Menu::draw(){
   glPopAttrib();
   glTranslatef(0,-9,0);
 
+  if (ctrl_menu_shown_){
 
-  // Checks to see if disc was JUST clicked, sets initial
-  // slider positions
-  if (Disc::spotlight_disc_ != NULL && slider_initial_){
-    slider1_ = Disc::spotlight_disc_->get_ugen_params(1);
-    slider2_ = Disc::spotlight_disc_->get_ugen_params(2);
-    last_disc_ = Disc::spotlight_disc_;
-    slider_initial_ = false; 
-  }
-  // Disc just unclicked
-  if (Disc::spotlight_disc_ != last_disc_){
-    slider_initial_ = true;
-    show_slider_ = false;
-  }
+    // Checks to see if disc was JUST clicked, sets initial
+    // slider positions
+    if (Disc::spotlight_disc_ != NULL && slider_initial_){
+      slider1_ = Disc::spotlight_disc_->get_ugen_params(1);
+      slider2_ = Disc::spotlight_disc_->get_ugen_params(2);
+      last_disc_ = Disc::spotlight_disc_;
+      slider_initial_ = false; 
+    }
+    // Disc just unclicked
+    if (Disc::spotlight_disc_ != last_disc_){
+      slider_initial_ = true;
+      show_slider_ = false;
+    }
 
-  // Disc clicked, show slider
-  if (Disc::spotlight_disc_ != NULL || show_slider_){
-    glPushMatrix();
-      //move down to first slider location
-      glTranslatef(-7 + slider1_ * 13.5, 0, 0);
-      glutSolidSphere(.6,20,20);
-      glPopMatrix();
-    glPushMatrix();
-      //move down to second slider location
-      glTranslatef(-7 + slider2_ * 13.5, 0, 0);
-      glTranslatef(0,-3.68,0);
-      glutSolidSphere(.6,20,20);
-      glPopMatrix();
+ 
+    // Disc clicked, show slider
+    if (Disc::spotlight_disc_ != NULL || show_slider_){
+      double text_x = -2.125;
+      glPushMatrix();
+        glTranslatef(text_x, 5, 0);
+        draw_text(Disc::spotlight_disc_->get_ugen()->name(), true);
+        glPopMatrix();
+
+      glPushMatrix();
+        glPushMatrix();
+          glTranslatef(text_x, 2.25, 0);
+          draw_text(Disc::spotlight_disc_->get_ugen()->p_name(1), false);
+          glPopMatrix();
+        //move down to first slider location
+        glTranslatef(-7 + slider1_ * 13.5, 0, 0);
+        glutSolidSphere(.6,20,20);
+        glPopMatrix();
+      glPushMatrix();
+        //move down to second slider location
+        glPushMatrix();
+          glTranslatef(text_x, -1.5, 0);
+          draw_text(Disc::spotlight_disc_->get_ugen()->p_name(2), false);
+          glPopMatrix();
+        glTranslatef(-7 + slider2_ * 13.5, 0, 0);
+        glTranslatef(0,-3.68,0);
+        glutSolidSphere(.6,20,20);
+        glPopMatrix();
+    }
+
   }
+    
 }
 
+//check this out... maybe replace with single function and no shift?
+
+
+// Writes words to the screen
+void Menu::draw_text(const char * p, bool large){
+  glPushMatrix();
+  glRasterPos2f(-5.0f, -3.5f);
+  if (large){
+    for (p; *p; p++){
+      glutBitmapCharacter(GLUT_BITMAP_9_BY_15, *p);
+    }
+  }
+  else {
+    for (p; *p; p++){
+      glutBitmapCharacter(GLUT_BITMAP_8_BY_13, *p);
+    }
+  }
+  glPopMatrix();
+
+}
 // Shifts the menu into the left side of the screen
 void Menu::get_origin(double &x, double &y, double &z){
   x=kXShift; y=0; z=0;
@@ -167,11 +206,20 @@ bool Menu::check_clicked(double x, double y, double z){
 void Menu::unclicked(){
   if (valid_disc_){
   
-    if(Physics::is_clear_area(new_disc_->pos_.x,new_disc_->pos_.y, new_disc_->get_radius()))
-    { // unclicks the disc, a new disc is finalized!
+    if(Physics::is_clear_area(new_disc_->pos_.x,new_disc_->pos_.y, new_disc_->get_radius())){ 
+    // unclicks the disc, a new disc is finalized!
       new_disc_->unclicked();
+
+
+      // Add disc to the graph! 
+      // Functions do internal type checking
+      if (graph_->add_effect(new_disc_)){}
+      else if (graph_->add_midi_ugen(new_disc_)){}
+      else if (graph_->add_input(new_disc_)){}
+          
     }
     else{
+      // Remove the disc from the world
       Graphics::remove_drawable(new_disc_);
       Graphics::remove_moveable(new_disc_);
       Physics::take_physics(new_disc_);
@@ -311,11 +359,11 @@ void Menu::handle_click(int x, int y){
     if (inSquare(x - 16, y, x_pane_but, y_trash, sm_but_size)){
       if (Disc::spotlight_disc_ != NULL){
         while(Disc::spotlight_disc_->orb_abandon()){}
-        std::cout << "Remember to remove deleted discs from the UGenChain, too." << std::endl;
         Graphics::remove_drawable(Disc::spotlight_disc_);
         Graphics::remove_moveable(Disc::spotlight_disc_);
         Physics::take_physics(Disc::spotlight_disc_);
-        delete Disc::spotlight_disc_;
+        // This also deletes the disc
+        graph_->remove_disc(Disc::spotlight_disc_);
         Disc::spotlight_disc_ = NULL;
       }
       return;
@@ -338,8 +386,8 @@ void Menu::handle_click(int x, int y){
 
 
 // Links the menu to the audio module
-void Menu::link_ugen_chain(UGenChain *u){
-  chain_= u;
+void Menu::link_ugen_graph(UGenGraphBuilder *gb){
+  graph_= gb;
 }
 
 
@@ -355,7 +403,6 @@ void Menu::make_disc(int button){
           new_disc_->set_color(0.5, 0.5, 0.5);
           new_disc_->set_texture(0);
           new_disc_->delegate_orb_color_scheme(0);
-          chain_->add_input(new InputUGenNode(u_input, &new_disc_->pos_));
           break;
           }
     // Sine 
@@ -365,9 +412,8 @@ void Menu::make_disc(int button){
           new_disc_->set_color(0.9, 0.9, 0.3);
           new_disc_->set_texture(1);
           new_disc_->delegate_orb_color_scheme(6);
-          chain_->add_midi_ugen(new MidiUGenNode(u_sine, &new_disc_->pos_));
-          break;}
-
+          break;
+    }
     // Square
     case 102: {
           Square *u_square = new Square();
@@ -375,9 +421,8 @@ void Menu::make_disc(int button){
           new_disc_->set_color(0.3, 0.9, 0.9);
           new_disc_->set_texture(2);
           new_disc_->delegate_orb_color_scheme(2);
-          chain_->add_midi_ugen(new MidiUGenNode(u_square, &new_disc_->pos_));
-          break;}
-
+          break;
+    }
     // Tri
     case 103: {
           Tri *u_tri = new Tri();
@@ -385,7 +430,6 @@ void Menu::make_disc(int button){
           new_disc_->set_color(0.9, 0.9, 0.3);
           new_disc_->set_texture(3);
           new_disc_->delegate_orb_color_scheme(3);
-          chain_->add_midi_ugen(new MidiUGenNode(u_tri, &new_disc_->pos_));
           break; 
     }
     // Saw
@@ -395,7 +439,6 @@ void Menu::make_disc(int button){
           new_disc_->set_color(0.9, 0.3, 0.9);
           new_disc_->set_texture(4);
           new_disc_->delegate_orb_color_scheme(4);
-          chain_->add_midi_ugen(new MidiUGenNode(u_saw, &new_disc_->pos_));
           break;
     }
     // BitCrusher
@@ -404,16 +447,14 @@ void Menu::make_disc(int button){
           new_disc_ = new Disc(u_bc, rad, true);
           new_disc_->set_color(0.3, 0.9, 0.3);
           new_disc_->set_texture(5);
-          chain_->add_effect(new FxUGenNode(u_bc, &new_disc_->pos_));
           break; 
-        }
+    }
     // Chorus
     case 201: {
           Chorus *u_chorus = new Chorus();
           new_disc_ = new Disc(u_chorus, rad, true);
           new_disc_->set_color(0.3, 0.6, 0.9);
           new_disc_->set_texture(6);
-          chain_->add_effect(new FxUGenNode(u_chorus, &new_disc_->pos_));
           break; 
     }
     // Delay
@@ -422,7 +463,6 @@ void Menu::make_disc(int button){
           new_disc_ = new Disc(u_delay, rad, true);
           new_disc_->set_color(0.7, 0.7, 0.3);
           new_disc_->set_texture(7);
-          chain_->add_effect(new FxUGenNode(u_delay, &new_disc_->pos_));
           break; 
     }
     // Distortion
@@ -431,7 +471,6 @@ void Menu::make_disc(int button){
           new_disc_ = new Disc(u_dist, rad, true);
           new_disc_->set_color(0.9, 0.6, 0.3);
           new_disc_->set_texture(8);
-          chain_->add_effect(new FxUGenNode(u_dist, &new_disc_->pos_));
           break; 
     }
     // Filter
@@ -440,7 +479,6 @@ void Menu::make_disc(int button){
           new_disc_ = new Disc(u_filt, rad, true);
           new_disc_->set_color(0.7, 0.7, 0.7);
           new_disc_->set_texture(9);
-          chain_->add_effect(new FxUGenNode(u_filt, &new_disc_->pos_));
           break; 
     }
     // Bandpass
@@ -449,7 +487,6 @@ void Menu::make_disc(int button){
           new_disc_ = new Disc(u_bp, rad, true);
           new_disc_->set_color(0.5, 0.5, 0.5);
           new_disc_->set_texture(10);
-          chain_->add_effect(new FxUGenNode(u_bp, &new_disc_->pos_));
           break;
     }
     // Looper 
@@ -459,7 +496,6 @@ void Menu::make_disc(int button){
           new_disc_->set_color(0.9, 0.0, 0.0);
           new_disc_->set_texture(11);
           new_disc_->delegate_orb_color_scheme(1);
-          chain_->add_effect(new FxUGenNode(u_loop, &new_disc_->pos_));
           break;
     }
     // RingMod 
@@ -468,7 +504,6 @@ void Menu::make_disc(int button){
           new_disc_ = new Disc(u_rm, rad, true);
           new_disc_->set_color(0.9, 0.0, 0.7);
           new_disc_->set_texture(12);
-          chain_->add_effect(new FxUGenNode(u_rm, &new_disc_->pos_));
           break; 
     }
     // Reverb
@@ -477,7 +512,6 @@ void Menu::make_disc(int button){
           new_disc_ = new Disc(u_rev, rad, true);
           new_disc_->set_color(0.7, 0.0, 0.9);
           new_disc_->set_texture(13);
-          chain_->add_effect(new FxUGenNode(u_rev, &new_disc_->pos_));
           break; 
     }
     // Tremolo
@@ -486,9 +520,8 @@ void Menu::make_disc(int button){
           new_disc_ = new Disc(u_trem, rad, true);
           new_disc_->set_color(0.0, 0.6, 0.6);
           new_disc_->set_texture(14);
-          chain_->add_effect(new FxUGenNode(u_trem, &new_disc_->pos_));
           break; }
-  }
+    }
   
   valid_disc_ = true;
   // Add the disc to the front of the list. It will speed deletion times

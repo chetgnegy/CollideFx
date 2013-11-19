@@ -28,7 +28,7 @@ Disc::Disc(UnitGenerator *u, double radius, bool ghost, int initial_orbs, int ma
   maintain_orbs_ = maintain_orbs;
   color_ = Vector3d(0,0,1);
   ghost_ = ghost;
-  which_texture_ = 0;
+  which_texture_ = -1;
   orb_color_scheme_ = 0;
 }
 
@@ -147,17 +147,19 @@ void Disc::draw(){
     
     // Prepare attributes for top face
     glPushAttrib(GL_ALL_ATTRIB_BITS);
-    glEnable(GL_BLEND);
-    glShadeModel(GL_FLAT);
-    glDepthMask(GL_TRUE);  // disable writes to Z-Buffer
-    glDisable(GL_DEPTH_TEST);  // disable depth-testing
-    glEnable(GL_TEXTURE_2D);
-    glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-    glBindTexture(GL_TEXTURE_2D, tex_[which_texture_]);
-    glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
+    if (which_texture_>=0){
+      glEnable(GL_BLEND);
+      glShadeModel(GL_FLAT);
+      glDepthMask(GL_TRUE);  // disable writes to Z-Buffer
+      glDisable(GL_DEPTH_TEST);  // disable depth-testing
+      glEnable(GL_TEXTURE_2D);
+      glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+      glBindTexture(GL_TEXTURE_2D, tex_[which_texture_]);
+      glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    }
     // Draw top design
     gluDisk(quadratic,0.0f,1.0f,res,res);
+
     glPopAttrib();
 
     glPopMatrix();

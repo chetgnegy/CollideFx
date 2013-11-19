@@ -26,7 +26,7 @@ public:
   static const double kWallThickness = 0.02;
   static const int kNumParticles = 5;
   static const int kNumLines = 15;
-  static const double kAnimationFrequency = .25;
+  static const double kAnimationFrequency = 0.25;
   
   // Creates the world
   World(double sx, double sy, double x, double y);

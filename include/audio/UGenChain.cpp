@@ -18,7 +18,7 @@ bool UGenChain::midi_initialized_ = false;
 // which in turn hands them off to any midi modules that may have been created 
 void midiCallback( double dt, std::vector< unsigned char > *message, void *data )
 {
-    UGenChain *chain = (UGenChain *) data;
+    UGenGraphBuilder *graph = (UGenGraphBuilder *) data;
     unsigned int nBytes = message->size();
 
     // if a NoteOn message is received, pluck the string
@@ -26,7 +26,8 @@ void midiCallback( double dt, std::vector< unsigned char > *message, void *data 
     {
       int MIDI_pitch = static_cast<int>(message->at(1));
       int veloctiy = static_cast<int>(message->at(2));
-      chain->handoff_midi(MIDI_pitch, veloctiy);
+      graph->handoff_midi(MIDI_pitch, veloctiy);
+      graph->print_all();
     }
 }
 
@@ -38,23 +39,23 @@ int audioCallback(void *outputBuffer, void *inputBuffer, unsigned int num_frames
   double *input_buffer = (double *) inputBuffer;
   double *output_buffer = (double *) outputBuffer;
   
-  UGenChain *chain = (UGenChain *) data;
+  UGenGraphBuilder *graph = (UGenGraphBuilder *) data;
   int numChannels = UGenChain::kNumChannels;
   
 
   double newVal = 0, lastVal;
   for (unsigned int i = 0; i < num_frames; ++i) {
     // Pass sample to the inputs of the UGenChain
-    chain->handoff_audio(input_buffer[i] / UGenChain::kMaxOutput);
+    graph->handoff_audio(input_buffer[i] / UGenChain::kMaxOutput);
 
-    newVal = chain->tick();
+    newVal = graph->tick();
  
     //Output limiting
     /*
     if (fabs(newVal) > 1.001) newVal = lastVal;
     else lastVal = newVal;
     */
-    output_buffer[i * numChannels] =  newVal;
+    output_buffer[i * numChannels] = newVal;
   }
   
   //Fills the other channels
@@ -75,6 +76,7 @@ int audioCallback(void *outputBuffer, void *inputBuffer, unsigned int num_frames
 
 //Creates all structures. You still need to call initialize()!
 UGenChain::UGenChain(){
+  graph_builder_ = new UGenGraphBuilder();
   anti_aliasing_ = new DigitalLowpassFilter(10000, 1, 1);
   low_pass_ = new DigitalHighpassFilter(10, 1, 1);
 }
@@ -84,15 +86,7 @@ UGenChain::~UGenChain(){
   //Make sure we close things gracefully
   stop_audio();
   
-  /*
-  std::list<UnitGenerator *>::iterator list_iterator;
-  list_iterator = chain_.begin();
-  //Deletes all filters
-  while (chain_.size() > 0 && list_iterator != chain_.end()) {
-    delete (*list_iterator);
-    ++list_iterator;
-  }
-  */
+  delete graph_builder_;
   delete anti_aliasing_;
   delete low_pass_;  
   delete midi_;
@@ -127,7 +121,13 @@ int UGenChain::initialize_audio(){
     unsigned int buffer_frames = kBufferFrames;
     RtAudioFormat format = kFormat;
     // Tells the audio stream how to open and what callback to use
-    adac_->openStream(&output_params, &input_params, format, sample_rate, &buffer_frames, &audioCallback, (void *) this, &options_);
+    adac_->openStream(&output_params, 
+                      &input_params, format, 
+                      sample_rate, 
+                      &buffer_frames, 
+                      &audioCallback, 
+                      (void *) this->graph_builder_, 
+                      &options_);
      // opens the audio buffer
     adac_->startStream();
   } catch (RtError& e) {
@@ -153,7 +153,7 @@ int UGenChain::initialize_midi(){
   }
 
   midi_->openPort(0);
-  midi_->setCallback( &midiCallback, (void *)this);
+  midi_->setCallback( &midiCallback, (void *) this->graph_builder_);
   // Don't ignore sysex, timing, or active sensing messages.
   midi_->ignoreTypes(false, false, false);
   midi_initialized_ = true;
@@ -171,63 +171,23 @@ void UGenChain::stop_audio(){
 }
   
 
-// Passes any midi notes the MidiUnitGenerators. Decides using the
-// value of velocity whether the event is a note on or a note off
-void UGenChain::handoff_midi(int MIDI_pitch, int velocity){
-  int i = 0;
-  //Process each effect in chain
-  while (i < midi_modules_.size()) {
-    // Stops the note
-    if (velocity == 0){
-      midi_modules_.at(i)->first->stop_note(MIDI_pitch);
-    }
-    // Starts the note
-    else{
-      midi_modules_.at(i)->first->play_note(MIDI_pitch, velocity);
-    }
-    ++i;
-  }
-}
-
-// Passes any audio samples to the Input ugens. 
-void UGenChain::handoff_audio(double sample){
-  int i = 0;
-  //Process each effect in chain
-  while (i < inputs_.size()) {
-    inputs_.at(i)->first->set_sample( sample );
-    ++i;
-  }
-}
-
-
 // Process the next sample in the UGenChain
 double UGenChain::tick(){
 
-  // I don't know what to do here yet...
+  graph_builder_->rebuild();
+  double output = 0;
+  output = graph_builder_->tick();
 
   //Filters the signal to remove HF and DC components
-  double output = 0;
   low_pass_->tick(output);
   anti_aliasing_->tick(low_pass_->most_recent_sample());
   return anti_aliasing_->most_recent_sample().re();
 }
 
 
-// Adds a unit generator to the signal chain
-void UGenChain::add_effect(FxUGenNode *ugen){
-  chain_.push_back(ugen);
-}
-
-// Adds midi unit generator to a list of objects that must be checked
-// when new midi event is created
-void UGenChain::add_input(InputUGenNode *input){
-  inputs_.push_back(input);
-}
-
-// Adds midi unit generator to a list of objects that must be checked
-// when new midi event is created
-void UGenChain::add_midi_ugen(MidiUGenNode *mugen){
-  midi_modules_.push_back(mugen);
+// Returns the interconnects of unit generators
+UGenGraphBuilder *UGenChain::get_signal_graph(){
+  return graph_builder_;
 }
 
 // Check to see if the audio and midi has been set up properly

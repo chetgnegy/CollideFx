@@ -9,18 +9,12 @@
 */
 
 #include "UnitGenerator.h"
-#include <iostream>//remove
-
-
-
 
 double interpolate(double *array, int length, double index);
 float interpolate(float *array, int length, double index);
 
 
-
 // #--------------Unit Generator Base Classes ----------------#
-
 
 
 // Allows user to set the generic parameters, bounds must already be set
@@ -94,6 +88,9 @@ param2 = sustain (seconds)
 */
 
 Sine::Sine(double p1, double p2, int sample_rate){
+  name_ = "Sine";
+  param1_name_ = "Attack";
+  param2_name_ = "Sustain";
   myCW_ = new ClassicWaveform("sine", 44100);
   set_limits(0.001, 10, 0.001, 10);
   set_params(p1, p2);
@@ -125,6 +122,9 @@ param2 = sustain
 */
 
 Square::Square(double p1, double p2, int sample_rate){
+  name_ = "Square";
+  param1_name_ = "Attack";
+  param2_name_ = "Sustain";
   myCW_ = new ClassicWaveform("square", 44100);
   set_limits(0.001, 10, 0.001, 10);
   set_params(p1, p2);
@@ -155,6 +155,9 @@ param2 = sustain
 */
 
 Tri::Tri(double p1, double p2, int sample_rate){
+  name_ = "Tri";
+  param1_name_ = "Attack";
+  param2_name_ = "Sustain";
   myCW_ = new ClassicWaveform("tri", 44100);
   set_limits(0.001, 10, 0.001, 10);
   set_params(p1, p2);
@@ -183,6 +186,9 @@ param2 = sustain
 */
 
 Saw::Saw(double p1, double p2, int sample_rate){
+  name_ = "Saw";
+  param1_name_ = "Attack";
+  param2_name_ = "Sustain";
   myCW_ = new ClassicWaveform("saw", 44100);
   set_limits(0.001, 10, 0.001, 10);
   set_params(p1, p2);
@@ -211,6 +217,9 @@ The bitcrusher effect quantizes and downsamples the input
   param2 = downsampling factor
 */
 BitCrusher::BitCrusher(int p1, int p2){
+  name_ = "BitCrusher";
+  param1_name_ = "Bits";
+  param2_name_ = "Downsampling Factor";
   set_limits(1, 16, 1, 16);
   set_params(p1, p2); 
   sample_ = 0;
@@ -255,6 +264,9 @@ The chorus effect delays the signal by a variable amount
   param2 = depth of the chorus effect
 */
 Chorus::Chorus(double p1, double p2, int sample_rate){
+  name_ = "Chorus";
+  param1_name_ = "Rate";
+  param2_name_ = "Depth";
   sample_rate_ = sample_rate;
   set_limits(0, 1, 0, 1);
   set_params(p1, p2);
@@ -328,6 +340,9 @@ The delay effect plays the signal back some time later
   param2 = amount of feedback in delay buffer
 */
 Delay::Delay(double p1, double p2, int sample_rate){
+  name_ = "Delay";
+  param1_name_ = "Time";
+  param2_name_ = "Feedback";
   sample_rate_ = sample_rate;
   set_limits(0, 1, 0, 1);
   
@@ -416,6 +431,9 @@ The distortion effect clips the input to a specified level
   param2 = clipping level
 */
 Distortion::Distortion(double p1, double p2){
+  name_ = "Distortion";
+  param1_name_ = "Pre-gain";
+  param2_name_ = "Post-gain";
   set_limits(0, 20, 0, 20);
   set_params(p1, p2);
 }
@@ -439,6 +457,9 @@ A second order high or low pass filter
 */
 
 Filter::Filter(double p1, double p2){
+  name_ = "Filter";
+  param1_name_ = "Cutoff Frequency";
+  param2_name_ = "Q";
   set_limits(100, 10000, 1, 10);
   param1_ = p1;
   param2_ = p2;
@@ -492,6 +513,9 @@ param2 = Q
 */
 
 Bandpass::Bandpass(double p1, double p2){
+  name_ = "Bandpass";
+  param1_name_ = "Cutoff Frequency";
+  param2_name_ = "Q";
   set_limits(100, 10000, 1, 10);
   param1_ = p1;
   param2_ = p2;
@@ -525,6 +549,9 @@ The looper effect keeps a section of the input in a buffer and loops it back
   param2 = number of beats
 */
 Looper::Looper(int sample_rate){
+  name_ = "Looper";
+  param1_name_ = "BPM";
+  param2_name_ = "Number of Beats";
   //declare float buffer
   sample_rate_ = sample_rate;
   set_limits(60, 250, 1, 60);
@@ -660,6 +687,9 @@ A ring modulator. Multiplies the input by a sinusoid
   param2 = Not Used
 */
 RingMod::RingMod(double p1, double p2, int sample_rate){
+  name_ = "RingMod";
+  param1_name_ = "Frequency";
+  param2_name_ = "Not Used";
   sample_rate_ = sample_rate;
   set_limits(0, 1, 0, 1);
   set_params(p1, p2);
@@ -704,6 +734,9 @@ const int Reverb::kCombDelays[] = {1116,1188,1356,1277,1422,1491,1617,1557};
 const int Reverb::kAllPassDelays[] = {225, 556, 441, 341};
 
 Reverb::Reverb(double p1, double p2){
+  name_ = "Reverb";
+  param1_name_ = "Room Size";
+  param2_name_ = "Damping";
   set_limits(0, 1, 0, 1);
   
 
@@ -775,6 +808,9 @@ The Tremolo effect modulates the amplitude of the signal
   param2 = depth
 */
 Tremolo::Tremolo(double p1, double p2, int sample_rate){
+  name_ = "Tremolo";
+  param1_name_ = "Rate";
+  param2_name_ = "Depth";
   sample_rate_ = sample_rate;
   set_limits(0, 1, 0, 1);
   set_params(p1, p2);

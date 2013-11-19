@@ -64,8 +64,11 @@ public:
   // Sets instantaneous velocity of the disc
   void set_velocity(double x, double y);
 
+  UnitGenerator *get_ugen(){ return ugen_; }
+
   // Forwards request for parameter values
   double get_ugen_params(int param);
+
   void set_ugen_params(double param1, double param2);
   
   /* ----- Drawable ----- */
@@ -123,6 +126,8 @@ public:
   Vector3d external_torques();
 
   static Disc *spotlight_disc_;
+
+
 private:
   // Reads in a bitmap file and uses it as a texture.
   GLuint loadTextureFromFile( const char * filename );

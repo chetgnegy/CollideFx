@@ -13,6 +13,7 @@
 
 
 #include <cmath>
+#include <string.h>
 #include <list>
 #include <algorithm>
 #include "ClassicWaveform.h"
@@ -36,7 +37,11 @@ public:
 
   // Can things lead into is unit generator or is it the first
   // in the chain?
-  bool is_input();
+  virtual bool is_input() = 0;
+  virtual bool is_midi() = 0;
+
+  const char * name() { return name_;}
+  const char * p_name(int i) {return i==1 ? param1_name_ : param2_name_;}
 protected:
   // Sets the bounds on the parameters of the ugen
   void set_limits(double min1, double max1, double min2, double max2);
@@ -49,7 +54,7 @@ protected:
   // to the subclass to define these and make them meaningful
   double param1_, max_param1_, min_param1_;
   double param2_, max_param2_, min_param2_;
-  
+  const char *name_, *param1_name_, *param2_name_;
 };
 
 class MidiUnitGenerator: public UnitGenerator{
@@ -68,6 +73,8 @@ public:
   double tick(double in){ return tick(); }
 
   bool is_input(){ return true; }
+  bool is_midi(){ return true; }
+
 protected:
   ClassicWaveform *myCW_;
 };
@@ -80,11 +87,19 @@ The input unit gen just returns what it was given
 */
 class Input : public UnitGenerator {
 public:
-  Input(){}
+  Input(){
+    name_ = "Input";
+    param1_name_ = "Volume";
+    param2_name_ = "Not Used";
+    set_limits(0, 1, 0, 0);
+    set_params(1, 0);
+  
+  }
   ~Input(){}
   // Processes a single sample in the unit generator
   double tick(double in){ return current_value_; }  
   bool is_input(){ return true; }
+  bool is_midi(){ return false; }
   double set_sample(double val){ current_value_ = val; }
 
 private:
@@ -160,6 +175,7 @@ public:
   void set_params(double p1, double p2);
 
   bool is_input(){ return false; }
+  bool is_midi(){ return false; }
 private:
   // Quantizes the double to the number of bits specified by param1
   double quantize(double in);
@@ -195,6 +211,7 @@ public:
   void set_params(double p1, double p2);
 
   bool is_input(){ return false; }
+  bool is_midi(){ return false; }
 private:
   double *buffer_;
   int buf_write_;
@@ -225,6 +242,7 @@ public:
   void set_params(double p1, double p2);
 
   bool is_input(){ return false; }
+  bool is_midi(){ return false; }
 private:
   float *buffer_;
   int buf_write_;
@@ -252,6 +270,7 @@ public:
   double tick(double in);  
   
   bool is_input(){ return false; }
+  bool is_midi(){ return false; }
 };
 
 
@@ -274,6 +293,7 @@ public:
   void set_lowpass(bool lowpass);
 
   bool is_input(){ return false; }
+  bool is_midi(){ return false; }
 private:
   DigitalFilter *f_;
   bool currently_lowpass_;
@@ -295,6 +315,7 @@ public:
   void set_params(double p1, double p2);
 
   bool is_input(){ return false; }
+  bool is_midi(){ return false; }
 private:
   DigitalBandpassFilter *f_;
 
@@ -322,6 +343,7 @@ public:
   void start_countdown();
 
   bool is_input(){ return false; }
+  bool is_midi(){ return false; }
 
 private:
   // Cue Loop to start recording
@@ -363,6 +385,7 @@ public:
   void set_params(double p1, double p2);
 
   bool is_input(){ return false; }
+  bool is_midi(){ return false; }
 private:
   int sample_count_;
   int sample_rate_;
@@ -388,6 +411,7 @@ public:
   void set_params(double p1, double p2);
 
   bool is_input(){ return false; }
+  bool is_midi(){ return false; }
 private:
   FilterBank *fb_;
   std::list<AllpassApproximationFilter *> aaf_;
@@ -418,6 +442,7 @@ public:
   void set_params(double p1, double p2);
 
   bool is_input(){ return false; }
+  bool is_midi(){ return false; }
   
 private:
   int sample_count_;

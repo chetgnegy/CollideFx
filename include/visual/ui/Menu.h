@@ -16,7 +16,7 @@
 #include "Drawable.h"
 #include "Moveable.h"
 #include "RgbImage.h"
-#include "UGenChain.h"
+#include "UGenGraphBuilder.h"
 
 #include <iostream> // delete
 
@@ -63,7 +63,7 @@ public:
   void right_clicked(){}
 
   // Links the menu to the audio module
-  void link_ugen_chain(UGenChain *u);
+  void link_ugen_graph(UGenGraphBuilder *u);
   
 private:
   // Converts the coordinates (x,y) from screen coordinates to
@@ -80,15 +80,16 @@ private:
   // Creates a new disc whenever a disc button is pressed.
   void make_disc(int button);
 
-  
+  // Writes words to the screen. large will increase the size a bit
+  void draw_text(const char * p, bool large);
   // The textures for all of the menus.
   GLuint menu_texture_ctrl_;
   GLuint menu_texture_fft_;
   bool menu_texture_loaded_;
   bool ctrl_menu_shown_;
 
-  // The chain of unit generators that we are linked with
-  UGenChain *chain_;
+  // The signal graph that we are linked with
+  UGenGraphBuilder *graph_;
 
   // Properties of the Menu bitmap
   int menu_row_pixels_;

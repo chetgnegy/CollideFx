@@ -25,7 +25,7 @@ LIBS=-framework CoreAudio -framework CoreMIDI -framework CoreFoundation \
 endif
 
 
-A_OBJS = ClassicWaveform.o DigitalFilter.o RtAudio.o RtMidi.o Thread.o Stk.o UGenChain.o UnitGenerator.o
+A_OBJS = ClassicWaveform.o DigitalFilter.o RtAudio.o RtMidi.o Thread.o Stk.o UGenChain.o UGenGraphBuilder.o UnitGenerator.o
 P_OBJS = Physics.o vmath.o 
 V_OBJS = Disc.o Graphics.o Orb.o World.o 
 U_OBJS = Menu.o RgbImage.o
@@ -58,6 +58,9 @@ Thread.o: Thread.h Thread.cpp
 
 UGenChain.o: UGenChain.cpp UGenChain.h
 	$(CXX) $(FLAGS) $(INC) $(A_INCDIR)UGenChain.cpp
+
+UGenGraphBuilder.o: UGenGraphBuilder.cpp UGenGraphBuilder.h
+	$(CXX) $(FLAGS) $(INC) $(A_INCDIR)UGenGraphBuilder.cpp
 
 UnitGenerator.o: UnitGenerator.cpp UnitGenerator.h
 	$(CXX) $(FLAGS) $(INC) $(A_INCDIR)UnitGenerator.cpp

@@ -8,6 +8,9 @@
  *      Uses RtAudio Library and OpenGL
  */
 
+#define CLASSDEMO 1
+
+
 #include <stdio.h>
 #include <math.h>
 #include <iostream>
@@ -18,6 +21,8 @@
 #include "Graphics.h"
 #include "Physics.h"
 #include "Menu.h"
+
+
 
 int main(int argc, char *argv[]) {
   srand (time(NULL));
@@ -30,28 +35,17 @@ int main(int argc, char *argv[]) {
   myChain->initialize_audio();
   myChain->initialize_midi();
   
-  
   Menu *myMenu = new Menu();
   World *myWorld = new World(30, 30, 9, 0);
   
   Graphics::add_drawable(myMenu, 1);
   Graphics::add_moveable(myMenu);
-  myMenu->link_ugen_chain(myChain);
+  myMenu->link_ugen_graph(myChain->get_signal_graph());
   
   Graphics::add_drawable(myWorld, 2);
   Physics::set_bounds(30*(1-2*World::kWallThickness), 30*(1-2*World::kWallThickness), 9, 0);
-  
-
-  
-
-  
-  // Disc *myDisc = new Disc(d, 4, false);
-  // Graphics::add_drawable(myDisc);
-
-
 
   myGraphics->start_graphics();
-  
   
   return 1;
 

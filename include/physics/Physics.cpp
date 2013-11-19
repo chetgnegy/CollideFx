@@ -15,6 +15,7 @@ double Physics::y_min_ = -10e10, Physics::y_max_ = -10e10;
 
 // Removes physics from an object
 bool Physics::take_physics(Physical *object){
+
   if (all_.size() > 0) {
     std::list<Physical *>::iterator it;
     it = all_.begin();

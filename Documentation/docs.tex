@@ -71,13 +71,15 @@ The purpose of this project is to create a real-time effects processor with a gr
 This software utilizes the RtAudio$_{[1]}$ engine, which conveniently allows the system to communicate with the sound card by periodically filling buffers with audio data. To keep the system modular, the graphical display and the audio components are completely independent of each other and interact only through the parameter space of the Disc objects. The RtAudio callbacks are handled through by UGenChain class. UGenChain contains some data structure \spag of UnitGenerators that pass the audio signal from the input source to the next element in the chain and finally to the array designated as the output buffer. 
 
 \subsection{Signal Path}
-The signal path, encompassed by the class UGenChain, is responsible for three main points: handling the audio stream, providing the next sample of audio data on request, and maintaining the order in which the signal chain is processed.\\
-The first of these responsibilities involves only initializing the RtAudio engine and opening the audio stream. The provision of the next sample is fairly straightforward given that the chain of unit generators. We simply "tick", or compute one sample, of audio from each unit generator in order and pass the result from the next. We of course start with an input source, who simply returns a sample of the audio input. The effects units are similar but involve some calculation, often state-based depending on its parameters, and also on the samples that have been processed by it at previous times.
+The class UGenChain, is responsible for three main points: handling the audio stream, providing the next sample of audio data on request, and making sure that Midi information is delegated to the signal flow graph.\\
+The first of these responsibilities involves only initializing the RtAudio engine and opening the audio stream. The provision of the next sample is fairly straightforward given that the chain of unit generators. We simply "tick", or compute one sample, of audio from each unit generator in order and pass the result from the next. We of course start with an input source, who simply returns a sample of the audio input. Midi sources return a single frame of audio data based on the Midi information provided and the type of waveform. The effects units are similar but involve some calculation, often state-based depending on its parameters, and also on the samples that have been processed by it at previous times.
 
-Finally, the signal chain is determined. \spag
+Finally, the signal chain is determined. This is done by the UGenGraphBuilder class. The UGenGraphBuilder considers the locations of the Discs in the world and contracts a Minimal Spanning Tree, where the Discs are treated as Nodes, and the connections between them as Edges.
 
 \subsection{Unit Generators}
 Several unit generators have been defined for this software. Many of them are loosely based around well known algorithms. The unit generators feature two main methods, "tick" and "set\_params". As previously mentioned, "tick" processes a single sample of audio data. The method "set\_params" allows for the parameters of the unit generator to be changed. This does not include the parameters that are determined by the position of the Discs, but some internal parameters to the unit generator. The "Input" unit generator is trivial and simply returns the current sample of audio from the input buffer.
+
+\subsubsection*{Midi Unit Generators} Several Midi Unit Generators are provided, all using classic waveform generators to provide audio data to the other modules. The Midi data is passed from a callback in the UGenChain to the UGenGraphBuilder and then to the individual Midi modules. Each midi module has an attack and sustain parameter allowing some configuration of the sound.
 
 \subsubsection*{Bit Crusher}
 The bit crusher effect is very handy for reproducing vintage low-fi audio effects. The audio signal, typical 16 bits in resolution, is quantized down to a specified level on the range of 1 to 16, 16 being the unquantized signal. By using a value of 8 bits, we can achieve "chip music" sounds that resemble those of older game systems. The bit crusher also features a downsampling parameter which effectively reduces the sampling rate of the signal. We can downsample by an integer number on the range 1 to 16, where we quickly experience the effects of aliasing as this parameter increases.
@@ -91,8 +93,14 @@ This is a simple delay line. The time in seconds can be changed as well as the a
 \subsubsection*{Distortion}
 \spag
 
+\subsubsection*{Filters}
+There is a choice of low pass, high pass, and band pass filters, all selectable using the Filter and Bandpass unit generators. The Filter ugen can be toggled between high and low pass. For all filters, the cutoff frequency and Q can be changed.
+
 \subsubsection*{Looper}
-The Looper waits for the user to trigger a start event and begins to count down from 4. It then records its input for a given number of beats at a specified tempo. Immediately after completing the recording, it begins to replay the buffer on repeat. Effects can be applied to the looper as if it is an input. 
+The looper waits for the user to trigger a start event and begins to count down from 4. It then records its input for a given number of beats at a specified tempo. Immediately after completing the recording, it begins to replay the buffer on repeat. Effects can be applied to the looper as if it is an input. 
+
+\subsubsection*{Ring Modulator}
+The ring modulator multiplies the input by a simple sinusoid. The frequency of which is chosen by the user.
 
 \subsubsection*{Reverb}
 This is an implementation of Freeverb$_{[3]}$ using feedback comb filters and all pass filters. The size of the simulated room and the damping can be altered in real time.
@@ -127,10 +135,16 @@ The orbs are made from textures that use additive blending. They do not interact
 \section{User Interaction}
 The graphics module also contains a list of items that implement an interface, Moveable. As the name suggests, these are items that can be moved by the user. When the user clicks on the screen, a ray is casted into the screen from the camera through the point where the user has clicked. The coordinate at which it intersects the plane containing the top face of the Discs is returned. This is done using OpenGL's unproject functionality. When a disc is clicked, an offset from the center is stored so that the object moves around the clicked point rather than the center of mass. There is also a menu on the left half of the screen that allows the user to create new discs. By clicking on one of the buttons we can create a disc and drag it onto the world. Once it is dropped into the world, it begins to interact with other modules both as a physical entity and as a audio unit generator. Discs dropped onto other discs or not within the bounds of the world are discarded.
 
-\section{Physics}
-The translational motion of the discs is implemented using the Velocity Verlet. This helps to achieve increased accuracy for a only slightly increased amount of computation as compared to the rectangular method integration. There is also support for collision detection for simple round objects.
+\subsection{Menu}
+The menu provides the user with the ability to create, modify, and destroy unit generators. The interface was designed in Photoshop and the coordinates of the users click are mapped to the pixels on the image. When a disc is selected on the menu, it appears underneath the cursor with transparency. Until it is placed on a clear place on the map, it interacts with the cursor only and will not collide with other objects.
 
-\subsection{Translational motion}
+\subsection{Parameter Modification}
+If the user right clicks on a disc, the menu will display its parameters in the lower control menu. Here the user can drag sliders to change the parameters of the unit generators. To prevent the constant reallocation of buffers, the parameters do not smoothly drag, but only change once the user has removed the click.
+
+\section{Physics}
+The translational motion of the discs is implemented using a simple rectangular integration. This helps to achieve increased accuracy for a only slightly increased amount of computation as compared to the rectangular method integration. There is also support for collision detection for simple round objects.
+
+\subsection{Translational motion}\spag
 At every time step, the motion of the objects is updated. We first update the position of the object according to the formula $x(t + \Delta t) = x(t) + v(t)\Delta t + \frac{1}{2}a(t)\Delta t^2$. We then ask each object in turn for the force that is currently begin applied to it, this force, divided my the mass of the object is equal to its acceleration, $a(t+\Delta t)$. The velocity is then updated, $v(t + \Delta t) = v(t) + \frac{1}{2}(a(t) + a(t + \Delta t))\Delta t$. This is enough for smooth translational motion provided our time steps are chosen correctly.
 
 \subsection{Collision Detection}
