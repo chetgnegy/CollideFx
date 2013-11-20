@@ -20,6 +20,14 @@ class Orb : public Drawable, public Physical {
 public:
   static const double kDeathTime = 15.0;
 
+  static const double kTransitTime = 1.5;
+  static const double kTransitForce = 20.0;
+  static const double kTransitDamping = 145.0;
+  static const double kTransitWander = 4.0;
+  static const double kStationaryForce = 40.0;
+  static const double kStationaryDamping = 2.0;
+  static const double kStationaryWander = 1.0;
+
   // A constructor that links the orb to a disc. If we don't link it
   // it will fly off and die.
   Orb(Vector3d *v = NULL, double hover = 2.0);
@@ -104,9 +112,13 @@ private:
 
   double angle_;
 
-  // If the anchor point is unassigned, we 
+  // If the anchor point is unassigned, we schedule death
   bool scheduled_death_;
   double death_timer_;
+
+  // If the anchor point moves, we schedule transit
+  bool scheduled_transit_;
+  double transit_timer_;
 };
 
 #endif

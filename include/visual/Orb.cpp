@@ -22,6 +22,8 @@ Orb::Orb(Vector3d *v, double hover){
   m_ = 1; I_ = 0;
   scheduled_death_ = false;
   death_timer_ = 99;
+  scheduled_transit_ = false;
+  transit_timer_ = 99;
   angle_ = 360.0 * rand()/(1.0*RAND_MAX);
   wander_ = Vector3d(16.0*(rand()/(1.0*RAND_MAX)-.5),
                      16.0*(rand()/(1.0*RAND_MAX)-.5),
@@ -91,6 +93,8 @@ void Orb::self_destruct(){
 // Changes the disc that the orb is assigned to
 void Orb::reassign(Vector3d *pos){
   anchor_point_ = pos;
+  scheduled_transit_ = true;
+  transit_timer_ = kTransitTime;
 }
 
 // Draws the orb at location (0,0,0)
@@ -175,23 +179,32 @@ void Orb::prepare_graphics(void){
 }
 
 // Advances the internal clock of the particles. This
-// currently only adjusts the orientation of the particles
+// handles death timing, transit timing and wandering
 void Orb::advance_time(double t){ 
   time_ += t; 
-    
-  if (scheduled_death_){ death_timer_ -= t;
 
+  // Tick the transit timer
+  if (scheduled_transit_){ 
+    transit_timer_ -= t;
+    if (transit_timer_ < 0){
+      transit_timer_ = 99;
+      scheduled_transit_ = false;
+    }
+  }
+  
+  // Tick the death timer and fly upwards!
+  if (scheduled_death_){ 
+    death_timer_ -= t;
     // Flies up!
     wander_.x += .6*rand()/(1.0*RAND_MAX)-.3;
     wander_.y += .6*rand()/(1.0*RAND_MAX)-.3;
     wander_.z += rand()/(1.0*RAND_MAX)-.45;  
   }
   else {
-    //Random
+    //Random wandering 
     wander_.z += rand()/(1.0*RAND_MAX)-.5;
     wander_.x += rand()/(1.0*RAND_MAX)-.5;
     wander_.y += rand()/(1.0*RAND_MAX)-.5;
-  
   }
 }
 
@@ -212,5 +225,12 @@ Vector3d Orb::external_forces(){
   double norm_distance = axis.length()/hover_dist_;
   double parabolic = -1.0/pow(norm_distance, 2)+ pow(norm_distance, 2);
   axis.normalize();
-  return axis * 40 * parabolic - vel_ * 2 + wander_;
+  if (scheduled_transit_){
+    return axis * kTransitForce * parabolic 
+            - vel_ * kTransitDamping 
+            + wander_* kTransitWander; 
+  }
+  return axis * kStationaryForce * parabolic 
+          - vel_ * kStationaryDamping 
+          + wander_ * kStationaryDamping; 
 }
