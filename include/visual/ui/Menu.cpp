@@ -34,6 +34,24 @@ Menu::~Menu(){}
 
 // Draws the currently showing menu
 void Menu::draw(){
+  glPushAttrib(GL_ALL_ATTRIB_BITS);
+  glDisable(GL_TEXTURE_2D);
+  glLineWidth(2);
+    glPushMatrix();
+      glTranslatef(-kXShift,0,0);
+      for (int i = 0; i < graph_->wires_.size(); ++i){
+        glBegin(GL_LINES);
+        glVertex3f(graph_->wires_[i].first->pos_.x, 
+                   graph_->wires_[i].first->pos_.y, 
+                   0);
+        glVertex3f(graph_->wires_[i].second->pos_.x, 
+                   graph_->wires_[i].second->pos_.y, 
+                   0);
+        glEnd();
+      }
+      glPopMatrix();
+      glPopAttrib();
+
   glBegin(GL_QUADS);
   float width = kScaleDimensions;
   float height = kScaleDimensions * height_to_width_;
@@ -43,7 +61,10 @@ void Menu::draw(){
   glTexCoord2f(0.0, 0.0); glVertex3f(-width, -height, 0);
   glEnd();
   glPopAttrib();
+  
   glTranslatef(0,-9,0);
+
+  
 
   if (ctrl_menu_shown_){
 
@@ -64,15 +85,15 @@ void Menu::draw(){
  
     // Disc clicked, show slider
     if (Disc::spotlight_disc_ != NULL || show_slider_){
-      double text_x = -2.125;
+      double text_x = -7.125;
       glPushMatrix();
-        glTranslatef(text_x, 5, 0);
+        glTranslatef(text_x, 1.5, 0);
         draw_text(Disc::spotlight_disc_->get_ugen()->name(), true);
         glPopMatrix();
 
       glPushMatrix();
         glPushMatrix();
-          glTranslatef(text_x, 2.25, 0);
+          glTranslatef(text_x, -1.25, 0);
           draw_text(Disc::spotlight_disc_->get_ugen()->p_name(1), false);
           glPopMatrix();
         //move down to first slider location
@@ -82,7 +103,7 @@ void Menu::draw(){
       glPushMatrix();
         //move down to second slider location
         glPushMatrix();
-          glTranslatef(text_x, -1.5, 0);
+          glTranslatef(text_x, -5, 0);
           draw_text(Disc::spotlight_disc_->get_ugen()->p_name(2), false);
           glPopMatrix();
         glTranslatef(-7 + slider2_ * 13.5, 0, 0);
@@ -101,14 +122,14 @@ void Menu::draw(){
 // Writes words to the screen
 void Menu::draw_text(const char * p, bool large){
   glPushMatrix();
-  glRasterPos2f(-5.0f, -3.5f);
+  glRasterPos2f(0.0f, 0.0f);
   if (large){
-    for (p; *p; p++){
+    for (; *p; p++){
       glutBitmapCharacter(GLUT_BITMAP_9_BY_15, *p);
     }
   }
   else {
-    for (p; *p; p++){
+    for (; *p; p++){
       glutBitmapCharacter(GLUT_BITMAP_8_BY_13, *p);
     }
   }
@@ -142,6 +163,7 @@ void Menu::set_attributes(void){
   else{
     glBindTexture(GL_TEXTURE_2D, menu_texture_fft_);
   }
+
 }
 
 // Pops the attriubtes stack

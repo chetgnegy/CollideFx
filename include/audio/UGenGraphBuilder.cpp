@@ -26,7 +26,89 @@ UGenGraphBuilder::~UGenGraphBuilder(){
 
 // Recomputes the graph based on the new positions of the discs
 void UGenGraphBuilder::rebuild(){
-  // Make a minimal spanning tree of the effects with each input
+  wires_.clear();
+  int num_inputs = inputs_.size() + midi_modules_.size();
+  int num_nodes = num_inputs+ fx_.size();
+  if (num_nodes == 0) return;
+  bool marked[num_nodes];
+
+
+  for (int i = 0; i < num_nodes; ++i){
+  //  data_[indexed(i)] = GraphData();
+    marked[i] = false;
+  }
+/*
+  // Get all of the edges -- I don't actually need this!
+  double dist;
+  for (int i = 0; i < num_nodes; ++i){
+    for (int j = i+1; j < num_nodes; ++j){
+      dist = get_edge_cost(indexed(i),indexed(j));
+      data_[indexed(i)].edges_.push_back(Edge( indexed(j), dist ));
+      data_[indexed(j)].edges_.push_back(Edge( indexed(i), dist ));
+    }
+  }
+  std::cout << "Listing Edges" << std::endl;
+  for (int i = 0; i < num_nodes; ++i){
+    std::cout << indexed(i)->get_ugen()->name() << std::endl;
+    data_[indexed(i)].list_edges();
+  }
+  */
+
+
+  // Modified Prim's Algorithm -- May not result in spanning tree 
+  // if distances are too far to make a wire!
+  double this_dist, min_dist;
+  int next_i = 0, next_j =0;
+
+  marked[0] = true;
+  bool nothing_happened = false;
+  while (!nothing_happened){
+    min_dist = 10e12;
+    nothing_happened = true;
+    for (int i = 0; i < num_nodes; ++i){
+      if (marked[i]){
+        for (int j = 0; j < num_nodes; ++j){
+          //Connecting an attached node to an unattached node
+          if (!marked[j]){
+            // Not connecting two inputs
+            if (i >= num_inputs || j >= num_inputs){
+                
+              this_dist = get_edge_cost(indexed(i), indexed(j));
+              if (this_dist < min_dist && this_dist < kMaxDist){
+                next_j = j;
+                next_i = i;
+                min_dist = this_dist;
+                nothing_happened = false;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    if (nothing_happened){
+      for (int i = 0; i < num_nodes; ++i){
+        if (!marked[i]){
+          marked[i] = true; 
+          nothing_happened = false;
+          break;
+        }
+      }
+    }
+    else{
+      marked[next_i] = true;
+      marked[next_j] = true;
+      wires_.push_back(Wire(indexed(next_i), indexed(next_j)));
+    }
+  }
+  
+
+  std::cout << "Listing Wires" << std::endl;
+  for (int i = 0; i < wires_.size(); ++i){
+    std::cout << wires_[i].first->get_ugen()->name() << " ";
+    std::cout << wires_[i].second->get_ugen()->name() << std::endl;
+  }
+
 
 
 }
@@ -44,20 +126,20 @@ void UGenGraphBuilder::print_all(){
   std::cout << "********************" << std::endl;
   std::cout << "Inputs:" << std::endl;
   for (int i = 0; i < inputs_.size(); ++i){
-    std::cout << "\t"<< inputs_.at(i)->get_ugen()->name() << " ";
-    std::cout << inputs_.at(i)->pos_ << std::endl;
+    std::cout << "\t"<< inputs_[i]->get_ugen()->name() << " ";
+    std::cout << inputs_[i]->pos_ << std::endl;
   }
 
   std::cout << "Midi:" << std::endl;
   for (int i = 0; i < midi_modules_.size(); ++i){
-    std::cout << "\t"<< midi_modules_.at(i)->get_ugen()->name() << " ";
-    std::cout << midi_modules_.at(i)->pos_ << std::endl;
+    std::cout << "\t"<< midi_modules_[i]->get_ugen()->name() << " ";
+    std::cout << midi_modules_[i]->pos_ << std::endl;
   }
 
   std::cout << "Effects:" << std::endl;
   for (int i = 0; i < fx_.size(); ++i){
-    std::cout << "\t"<< fx_.at(i)->get_ugen()->name() << " ";
-    std::cout << fx_.at(i)->pos_ << std::endl;
+    std::cout << "\t"<< fx_[i]->get_ugen()->name() << " ";
+    std::cout << fx_[i]->pos_ << std::endl;
   }
 }
 
@@ -92,7 +174,17 @@ void UGenGraphBuilder::handoff_midi(int MIDI_pitch, int velocity){
   }
 }
 
-
+// Allows all ugens to be called uniformly
+Disc *UGenGraphBuilder::indexed(int i){
+  if (i<inputs_.size()) return inputs_[i];
+  if (i<inputs_.size() + midi_modules_.size()){
+    return midi_modules_[i-inputs_.size()];
+  }
+  if (i<inputs_.size() + midi_modules_.size() + fx_.size()){
+    return fx_[i - inputs_.size() - midi_modules_.size()];
+  }
+  return NULL;
+}
 
 // Adds a unit generator to the signal chain
 bool UGenGraphBuilder::add_effect(Disc *fx){
@@ -153,3 +245,13 @@ double UGenGraphBuilder::get_edge_cost(Disc* a, Disc* b){
 
 GraphData::GraphData(){}
 GraphData::~GraphData(){}
+
+void GraphData::list_edges(){
+  for (int i = 0; i < edges_.size(); ++i){
+    std::cout << "\t[" << edges_[i].first->get_ugen()->name() << 
+                   " " << edges_[i].second << "]" << std::endl;
+  }
+
+}
+
+

@@ -29,7 +29,7 @@ class DigitalFilter {
  public:
  //Creates a generic filter with no history or previous input
   DigitalFilter(double center_frequency, double Q, double gain);
-  ~DigitalFilter();
+  virtual ~DigitalFilter() = 0;
   
   // Must be overridden by subclass
   virtual void calculate_coefficients() = 0;

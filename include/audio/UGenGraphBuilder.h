@@ -17,14 +17,17 @@
 #include "UnitGenerator.h"
 #include "Disc.h"
 
-class GraphData{
-  GraphData();
-  ~GraphData();
-};
+class GraphData;
+
+
+typedef std::pair<Disc *, double > Edge; 
+typedef std::pair<Disc *, Disc * > Wire; 
 
 
 class UGenGraphBuilder {
 public:
+
+  static const double kMaxDist = 7.0;
   UGenGraphBuilder();
   ~UGenGraphBuilder();
 
@@ -64,10 +67,16 @@ public:
   // Removes a disc from the graph and deletes the disc
   bool remove_disc(Disc *ugen);
 
+  std::vector<Wire> wires_;
 
 private:
   // The distance between two discs
   double get_edge_cost(Disc* a, Disc* b);
+
+  void find_edges();
+
+  // Allows all ugens to be called uniformly
+  Disc *indexed(int i);
 
   // The chain of effects that is processed before being sent to the output
   std::vector<Disc *> fx_;
@@ -78,9 +87,19 @@ private:
   // The list of unit generators that require midi events to work
   std::vector<Disc *> midi_modules_;
   
+  
   std::map < Disc *, GraphData > data_;
 };
 
+
+class GraphData{
+public:
+  GraphData();
+  ~GraphData();
+  std::vector< Edge > edges_;
+  bool marked_;
+  void list_edges();
+};
 
 
 #endif

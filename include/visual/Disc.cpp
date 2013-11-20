@@ -6,7 +6,7 @@
   This file the Disc class. This class is used as the graphical representation of a unit generator
 */
 
-#import "Disc.h"
+#include "Disc.h"
 
 
 
@@ -103,14 +103,14 @@ void Disc::set_location(double x, double y){
   pos_.x = x;
   pos_.y = y;
   pos_.z = 0;
-};
+}
 
 // Sets instantaneous velocity of the disc
 void Disc::set_velocity(double x, double y){
   vel_.x = x;
   vel_.y = y;
   vel_.z = 0;
-};
+}
 
 
 // Forwards request for parameter values

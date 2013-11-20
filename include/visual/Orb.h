@@ -108,4 +108,5 @@ private:
   bool scheduled_death_;
   double death_timer_;
 };
+
 #endif

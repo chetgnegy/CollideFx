@@ -1,6 +1,6 @@
 #!/bin/sh
 
-CXX=llvm-g++-4.2 
+CXX=g++ -w
 INC=-I include/ -I include/audio -I include/physics/ -I include/visual/ -I include/visual/ui/
 
 INCDIR=./include/

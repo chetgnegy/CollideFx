@@ -28,6 +28,7 @@ void midiCallback( double dt, std::vector< unsigned char > *message, void *data 
       int veloctiy = static_cast<int>(message->at(2));
       graph->handoff_midi(MIDI_pitch, veloctiy);
       graph->print_all();
+      graph->rebuild();
     }
 }
 
@@ -193,3 +194,5 @@ UGenGraphBuilder *UGenChain::get_signal_graph(){
 // Check to see if the audio and midi has been set up properly
 bool UGenChain::has_audio(){ return audio_initialized_; }
 bool UGenChain::has_midi(){ return midi_initialized_; }
+
+

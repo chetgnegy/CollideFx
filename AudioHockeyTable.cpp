@@ -8,9 +8,6 @@
  *      Uses RtAudio Library and OpenGL
  */
 
-#define CLASSDEMO 1
-
-
 #include <stdio.h>
 #include <math.h>
 #include <iostream>
@@ -50,3 +47,4 @@ int main(int argc, char *argv[]) {
   return 1;
 
 }
+

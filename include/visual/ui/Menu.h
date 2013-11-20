@@ -22,8 +22,8 @@
 
 class Menu : public Drawable, public Moveable {
 public:
-  static const float kXShift = -16;
-  static const float kScaleDimensions = 9.7;
+  const float kXShift = -16;
+  const float kScaleDimensions = 9.7;
   
   Menu();
   ~Menu();

@@ -22,8 +22,10 @@
 
 class UnitGenerator{
 public: 
+  virtual ~UnitGenerator(){};
+
   // Processes a single sample in the unit generator
-  virtual double tick(double in){};
+  virtual double tick(double in) = 0;
   
   // Allows user to set the generic parameters, bounds must already be set
   virtual void set_params(double p1, double p2);
@@ -100,7 +102,7 @@ public:
   double tick(double in){ return current_value_; }  
   bool is_input(){ return true; }
   bool is_midi(){ return false; }
-  double set_sample(double val){ current_value_ = val; }
+  void set_sample(double val){ current_value_ = val; }
 
 private:
   double current_value_;
