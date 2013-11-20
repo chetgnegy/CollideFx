@@ -14,6 +14,7 @@
 #include <map>
 #include <queue>
 #include <vector>
+#include <algorithm>
 #include "UnitGenerator.h"
 #include "Disc.h"
 
@@ -66,6 +67,8 @@ public:
 
   // Removes a disc from the graph and deletes the disc
   bool remove_disc(Disc *ugen);
+
+  void switch_wire_direction(Wire &w);
 
   std::vector<Wire> wires_;
 

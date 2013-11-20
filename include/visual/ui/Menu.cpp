@@ -34,15 +34,29 @@ Menu::~Menu(){}
 
 // Draws the currently showing menu
 void Menu::draw(){
+  // {Printing the lines
   glPushAttrib(GL_ALL_ATTRIB_BITS);
   glDisable(GL_TEXTURE_2D);
   glLineWidth(2);
     glPushMatrix();
       glTranslatef(-kXShift,0,0);
       for (int i = 0; i < graph_->wires_.size(); ++i){
+        glColor3f(1,1,.6);
+        Vector3d midpoint = (graph_->wires_[i].first->pos_ + 
+                            graph_->wires_[i].second->pos_) * 0.5;
         glBegin(GL_LINES);
         glVertex3f(graph_->wires_[i].first->pos_.x, 
                    graph_->wires_[i].first->pos_.y, 
+                   0);
+        glVertex3f(midpoint.x, 
+                   midpoint.y, 
+                   0);
+        glEnd();
+        glColor3f(1,0,0);
+        
+        glBegin(GL_LINES);
+        glVertex3f(midpoint.x, 
+                   midpoint.y, 
                    0);
         glVertex3f(graph_->wires_[i].second->pos_.x, 
                    graph_->wires_[i].second->pos_.y, 
@@ -51,6 +65,7 @@ void Menu::draw(){
       }
       glPopMatrix();
       glPopAttrib();
+  // } Printing the lines
 
   glBegin(GL_QUADS);
   float width = kScaleDimensions;

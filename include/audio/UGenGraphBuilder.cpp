@@ -10,6 +10,8 @@
 #include "UGenGraphBuilder.h"
 
 
+bool compare_wires (Wire i, Wire j);
+
 UGenGraphBuilder::UGenGraphBuilder(){}
 
 UGenGraphBuilder::~UGenGraphBuilder(){
@@ -56,7 +58,9 @@ void UGenGraphBuilder::rebuild(){
 
 
   // Modified Prim's Algorithm -- May not result in spanning tree 
-  // if distances are too far to make a wire!
+  // if distances are too far to make a wire! Also, there is the constraint 
+  // that two inpput nodes cannot connect with each other
+
   double this_dist, min_dist;
   int next_i = 0, next_j =0;
 
@@ -102,6 +106,41 @@ void UGenGraphBuilder::rebuild(){
     }
   }
   
+  // Sorts the wires so that the directionality is stable
+  std::sort(wires_.begin(), wires_.end(), compare_wires);
+
+  bool finalized[wires_.size()];
+  
+  for (int i = 0; i < wires_.size(); ++i)finalized[i] = false;
+  // First pass
+  for (int i = 0; i < wires_.size(); ++i){
+    if (wires_[i].second->get_ugen()->is_input()){
+      switch_wire_direction(wires_[i]);
+      finalized[i] = true;
+    }
+    else if (wires_[i].first->get_ugen()->is_input()){
+      finalized[i] = true;
+    }
+
+  }
+
+  for (int i = 0; i < wires_.size(); ++i){
+    if (finalized[i]){
+      for (int j = 0; j < wires_.size(); ++j){
+        if (!finalized[j]){
+          if (wires_[i].second == wires_[j].second){
+            switch_wire_direction(wires_[j]);
+            finalized[j] = true;
+          }
+          else if (wires_[i].second == wires_[j].first){
+            finalized[j] = true;
+          }
+        }
+
+      }
+    }
+  }
+
 
   std::cout << "Listing Wires" << std::endl;
   for (int i = 0; i < wires_.size(); ++i){
@@ -109,9 +148,30 @@ void UGenGraphBuilder::rebuild(){
     std::cout << wires_[i].second->get_ugen()->name() << std::endl;
   }
 
+}
 
+// Sorts the wires by the addresses of their endpoints. This sort isn't 
+// especially meaningful, but it provides stability in the connections 
+// from rebuild to rebuild. The order in which wires are created should 
+// not effect their directionality.
+bool compare_wires (Wire i, Wire j){
+  return i.first < j.first || (i.first == j.first && i.second < j.second);
+}
+
+
+void UGenGraphBuilder::switch_wire_direction(Wire &w){
+  Disc *temp = w.first;
+  w.first = w.second;
+  w.second = temp;
 
 }
+
+
+
+
+
+
+
 
 // Processes a single sample. Note that you must first handoff audio 
 // and midi data to the graph by using the handoff_audio and 
