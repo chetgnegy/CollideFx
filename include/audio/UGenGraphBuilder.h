@@ -17,7 +17,7 @@
 #include <algorithm>
 #include "UnitGenerator.h"
 #include "Disc.h"
-
+#include "Thread.h"
 class GraphData;
 
 
@@ -72,11 +72,17 @@ public:
 
   std::vector<Wire> wires_;
 
+  std::vector<Disc *> sinks_;
 private:
   // The distance between two discs
   double get_edge_cost(Disc* a, Disc* b);
 
   void find_edges();
+
+  // Reverses the push architecture of "out = tick(in)" to recursively pull
+  // samples to the output sinks from the inputs
+  double pull_result(Disc *k, std::vector<Disc *> inputs);
+
 
   // Allows all ugens to be called uniformly
   Disc *indexed(int i);
@@ -92,6 +98,8 @@ private:
   
   
   std::map < Disc *, GraphData > data_;
+
+  Mutex audio_lock_;
 };
 
 
@@ -99,9 +107,11 @@ class GraphData{
 public:
   GraphData();
   ~GraphData();
-  std::vector< Edge > edges_;
-  bool marked_;
   void list_edges();
+  std::vector< Edge > edges_;
+  std::vector< Disc* > inputs_;
+  std::vector< Disc* > outputs_;
+  
 };
 
 

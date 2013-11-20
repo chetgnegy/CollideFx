@@ -29,15 +29,25 @@ UGenGraphBuilder::~UGenGraphBuilder(){
 // Recomputes the graph based on the new positions of the discs
 void UGenGraphBuilder::rebuild(){
   wires_.clear();
+  data_.clear();
+  sinks_.clear();
   int num_inputs = inputs_.size() + midi_modules_.size();
   int num_nodes = num_inputs+ fx_.size();
   if (num_nodes == 0) return;
+
+  // This function may be called from the graphics thread?
+  audio_lock_.lock();
+  
+  
+
   bool marked[num_nodes];
+  bool is_sink[num_nodes];
 
 
   for (int i = 0; i < num_nodes; ++i){
-  //  data_[indexed(i)] = GraphData();
+    data_[indexed(i)] = GraphData();
     marked[i] = false;
+    is_sink[i];
   }
 /*
   // Get all of the edges -- I don't actually need this!
@@ -109,8 +119,8 @@ void UGenGraphBuilder::rebuild(){
   // Sorts the wires so that the directionality is stable
   std::sort(wires_.begin(), wires_.end(), compare_wires);
 
+  // Make sure inputs are only transmitting
   bool finalized[wires_.size()];
-  
   for (int i = 0; i < wires_.size(); ++i)finalized[i] = false;
   // First pass
   for (int i = 0; i < wires_.size(); ++i){
@@ -123,31 +133,43 @@ void UGenGraphBuilder::rebuild(){
     }
 
   }
-
-  for (int i = 0; i < wires_.size(); ++i){
-    if (finalized[i]){
-      for (int j = 0; j < wires_.size(); ++j){
-        if (!finalized[j]){
-          if (wires_[i].second == wires_[j].second){
-            switch_wire_direction(wires_[j]);
-            finalized[j] = true;
-          }
-          else if (wires_[i].second == wires_[j].first){
-            finalized[j] = true;
+  //Iterate until convergence
+  while (!nothing_happened){
+    nothing_happened = true;
+    // Make propagate transmission
+    for (int i = 0; i < wires_.size(); ++i){
+      if (finalized[i]){
+        for (int j = 0; j < wires_.size(); ++j){
+          if (!finalized[j]){
+            if (wires_[i].second == wires_[j].second){
+              switch_wire_direction(wires_[j]);
+              nothing_happened = false;
+              finalized[j] = true;
+            }
+            else if (wires_[i].second == wires_[j].first){
+              finalized[j] = true;
+            }
           }
         }
-
       }
     }
   }
 
-
   std::cout << "Listing Wires" << std::endl;
   for (int i = 0; i < wires_.size(); ++i){
+
     std::cout << wires_[i].first->get_ugen()->name() << " ";
     std::cout << wires_[i].second->get_ugen()->name() << std::endl;
+    data_[wires_[i].second].inputs_.push_back(wires_[i].first);
+    data_[wires_[i].first].outputs_.push_back(wires_[i].second);
   }
 
+  for (int i = 0; i < num_nodes; ++i){
+    if (data_[indexed(i)].outputs_.size() == 0){
+      sinks_.push_back(indexed(i));
+    }
+  }
+  audio_lock_.unlock();
 }
 
 // Sorts the wires by the addresses of their endpoints. This sort isn't 
@@ -168,6 +190,21 @@ void UGenGraphBuilder::switch_wire_direction(Wire &w){
 
 
 
+// Reverses the push architechture of "out = tick(in)" to recursively pull
+// samples to the output sinks from the inputs
+double UGenGraphBuilder::pull_result(Disc *k, std::vector<Disc *> inputs){
+  double sum = 0;
+  if (inputs.size() > 0) {
+    std::vector<Disc *>::iterator it;
+    it = inputs.begin();
+
+    while (it != inputs.end()) {
+      sum += pull_result((*it), data_[*it].inputs_);
+      ++it;
+    }
+  }
+  return k->get_ugen()->tick(sum);
+}
 
 
 
@@ -177,7 +214,18 @@ void UGenGraphBuilder::switch_wire_direction(Wire &w){
 // and midi data to the graph by using the handoff_audio and 
 // handoff midi functions
 double UGenGraphBuilder::tick(){
-  return 0;
+  audio_lock_.lock();
+  
+  double sum = 0;
+  std::vector<Disc *>::iterator it;
+    it = sinks_.begin();
+    while (it != sinks_.end()) {
+      sum += pull_result((*it), data_[*it].inputs_);
+      ++it;
+    }
+  audio_lock_.unlock();
+  
+  return sum;
 }
 
 // Prints all data about the graph, including the nodes,

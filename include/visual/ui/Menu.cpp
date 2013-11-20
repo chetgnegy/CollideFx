@@ -377,7 +377,10 @@ void Menu::handle_click(int x, int y){
   else {
     // UP ARROW BUTTON
     if (inSquare(x - 16, y, x_arrow_but, y_up_but, sm_but_size)){
-      std::cout << "Clicked Up" << std::endl; return;
+      std::cout << "Clicked Up" << std::endl; 
+      graph_->print_all();
+      graph_->rebuild();
+      return;
     }
     // DOWN ARROW BUTTON
     if (inSquare(x - 16, y, x_arrow_but, y_down_but, sm_but_size)){
@@ -401,6 +404,7 @@ void Menu::handle_click(int x, int y){
         Physics::take_physics(Disc::spotlight_disc_);
         // This also deletes the disc
         graph_->remove_disc(Disc::spotlight_disc_);
+        graph_->rebuild();
         Disc::spotlight_disc_ = NULL;
       }
       return;

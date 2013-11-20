@@ -27,8 +27,7 @@ void midiCallback( double dt, std::vector< unsigned char > *message, void *data 
       int MIDI_pitch = static_cast<int>(message->at(1));
       int veloctiy = static_cast<int>(message->at(2));
       graph->handoff_midi(MIDI_pitch, veloctiy);
-      graph->print_all();
-      graph->rebuild();
+      
     }
 }
 
