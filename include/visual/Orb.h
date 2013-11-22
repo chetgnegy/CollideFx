@@ -22,7 +22,7 @@ public:
 
   static const double kTransitTime = 1.5;
   static const double kTransitForce = 20.0;
-  static const double kTransitDamping = 145.0;
+  static const double kTransitDamping = 75.0;
   static const double kTransitWander = 4.0;
   static const double kStationaryForce = 40.0;
   static const double kStationaryDamping = 2.0;

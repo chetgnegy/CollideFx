@@ -246,13 +246,13 @@ void Menu::unclicked(){
     if(Physics::is_clear_area(new_disc_->pos_.x,new_disc_->pos_.y, new_disc_->get_radius())){ 
     // unclicks the disc, a new disc is finalized!
       new_disc_->unclicked();
-
-
       // Add disc to the graph! 
       // Functions do internal type checking
       if (graph_->add_effect(new_disc_)){}
       else if (graph_->add_midi_ugen(new_disc_)){}
       else if (graph_->add_input(new_disc_)){}
+      // Keeps an eye on this disc
+      Disc::spotlight_disc_ = new_disc_;
           
     }
     else{
@@ -378,8 +378,9 @@ void Menu::handle_click(int x, int y){
     // UP ARROW BUTTON
     if (inSquare(x - 16, y, x_arrow_but, y_up_but, sm_but_size)){
       std::cout << "Clicked Up" << std::endl; 
-      graph_->print_all();
+      graph_->lock_thread(true);
       graph_->rebuild();
+      graph_->lock_thread(false);
       return;
     }
     // DOWN ARROW BUTTON
@@ -402,10 +403,15 @@ void Menu::handle_click(int x, int y){
         Graphics::remove_drawable(Disc::spotlight_disc_);
         Graphics::remove_moveable(Disc::spotlight_disc_);
         Physics::take_physics(Disc::spotlight_disc_);
+    
+        //Graphics thread is also using this
+        graph_->lock_thread(true);
         // This also deletes the disc
         graph_->remove_disc(Disc::spotlight_disc_);
         graph_->rebuild();
+        graph_->lock_thread(false);
         Disc::spotlight_disc_ = NULL;
+
       }
       return;
     }

@@ -64,7 +64,9 @@ public:
   // Sets instantaneous velocity of the disc
   void set_velocity(double x, double y);
 
-  UnitGenerator *get_ugen(){ return ugen_; }
+  UnitGenerator *get_ugen(){ 
+    return ugen_; 
+  }
 
   // Forwards request for parameter values
   double get_ugen_params(int param);
@@ -90,6 +92,9 @@ public:
   
   // initializes the textures
   void prepare_graphics(void);
+
+  // advance the spotlight timer
+  void advance_time(double t);
 
   /* ----- Moveable ----- */
 
@@ -158,6 +163,7 @@ private:
 
   int orb_color_scheme_;
 
+  static double spotlight_graphic_timer;
 
 };
 

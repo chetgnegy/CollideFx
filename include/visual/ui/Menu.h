@@ -106,6 +106,8 @@ private:
   bool slider_initial_; 
   Disc *last_disc_;
   bool show_slider_;
+
+  bool midi_active;
 };
 
 #endif

@@ -31,14 +31,12 @@ void UGenGraphBuilder::rebuild(){
   wires_.clear();
   data_.clear();
   sinks_.clear();
+
   int num_inputs = inputs_.size() + midi_modules_.size();
   int num_nodes = num_inputs+ fx_.size();
   if (num_nodes == 0) return;
 
-  // This function may be called from the graphics thread?
-  audio_lock_.lock();
-  
-  
+
 
   bool marked[num_nodes];
   bool is_sink[num_nodes];
@@ -117,7 +115,7 @@ void UGenGraphBuilder::rebuild(){
   }
   
   // Sorts the wires so that the directionality is stable
-  std::sort(wires_.begin(), wires_.end(), compare_wires);
+  //std::sort(wires_.begin(), wires_.end(), compare_wires);
 
   // Make sure inputs are only transmitting
   bool finalized[wires_.size()];
@@ -158,18 +156,27 @@ void UGenGraphBuilder::rebuild(){
   std::cout << "Listing Wires" << std::endl;
   for (int i = 0; i < wires_.size(); ++i){
 
-    std::cout << wires_[i].first->get_ugen()->name() << " ";
-    std::cout << wires_[i].second->get_ugen()->name() << std::endl;
+    std::cout << "\t" << wires_[i].first->get_ugen()->name() << " ";
+    std::cout << "\t" << wires_[i].second->get_ugen()->name() << std::endl;
+    std::cout << "\t" << wires_[i].first->get_ugen() << " ";
+    std::cout << "\t" << wires_[i].second->get_ugen() << std::endl;
     data_[wires_[i].second].inputs_.push_back(wires_[i].first);
     data_[wires_[i].first].outputs_.push_back(wires_[i].second);
   }
 
   for (int i = 0; i < num_nodes; ++i){
     if (data_[indexed(i)].outputs_.size() == 0){
+      std::cout <<  "Sink: " << indexed(i)->get_ugen()->name() << std::endl;
       sinks_.push_back(indexed(i));
     }
   }
-  audio_lock_.unlock();
+  
+}
+
+
+void UGenGraphBuilder::lock_thread(bool lock){
+  if (lock) audio_lock_.lock();
+  else audio_lock_.unlock();
 }
 
 // Sorts the wires by the addresses of their endpoints. This sort isn't 
@@ -192,18 +199,19 @@ void UGenGraphBuilder::switch_wire_direction(Wire &w){
 
 // Reverses the push architechture of "out = tick(in)" to recursively pull
 // samples to the output sinks from the inputs
-double UGenGraphBuilder::pull_result(Disc *k, std::vector<Disc *> inputs){
+double UGenGraphBuilder::pull_result(UnitGenerator *k, std::vector<Disc *> inputs){
   double sum = 0;
   if (inputs.size() > 0) {
     std::vector<Disc *>::iterator it;
     it = inputs.begin();
-
+      
     while (it != inputs.end()) {
-      sum += pull_result((*it), data_[*it].inputs_);
+      double scale = 1;//pow(data_[*it].inputs_.size(), 0.5);
+      sum += scale * pull_result((*it)->get_ugen(), data_[*it].inputs_);
       ++it;
     }
   }
-  return k->get_ugen()->tick(sum);
+  return k->tick(sum);
 }
 
 
@@ -214,17 +222,14 @@ double UGenGraphBuilder::pull_result(Disc *k, std::vector<Disc *> inputs){
 // and midi data to the graph by using the handoff_audio and 
 // handoff midi functions
 double UGenGraphBuilder::tick(){
-  audio_lock_.lock();
-  
+  bool print = false;
   double sum = 0;
   std::vector<Disc *>::iterator it;
     it = sinks_.begin();
     while (it != sinks_.end()) {
-      sum += pull_result((*it), data_[*it].inputs_);
+      sum += pull_result((*it)->get_ugen(), data_[*it].inputs_);
       ++it;
     }
-  audio_lock_.unlock();
-  
   return sum;
 }
 

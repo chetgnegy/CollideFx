@@ -70,6 +70,8 @@ public:
 
   void switch_wire_direction(Wire &w);
 
+  void lock_thread(bool lock);
+
   std::vector<Wire> wires_;
 
   std::vector<Disc *> sinks_;
@@ -81,7 +83,7 @@ private:
 
   // Reverses the push architecture of "out = tick(in)" to recursively pull
   // samples to the output sinks from the inputs
-  double pull_result(Disc *k, std::vector<Disc *> inputs);
+  double pull_result(UnitGenerator *k, std::vector<Disc *> inputs);
 
 
   // Allows all ugens to be called uniformly

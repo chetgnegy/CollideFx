@@ -11,6 +11,7 @@
 
 
 Disc* Disc::spotlight_disc_ = NULL;
+double Disc::spotlight_graphic_timer = 0;
 bool Disc::texture_loaded_ = false;
 GLuint *Disc::tex_ = new GLuint[15];
 
@@ -129,7 +130,7 @@ void Disc::draw(){
 
  glPushMatrix();
     glScalef(r_, r_, 1);
-    int res = 16;
+    int res = 24;
 
     quadratic=gluNewQuadric();          // Create A Pointer To The Quadric Object ( NEW )
     gluQuadricNormals(quadratic, GLU_SMOOTH);   // Create Smooth Normals ( NEW )
@@ -139,6 +140,24 @@ void Disc::draw(){
       glTranslatef(0,0,.01);
       gluDisk(quadratic,0.70f,1.0f,res,res);
       glPopMatrix();
+    
+    // Animate the selected disc
+    if (this == spotlight_disc_){
+      double spot_alpha = .05*sin(8*spotlight_graphic_timer);
+      glColor4f(color_.x,color_.y,color_.z, 
+                .23 + spot_alpha);
+      gluDisk(quadratic,1.95f,2.0f,res,res);
+      glColor4f(color_.x,color_.y,color_.z,
+                .16 + spot_alpha);
+      gluDisk(quadratic,1.75f,1.8f,res,res);
+      glColor4f(color_.x,color_.y,color_.z, 
+                .12 + spot_alpha);
+      gluDisk(quadratic,1.55f,1.6f,res,res);
+      glColor4f(color_.x,color_.y,color_.z, 
+                .07 + spot_alpha);
+      gluDisk(quadratic,1.35f,1.4f,res,res);
+    }
+
     glColor4f(color_.x,color_.y,color_.z, alpha);
     gluCylinder(quadratic,1.0f,1.0f,1.0f,res,res);
     //Draw the faces
@@ -228,6 +247,15 @@ void Disc::prepare_graphics(void){
     tex_[13] = loadTextureFromFile( "graphics/reverb.bmp" );
     tex_[14] = loadTextureFromFile( "graphics/tremolo.bmp" );
     texture_loaded_ = true;
+  }
+}
+
+void Disc::advance_time(double t){
+  if (this == spotlight_disc_){
+    spotlight_graphic_timer += t;
+  
+  if (spotlight_graphic_timer>6.2831853)
+    spotlight_graphic_timer-=6.2831853;
   }
 }
 
