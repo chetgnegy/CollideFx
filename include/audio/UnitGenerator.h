@@ -19,6 +19,7 @@
 #include "ClassicWaveform.h"
 #include "DigitalFilter.h"
 #include "complex.h"
+#include "fft.h"
 
 class UnitGenerator{
 public: 
@@ -30,6 +31,9 @@ public:
   // Processes a single sample in the unit generator
   virtual double tick(double in) = 0;
   double *process_buffer(double buffer[], int length);
+
+  // Get the fft of the buffer's current contents
+  void buffer_fft(int full_length, complex *out);
 
   // Allows user to set the generic parameters, bounds must already be set
   virtual void set_params(double p1, double p2);

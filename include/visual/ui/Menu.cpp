@@ -68,6 +68,8 @@ void Menu::draw(){
       glPopAttrib();
   // } Printing the lines
 
+  glColor3f(1,1,1);
+      
   glBegin(GL_QUADS);
   float width = kScaleDimensions;
   float height = kScaleDimensions * height_to_width_;
@@ -143,6 +145,32 @@ void Menu::draw(){
         glPopMatrix();
     }
 
+  }
+  else{
+    // Draws the FFT
+    if(graph_->fft_signaled()){
+      graph_->calculate_fft();
+    }
+    complex *fft = graph_->get_fft();
+    glLineWidth(6);
+    double x = -8, y = -4.7;
+    double bar_width = .057;
+    double y_scale = 2.3;
+    double R, G, B;
+    double y_coord;
+
+    for (int i = 0; i < graph_->get_fft_length(); ++i){
+      glBegin(GL_LINES);
+      
+      spectrum(.3*log10(1+100*fft[i].normsq()),R, G, B);
+      glColor3f(R,G,B);
+      glVertex3f(x + i*bar_width, y + 0,0);
+      y_coord = fmin(y_scale * log10(1+100*fft[i].normsq()),9.5);
+      glVertex3f(x + i*bar_width, y + y_coord,0);
+      glEnd();
+      glPopAttrib();
+    }
+    glColor3f(1,1,1);
   }
     
 }

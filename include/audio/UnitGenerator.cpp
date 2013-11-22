@@ -26,6 +26,10 @@ double *UnitGenerator::process_buffer(double *buffer, int length){
   return ugen_buffer_;
 }
 
+void UnitGenerator::buffer_fft(int full_length, complex *out){
+  if (ugen_buffer_size_ != ugen_buffer_size_) printf("Buffer size mismatch");
+  CFFT::Forward((complex *)ugen_buffer_, out, full_length);
+}
 
 // Allows user to set the generic parameters, bounds must already be set
 void UnitGenerator::set_params(double p1, double p2){

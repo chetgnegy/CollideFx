@@ -50,26 +50,9 @@ int audioCallback(void *outputBuffer, void *inputBuffer, unsigned int num_frames
   double *out_mono = new double[num_frames];
   graph->lock_thread(true);
   graph->load_buffer(out_mono, num_frames);
+  graph->signal_fft();
   graph->lock_thread(false);
-  /*
-  for (unsigned int i = 0; i < num_frames; ++i) {
-    // Pass sample to the inputs of the UGenChain
-    graph->handoff_audio(input_buffer[i] / UGenChain::kMaxOutput);
-    
-    //Graphics thread is also using this
-    graph->lock_thread(true);
-    newVal = graph->tick();
-    graph->lock_thread(false);
-    
-    //Output limiting
-    //if (fabs(newVal) > 1.001) newVal = lastVal;
-    //else lastVal = newVal;
-    
-    output_buffer[i * numChannels] = newVal;
-  }
-  */
-  
-  
+
   //Fills the other channels
   for (unsigned int i = 0; i < num_frames; ++i) {
     for (unsigned int j = 0; j < numChannels; ++j) {

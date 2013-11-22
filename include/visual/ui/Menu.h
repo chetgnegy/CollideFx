@@ -17,6 +17,7 @@
 #include "Moveable.h"
 #include "RgbImage.h"
 #include "UGenGraphBuilder.h"
+#include "graphicsutil.h"
 
 #include <iostream> // delete
 
@@ -109,6 +110,7 @@ private:
   bool show_slider_;
 
   bool midi_active_;
+
 };
 
 #endif

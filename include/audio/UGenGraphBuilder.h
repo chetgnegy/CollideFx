@@ -18,6 +18,7 @@
 #include "UnitGenerator.h"
 #include "Disc.h"
 #include "Thread.h"
+
 class GraphData;
 
 
@@ -72,6 +73,17 @@ public:
 
   void lock_thread(bool lock);
 
+  // Lets the other thread know that the FFT is ready to compute
+  void signal_fft();
+  bool fft_signaled(){return fft_ready_;}
+
+  // The graphics thread can grab this and display it
+  void calculate_fft();
+
+  complex *get_fft();
+  int get_fft_length(){return buffer_length_/2;}
+  
+
   std::vector<Wire> wires_;
 
   std::vector<Disc *> sinks_;
@@ -108,6 +120,9 @@ private:
   Mutex audio_lock_;
 
   int buffer_length_;
+
+  complex *fft_;
+  bool fft_ready_;
 };
 
 

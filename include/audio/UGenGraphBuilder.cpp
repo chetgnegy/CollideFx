@@ -14,6 +14,7 @@ bool compare_wires (Wire i, Wire j);
 
 UGenGraphBuilder::UGenGraphBuilder(int length){
   buffer_length_ = length;
+  fft_ = new complex[buffer_length_];
 }
 
 UGenGraphBuilder::~UGenGraphBuilder(){
@@ -275,6 +276,7 @@ void UGenGraphBuilder::load_buffer(double *out, int frames){
     }
     ++it;
   }
+
 }
 
 
@@ -404,6 +406,22 @@ bool UGenGraphBuilder::remove_disc(Disc *d){
   return false;
 }
 
+// Lets the other thread know that the FFT is ready to compute
+void UGenGraphBuilder::signal_fft(){
+  fft_ready_ = true;
+}
+
+// The graphics thread can grab this and display it
+void UGenGraphBuilder::calculate_fft(){
+  if (Disc::spotlight_disc_ != NULL){
+    Disc::spotlight_disc_->get_ugen()->buffer_fft(buffer_length_, fft_);
+    fft_ready_ = false;
+  }
+}
+
+complex *UGenGraphBuilder::get_fft(){
+  return fft_;
+}
 
 // The distance between two discs
 double UGenGraphBuilder::get_edge_cost(Disc* a, Disc* b){

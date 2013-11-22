@@ -25,7 +25,7 @@ LIBS=-framework CoreAudio -framework CoreMIDI -framework CoreFoundation \
 endif
 
 
-A_OBJS = ClassicWaveform.o DigitalFilter.o RtAudio.o RtMidi.o Thread.o Stk.o UGenChain.o UGenGraphBuilder.o UnitGenerator.o
+A_OBJS = ClassicWaveform.o DigitalFilter.o fft.o RtAudio.o RtMidi.o Thread.o Stk.o UGenChain.o UGenGraphBuilder.o UnitGenerator.o
 P_OBJS = Physics.o vmath.o 
 V_OBJS = Disc.o Graphics.o Orb.o World.o 
 U_OBJS = Menu.o RgbImage.o
@@ -43,6 +43,9 @@ ClassicWaveform.o: ClassicWaveform.cpp ClassicWaveform.h
 
 DigitalFilter.o: DigitalFilter.cpp DigitalFilter.h
 	$(CXX) $(FLAGS) $(INC) $(A_INCDIR)DigitalFilter.cpp
+
+fft.o: fft.cpp fft.h
+	$(CXX) $(FLAGS) $(INC) $(A_INCDIR)fft.cpp
 
 RtAudio.o: RtAudio.h RtError.h RtAudio.cpp
 	$(CXX) $(FLAGS) $(INC) $(A_INCDIR)RtAudio.cpp
