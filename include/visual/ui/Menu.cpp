@@ -27,6 +27,7 @@ Menu::Menu(){
   show_slider_ = false;
   slider1_ = 0;
   slider2_ = 0;
+  midi_active_ = false;
 }
 
 Menu::~Menu(){}
@@ -77,12 +78,27 @@ void Menu::draw(){
   glEnd();
   glPopAttrib();
   
+
+  // Grey Midi if not enabled
+  if (!midi_active_){
+    glPushAttrib(GL_ALL_ATTRIB_BITS);
+        glEnable(GL_BLEND);
+        glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+      
+    glColor4f(0,0,0,.7);
+    glBegin(GL_QUADS);
+    glTexCoord2f(0.0, 1.0); glVertex3f(-0.55*width, 0.75*height, 0);
+    glTexCoord2f(1.0, 1.0); glVertex3f(0.9*width, 0.75*height, 0);
+    glTexCoord2f(1.0, 0.0); glVertex3f(0.9*width, 0.53*height, 0);
+    glTexCoord2f(0.0, 0.0); glVertex3f(-0.55*width, 0.53*height, 0);
+    glEnd();
+    glPopAttrib();
+  }
   glTranslatef(0,-9,0);
 
   
 
   if (ctrl_menu_shown_){
-
     // Checks to see if disc was JUST clicked, sets initial
     // slider positions
     if (Disc::spotlight_disc_ != NULL && slider_initial_){
@@ -342,10 +358,10 @@ void Menu::handle_click(int x, int y){
       if (inSquare(x -32, y - 21, x_but + i*(but_size+h_but_space), y_but[0], but_size)){
         switch (i){
           case 0: make_disc(100); return; // Input
-          case 1: make_disc(101); return; // Sine
-          case 2: make_disc(102); return; // Square
-          case 3: make_disc(103); return; // Tri
-          case 4: make_disc(104); return; // Saw
+          case 1: if (midi_active_) make_disc(101); return; // Sine
+          case 2: if (midi_active_) make_disc(102); return; // Square
+          case 3: if (midi_active_) make_disc(103); return; // Tri
+          case 4: if (midi_active_) make_disc(104); return; // Saw
         }
       }
     }
@@ -438,6 +454,8 @@ void Menu::link_ugen_graph(UGenGraphBuilder *gb){
 }
 
 
+// Allows MIDI disks to be made
+void Menu::enable_midi(){ midi_active_ = true; }
 
 // Creates a new disc whenever a disc button is pressed.
 void Menu::make_disc(int button){

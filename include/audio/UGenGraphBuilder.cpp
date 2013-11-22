@@ -12,7 +12,9 @@
 
 bool compare_wires (Wire i, Wire j);
 
-UGenGraphBuilder::UGenGraphBuilder(){}
+UGenGraphBuilder::UGenGraphBuilder(int length){
+  buffer_length_ = length;
+}
 
 UGenGraphBuilder::~UGenGraphBuilder(){
   /*
@@ -158,15 +160,12 @@ void UGenGraphBuilder::rebuild(){
 
     std::cout << "\t" << wires_[i].first->get_ugen()->name() << " ";
     std::cout << "\t" << wires_[i].second->get_ugen()->name() << std::endl;
-    std::cout << "\t" << wires_[i].first->get_ugen() << " ";
-    std::cout << "\t" << wires_[i].second->get_ugen() << std::endl;
     data_[wires_[i].second].inputs_.push_back(wires_[i].first);
     data_[wires_[i].first].outputs_.push_back(wires_[i].second);
   }
 
   for (int i = 0; i < num_nodes; ++i){
     if (data_[indexed(i)].outputs_.size() == 0){
-      std::cout <<  "Sink: " << indexed(i)->get_ugen()->name() << std::endl;
       sinks_.push_back(indexed(i));
     }
   }
@@ -215,14 +214,39 @@ double UGenGraphBuilder::pull_result(UnitGenerator *k, std::vector<Disc *> input
 }
 
 
+// Reverses the push architechture of "out = tick(in)" to recursively pull
+// samples to the output sinks from the inputs. Works on an entire buffer
+// The buffer out is cleared of any previous contents
+double *UGenGraphBuilder::pull_result_buffer(UnitGenerator *k, std::vector<Disc *> inputs, 
+                                  int length){
+  double *out = new double[length];
+  // Zero out old array
+  for (int i = 0; i < length; ++i) out[i] = 0;
+      
+  if (inputs.size() > 0) {
+    std::vector<Disc *>::iterator it;
+    it = inputs.begin();
+    double *temp;
+    while (it != inputs.end()) {
+      double scale = 1;//pow(data_[*it].inputs_.size(), 0.5);
+      temp = pull_result_buffer((*it)->get_ugen(), data_[*it].inputs_, length);
+      // copy new branch into output buffer
+      for (int i = 0; i < length; ++i){
+        out[i] += temp[i];
+      }
+      ++it;
+    }
+  }
+  
+  return k->process_buffer(out, length);
 
+}
 
 
 // Processes a single sample. Note that you must first handoff audio 
 // and midi data to the graph by using the handoff_audio and 
 // handoff midi functions
 double UGenGraphBuilder::tick(){
-  bool print = false;
   double sum = 0;
   std::vector<Disc *>::iterator it;
     it = sinks_.begin();
@@ -232,6 +256,27 @@ double UGenGraphBuilder::tick(){
     }
   return sum;
 }
+
+// Processes a whole buffer. Note that you must first handoff audio 
+// and midi data to the graph by using the handoff_audio and 
+// handoff midi functions (mono)
+void UGenGraphBuilder::load_buffer(double *out, int frames){
+  // Zero out old array
+  for (int i = 0; i < frames; ++i) out[i] = 0;
+      
+  std::vector<Disc *>::iterator it;
+  it = sinks_.begin();
+  double *temp;
+  while (it != sinks_.end()) {
+    temp = pull_result_buffer((*it)->get_ugen(), data_[*it].inputs_, frames);
+    // copy new branch into output buffer
+    for (int i = 0; i < frames; ++i){
+      out[i] += temp[i];
+    }
+    ++it;
+  }
+}
+
 
 // Prints all data about the graph, including the nodes,
   // their type and positions
@@ -263,6 +308,16 @@ void UGenGraphBuilder::handoff_audio(double sample){
   //Process each effect in chain
   while (i < inputs_.size()) {
     static_cast<Input *>(inputs_.at(i)->get_ugen())->set_sample( sample );
+    ++i;
+  }
+}
+
+// Passes any audio samples to the Input ugens. 
+void UGenGraphBuilder::handoff_audio_buffer(double buffer[], int length){
+  int i = 0;
+  //Process each effect in chain
+  while (i < inputs_.size()) {
+    static_cast<Input *>(inputs_.at(i)->get_ugen())->set_buffer( buffer, length );
     ++i;
   }
 }

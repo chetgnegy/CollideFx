@@ -191,7 +191,7 @@ void Disc::get_origin(double &x, double &y, double &z){
 
 // The current orientation of the disk
 void Disc::get_rotation(double &w, double &x, double &y, double &z){
-  w=ang_pos_.length()*180.0 / 3.1415926535; 
+  w=ang_pos_.length() * 180.0 / 3.1415926535; 
   x=ang_pos_.x; y=ang_pos_.y; z=ang_pos_.z;
 }
 

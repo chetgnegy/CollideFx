@@ -29,7 +29,7 @@ class UGenGraphBuilder {
 public:
 
   static const double kMaxDist = 7.0;
-  UGenGraphBuilder();
+  UGenGraphBuilder(int buffer_length);
   ~UGenGraphBuilder();
 
   // Recomputes the graph based on the new positions of the discs
@@ -39,6 +39,7 @@ public:
   // and midi data to the graph by using the handoff_audio and 
   // handoff midi functions
   double tick();
+  void load_buffer(double *out, int length); // a whole buffer
 
   // Prints all data about the graph, including the nodes,
   // their type and positions
@@ -46,6 +47,7 @@ public:
 
   // Passes any audio samples to the Input ugens. 
   void handoff_audio(double samples);
+  void handoff_audio_buffer(double *buffer, int samples);
 
   // Passes any midi notes the MidiUnitGenerators. Decides using the
   // value of velocity whether the event is a note on or a note off
@@ -68,8 +70,6 @@ public:
   // Removes a disc from the graph and deletes the disc
   bool remove_disc(Disc *ugen);
 
-  void switch_wire_direction(Wire &w);
-
   void lock_thread(bool lock);
 
   std::vector<Wire> wires_;
@@ -84,7 +84,11 @@ private:
   // Reverses the push architecture of "out = tick(in)" to recursively pull
   // samples to the output sinks from the inputs
   double pull_result(UnitGenerator *k, std::vector<Disc *> inputs);
+  double *pull_result_buffer(UnitGenerator *k, std::vector<Disc *> inputs, int length);
 
+  void switch_wire_direction(Wire &w);
+
+  
 
   // Allows all ugens to be called uniformly
   Disc *indexed(int i);
@@ -102,6 +106,8 @@ private:
   std::map < Disc *, GraphData > data_;
 
   Mutex audio_lock_;
+
+  int buffer_length_;
 };
 
 

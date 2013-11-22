@@ -34,11 +34,14 @@ int main(int argc, char *argv[]) {
   
   Menu *myMenu = new Menu();
   World *myWorld = new World(30, 30, 9, 0);
+
   
   Graphics::add_drawable(myMenu, 1);
   Graphics::add_moveable(myMenu);
   myMenu->link_ugen_graph(myChain->get_signal_graph());
-  
+  if (UGenChain::has_midi()){ myMenu->enable_midi(); }
+    
+
   Graphics::add_drawable(myWorld, 2);
   Physics::set_bounds(30*(1-2*World::kWallThickness), 30*(1-2*World::kWallThickness), 9, 0);
 

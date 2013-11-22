@@ -22,11 +22,15 @@
 
 class UnitGenerator{
 public: 
-  virtual ~UnitGenerator(){};
+  virtual ~UnitGenerator(){ 
+    std::cout << "Deletes buffer" << std::endl;
+    delete[] ugen_buffer_; 
+  };
 
   // Processes a single sample in the unit generator
   virtual double tick(double in) = 0;
-  
+  double *process_buffer(double buffer[], int length);
+
   // Allows user to set the generic parameters, bounds must already be set
   virtual void set_params(double p1, double p2);
 
@@ -37,7 +41,7 @@ public:
   // and minimum parameters to be set
   void set_normalized_param(double param1, double param2);
 
-  // Can things lead into is unit generator or is it the first
+  // Can things lead into unit generator or is it the first
   // in the chain?
   virtual bool is_input() = 0;
   virtual bool is_midi() = 0;
@@ -45,6 +49,10 @@ public:
   const char * name() { return name_;}
   const char * p_name(int i) {return i==1 ? param1_name_ : param2_name_;}
 protected:
+  int ugen_buffer_size_;
+  double *ugen_buffer_;
+
+  
   // Sets the bounds on the parameters of the ugen
   void set_limits(double min1, double max1, double min2, double max2);
 
@@ -89,23 +97,20 @@ The input unit gen just returns what it was given
 */
 class Input : public UnitGenerator {
 public:
-  Input(){
-    name_ = "Input";
-    param1_name_ = "Volume";
-    param2_name_ = "Not Used";
-    set_limits(0, 1, 0, 0);
-    set_params(1, 0);
-  
-  }
-  ~Input(){}
-  // Processes a single sample in the unit generator
-  double tick(double in){ return current_value_; }  
+  Input(int length = 512);
+  ~Input();
+  // Pulls the current sample out of the buffer and advances the read index
+  double tick(double in);
   bool is_input(){ return true; }
   bool is_midi(){ return false; }
-  void set_sample(double val){ current_value_ = val; }
-
+  // Sets the sample at the current index in the buffer
+  void set_sample(double val);
+  // Sets the entire buffer
+  void set_buffer(double buffer[], int length);
+  
 private:
   double current_value_;
+  int current_index_; 
 };
 
 
@@ -116,7 +121,7 @@ The sine wave listens to the midi controller
 */
 class Sine : public MidiUnitGenerator {
 public:
-  Sine(double p1 = 0.001, double p2 = .2, int sample_rate = 44100);
+  Sine(double p1 = 0.001, double p2 = .2, int sample_rate = 44100, int length = 512);
   ~Sine();
   void set_params(double p1, double p2);
 };
@@ -129,7 +134,7 @@ The square wave listens to the midi controller
 */
 class Square : public MidiUnitGenerator  {
 public:
-  Square(double p1 = 0.25, double p2 = 2, int sample_rate = 44100);
+  Square(double p1 = 0.25, double p2 = 2, int sample_rate = 44100, int length = 512);
   ~Square();
   void set_params(double p1, double p2);
 };
@@ -142,7 +147,7 @@ The tri wave listens to the midi controller
 */
 class Tri : public MidiUnitGenerator  {
 public:
-  Tri(double p1 = 0.25, double p2 = 2, int sample_rate = 44100);
+  Tri(double p1 = 0.25, double p2 = 2, int sample_rate = 44100, int length = 512);
   ~Tri();
   void set_params(double p1, double p2);
 };
@@ -155,7 +160,7 @@ The saw wave listens to the midi controller
 */
 class Saw : public MidiUnitGenerator  {
 public:
-  Saw(double p1 = 0.25, double p2 = 2, int sample_rate = 44100);
+  Saw(double p1 = 0.25, double p2 = 2, int sample_rate = 44100, int length = 512);
   ~Saw();
   void set_params(double p1, double p2);
 };
@@ -169,7 +174,7 @@ The bitcrusher effect quantizes and downsamples the input
 */
 class BitCrusher : public UnitGenerator {
 public:
-  BitCrusher(int p1 = 8, int p2 = 2);
+  BitCrusher(int p1 = 8, int p2 = 2, int length = 512);
   ~BitCrusher();
   // Processes a single sample in the unit generator
   double tick(double in);
@@ -203,7 +208,7 @@ public:
   static const double kMaxFreq = 10.0;// Hz
   static const double kMinFreq = .020;// Hz
   
-  Chorus(double p1 = 0.5, double p2 = 0.5, int sample_rate = 44100);
+  Chorus(double p1 = 0.5, double p2 = 0.5, int sample_rate = 44100, int length = 512);
   ~Chorus();
   // Processes a single sample in the unit generator
   double tick(double in);  
@@ -236,7 +241,7 @@ class Delay : public UnitGenerator {
 public:
   static const int kShortestDelay = 50;
   
-  Delay(double p1 = 0.5, double p2 = 0.5, int sample_rate = 44100);
+  Delay(double p1 = 0.5, double p2 = 0.5, int sample_rate = 44100, int length = 512);
   ~Delay();
   // Processes a single sample in the unit generator
   double tick(double in);  
@@ -264,7 +269,7 @@ The distortion effect clips the input to a speficied level
 class Distortion : public UnitGenerator {
 public:
   
-  Distortion(double p1 = 18.0, double p2 = 0.6);
+  Distortion(double p1 = 18.0, double p2 = 0.6, int length = 512);
   ~Distortion();
   // Processes a single sample in the unit generator
 
@@ -284,7 +289,7 @@ A high or low pass filter
 class Filter : public UnitGenerator {
 public:
   // Makes a lowpass by default
-  Filter(double p1 = 1000, double p2 = 1);
+  Filter(double p1 = 1000, double p2 = 1, int length = 512);
   ~Filter();
   // Processes a single sample in the unit generator
   double tick(double in);
@@ -309,7 +314,7 @@ A second order bandpass filter
 */
 class Bandpass : public UnitGenerator {
 public:
-  Bandpass(double p1 = 1000, double p2 = 1);
+  Bandpass(double p1 = 1000, double p2 = 1, int length = 512);
   ~Bandpass();
   // Processes a single sample in the unit generator
   double tick(double in);
@@ -332,7 +337,7 @@ The looper effect keeps a section of the input in a buffer and loops it back
 class Looper : public UnitGenerator {
 public:
   
-  Looper(int sample_rate = 44100);
+  Looper(int sample_rate = 44100, int length = 512);
   ~Looper();
   
   // Processes a single sample in the unit generator
@@ -379,7 +384,7 @@ public:
   static const double kMaxFreq = 5000.0;// Hz
   static const double kMinFreq = 100;// Hz
 
-  RingMod(double p1 = .1, double p2 = 0, int sample_rate = 44100);
+  RingMod(double p1 = .1, double p2 = 0, int sample_rate = 44100, int length = 512);
   ~RingMod();
   // Processes a single sample in the unit generator
   double tick(double in);
@@ -405,7 +410,7 @@ public:
   static const int kCombDelays[];
   static const int kAllPassDelays[];
   
-  Reverb(double p1 = 0.8, double p2 = 0.2);
+  Reverb(double p1 = 0.8, double p2 = 0.2, int length = 512);
   ~Reverb();
   // Processes a single sample in the unit generator
   double tick(double in);  
@@ -434,7 +439,7 @@ public:
   static const double kMaxFreq = 10.0;// Hz
   static const double kMinFreq = .020;// Hz
   
-  Tremolo( double p1 = 0.5, double p2 = 0.5, int sample_rate = 44100);
+  Tremolo( double p1 = 0.5, double p2 = 0.5, int sample_rate = 44100, int length = 512);
   ~Tremolo();
   
   // Processes a single sample in the unit generator

@@ -42,8 +42,16 @@ int audioCallback(void *outputBuffer, void *inputBuffer, unsigned int num_frames
   UGenGraphBuilder *graph = (UGenGraphBuilder *) data;
   int numChannels = UGenChain::kNumChannels;
   
-
+  
   double newVal = 0, lastVal;
+
+  graph->handoff_audio_buffer(input_buffer,num_frames);
+
+  double *out_mono = new double[num_frames];
+  graph->lock_thread(true);
+  graph->load_buffer(out_mono, num_frames);
+  graph->lock_thread(false);
+  /*
   for (unsigned int i = 0; i < num_frames; ++i) {
     // Pass sample to the inputs of the UGenChain
     graph->handoff_audio(input_buffer[i] / UGenChain::kMaxOutput);
@@ -52,22 +60,29 @@ int audioCallback(void *outputBuffer, void *inputBuffer, unsigned int num_frames
     graph->lock_thread(true);
     newVal = graph->tick();
     graph->lock_thread(false);
+    
     //Output limiting
-    /*
-    if (fabs(newVal) > 1.001) newVal = lastVal;
-    else lastVal = newVal;
-    */
+    //if (fabs(newVal) > 1.001) newVal = lastVal;
+    //else lastVal = newVal;
+    
     output_buffer[i * numChannels] = newVal;
   }
+  */
+  
   
   //Fills the other channels
   for (unsigned int i = 0; i < num_frames; ++i) {
-    for (unsigned int j = 1; j < numChannels; ++j) {
-      output_buffer[i * numChannels + j] = output_buffer[i * numChannels ];
+    for (unsigned int j = 0; j < numChannels; ++j) {
+      // Limiting
+      if (fabs(out_mono[i]) > 2.4) out_mono[i] = 0;
+
+      output_buffer[i * numChannels + j] = out_mono[i];
     }
   }
-  
+  delete[] out_mono;
+
   return 0;
+
 }
 
 
@@ -78,7 +93,7 @@ int audioCallback(void *outputBuffer, void *inputBuffer, unsigned int num_frames
 
 //Creates all structures. You still need to call initialize()!
 UGenChain::UGenChain(){
-  graph_builder_ = new UGenGraphBuilder();
+  graph_builder_ = new UGenGraphBuilder(kBufferFrames);
   anti_aliasing_ = new DigitalLowpassFilter(10000, 1, 1);
   low_pass_ = new DigitalHighpassFilter(10, 1, 1);
 }

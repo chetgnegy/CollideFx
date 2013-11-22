@@ -65,6 +65,7 @@ public:
   // Links the menu to the audio module
   void link_ugen_graph(UGenGraphBuilder *u);
   
+  void enable_midi();
 private:
   // Converts the coordinates (x,y) from screen coordinates to
   // image coordinates (a,b)
@@ -107,7 +108,7 @@ private:
   Disc *last_disc_;
   bool show_slider_;
 
-  bool midi_active;
+  bool midi_active_;
 };
 
 #endif
