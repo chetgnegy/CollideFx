@@ -22,7 +22,7 @@ public:
 
   static const double kTransitTime = 2.5;
   static const double kTransitForce = 50.0;
-  static const double kTransitDamping = 25.0;
+  static const double kTransitDamping = 45.0;
   static const double kTransitWander = 8.0;
   static const double kStationaryForce = 40.0;
   static const double kStationaryDamping = 2.0;
@@ -41,6 +41,8 @@ public:
 
   // Changes the disc that the orb is assigned to
   void reassign(Vector3d *v);
+
+  bool mid_transit(){return scheduled_transit_;}
 
   // Removes anchor point and schedules destruction.
   // Particles fly in all directions!

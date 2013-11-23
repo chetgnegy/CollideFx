@@ -62,9 +62,9 @@ int audioCallback(void *outputBuffer, void *inputBuffer, unsigned int num_frames
   for (unsigned int i = 0; i < num_frames; ++i) {
     for (unsigned int j = 0; j < numChannels; ++j) {
       // Limiting
-      if (fabs(out_mono[i]) > 5) out_mono[i] = 0;
+      //if (fabs(out_mono[i]) > 15) out_mono[i] = 0;
 
-      output_buffer[i * numChannels + j] = out_mono[i];
+      output_buffer[i * numChannels + j] = 0.1 * out_mono[i];
     }
   }
   delete[] out_mono;

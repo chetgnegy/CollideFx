@@ -283,12 +283,14 @@ void UGenGraphBuilder::update_graphics_dependencies(){
     indexed(i)->excite(indexed(i)->get_ugen()->buffer_energy());
 
     // Shuffles Orbs around
-    if (rand()%4 == 0){
+    if (rand()%6 == 0){
       outputs = data_[indexed(i)].outputs_.size();
       if (outputs > 0){
+        bool try_handoff = true;
         do{
-          indexed(i)->orb_handoff(data_[indexed(i)].outputs_[rand() % outputs]);
-        }while(indexed(i)->above_capacity());
+          try_handoff = indexed(i)->orb_handoff(
+                        data_[indexed(i)].outputs_[rand() % outputs]);
+        }while(indexed(i)->above_capacity() && try_handoff);
       }
       else{
         indexed(i)->orb_limit();

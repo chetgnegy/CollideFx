@@ -60,7 +60,11 @@ public:
   // value of velocity whether the event is a note on or a note off
   void handoff_midi(int MIDI_pitch, int velocity);
 
+  void update_graphics_dependencies();
 
+  // Lets the other thread know that the FFT is ready to compute
+  void signal_new_buffer();
+  bool is_new_buffer(){return buffer_ready_;}
 
   // #------------ Modify Graph -------------#
 
@@ -82,14 +86,10 @@ public:
   bool remove_disc(Disc *ugen);
 
 
-  void update_graphics_dependencies();
-
+  
   // #--------------- FFT ----------------#
 
-  // Lets the other thread know that the FFT is ready to compute
-  void signal_new_buffer();
-  bool is_new_buffer(){return buffer_ready_;}
-
+  
   // The graphics thread can grab this and display it
   void calculate_fft();
 
@@ -97,7 +97,6 @@ public:
   int get_fft_length(){return buffer_length_/2;}
   
 
-  std::vector<Wire> wires_;  // Make this private
   std::vector<Disc *> sinks_;
 
 private:
@@ -124,6 +123,8 @@ private:
   std::vector<Disc *> inputs_;
   std::vector<Disc *> midi_modules_;
   std::vector<Disc *> fx_;
+  
+  std::vector<Wire> wires_;
   
   // Data containing the current connections
   std::map < Disc *, GraphData > data_;

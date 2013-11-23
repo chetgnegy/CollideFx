@@ -13,7 +13,7 @@
 Disc* Disc::spotlight_disc_ = NULL;
 double Disc::spotlight_graphic_timer = 0;
 bool Disc::texture_loaded_ = false;
-GLuint *Disc::tex_ = new GLuint[15];
+GLuint *Disc::tex_ = new GLuint[23];
 
 
 
@@ -109,12 +109,26 @@ void Disc::orb_repopulate(){
   orb_create(maintain_orbs_ - orbs_.size());
 }
 
-// Passes the orb to another disc, d.
+// Passes the orb to another disc, d. Does nothing if all discs 
+// are mid transit
 bool Disc::orb_handoff(Disc *d){
+  int count = 0;
   if (orbs_.size() > 0) {
-      d->orb_receive(*orbs_.begin());
-      orbs_.erase(orbs_.begin());  
-      return true;
+    // The final element
+    std::list<Orb *>::iterator it_end;
+    it_end = orbs_.end(); --it_end;
+    
+    std::list<Orb *>::iterator it;
+    it = orbs_.begin();
+    
+    while ((*it)->mid_transit() && it != it_end){
+      ++it;
+    }
+    if ((*it)->mid_transit()) return false;
+    d->orb_receive(*it);
+    orbs_.erase(it); 
+    
+    return true;
   }
   return false;
 }
@@ -122,7 +136,7 @@ bool Disc::orb_handoff(Disc *d){
 // Receives an orb from another Disc
 void Disc::orb_receive(Orb *roy_orbison){
   roy_orbison->reassign(&pos_);
-  roy_orbison->change_hover_distance(1.5*r_);
+  roy_orbison->change_hover_distance(r_);
   orbs_.push_back(roy_orbison);
 }
 
@@ -281,6 +295,16 @@ void Disc::prepare_graphics(void){
     tex_[12] = loadTextureFromFile( "graphics/ringmod.bmp" );
     tex_[13] = loadTextureFromFile( "graphics/reverb.bmp" );
     tex_[14] = loadTextureFromFile( "graphics/tremolo.bmp" );
+
+    tex_[15] = loadTextureFromFile( "graphics/looper_rec.bmp" );
+    tex_[16] = loadTextureFromFile( "graphics/looper_1.bmp" );
+    tex_[17] = loadTextureFromFile( "graphics/looper_2.bmp" );
+    tex_[18] = loadTextureFromFile( "graphics/looper_3.bmp" );
+    tex_[19] = loadTextureFromFile( "graphics/looper_4.bmp" );
+    tex_[20] = loadTextureFromFile( "graphics/looper_5.bmp" );
+    tex_[21] = loadTextureFromFile( "graphics/looper_6.bmp" );
+    tex_[22] = loadTextureFromFile( "graphics/looper_7.bmp" );
+    
     texture_loaded_ = true;
   }
 }
