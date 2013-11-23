@@ -4,7 +4,7 @@
  *  Created on: Nov 2, 2013
  *      Author: Chet Gnegy - chetgnegy@gmail.com
  *      
- *      
+ *      make 
  *      Uses RtAudio Library and OpenGL
  */
 

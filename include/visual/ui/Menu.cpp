@@ -11,16 +11,27 @@
 
 #include "Menu.h"
 
+void spectrum(double w, double &R, double &G, double &B);
+bool inSquare(int,int,int,int,int);
 
 Menu::Menu(){
+  GLuint menu_texture_ctrl_ = 0;
+  GLuint menu_texture_fft_ = 0;
   menu_texture_loaded_ = false;
   ctrl_menu_shown_ = true;
   menu_row_pixels_ = 0;
   menu_col_pixels_ = 0;
   height_to_width_ = 0;
+
+  // We have to link a graph
+  graph_ = NULL;
+
+  // Candidate discs
   valid_disc_ = false;
   new_disc_ = NULL;
-  last_disc_ = NULL;
+  last_disc_ = NULL; 
+
+  // The parameter slider
   slider1_clicked_ = false;
   slider2_clicked_ = false;
   slider_initial_ = false;
@@ -32,10 +43,21 @@ Menu::Menu(){
 
 Menu::~Menu(){}
 
+// Allows MIDI disks to be made
+void Menu::enable_midi(){ midi_active_ = true; }
+
+// Links the menu to the audio module
+void Menu::link_ugen_graph(UGenGraphBuilder *gb){ graph_= gb; }
+
+
+
+// #-------------- Drawable ----------------#
+
+
 
 // Draws the currently showing menu
 void Menu::draw(){
-  // {Printing the lines
+  /* {Printing the lines
   glPushAttrib(GL_ALL_ATTRIB_BITS);
   glDisable(GL_TEXTURE_2D);
   glLineWidth(2);
@@ -49,16 +71,12 @@ void Menu::draw(){
         glVertex3f(graph_->wires_[i].first->pos_.x, 
                    graph_->wires_[i].first->pos_.y, 
                    0);
-        glVertex3f(midpoint.x, 
-                   midpoint.y, 
-                   0);
+        glVertex3f(midpoint.x,  midpoint.y, 0);
         glEnd();
         glColor3f(1,0,0);
         
         glBegin(GL_LINES);
-        glVertex3f(midpoint.x, 
-                   midpoint.y, 
-                   0);
+        glVertex3f(midpoint.x, midpoint.y,  0);
         glVertex3f(graph_->wires_[i].second->pos_.x, 
                    graph_->wires_[i].second->pos_.y, 
                    0);
@@ -66,9 +84,8 @@ void Menu::draw(){
       }
       glPopMatrix();
       glPopAttrib();
-  // } Printing the lines
+  // } Printing the lines */
 
-  glColor3f(1,1,1);
       
   glBegin(GL_QUADS);
   float width = kScaleDimensions;
@@ -125,76 +142,65 @@ void Menu::draw(){
         glPopMatrix();
 
       glPushMatrix();
+        // First Slider
         glPushMatrix();
           glTranslatef(text_x, -1.25, 0);
           draw_text(Disc::spotlight_disc_->get_ugen()->p_name(1), false);
           glPopMatrix();
-        //move down to first slider location
         glTranslatef(-7 + slider1_ * 13.5, 0, 0);
-        glutSolidSphere(.6,20,20);
+        glutSolidSphere(.6,20,20); // The slider
         glPopMatrix();
       glPushMatrix();
-        //move down to second slider location
+        // Second Slider
         glPushMatrix();
           glTranslatef(text_x, -5, 0);
           draw_text(Disc::spotlight_disc_->get_ugen()->p_name(2), false);
           glPopMatrix();
         glTranslatef(-7 + slider2_ * 13.5, 0, 0);
-        glTranslatef(0,-3.68,0);
-        glutSolidSphere(.6,20,20);
+        glTranslatef(0, -3.68, 0);
+        glutSolidSphere(.6,20,20); // The slider
         glPopMatrix();
     }
 
   }
-  else{
+  else if (Disc::spotlight_disc_ != NULL){
     // Draws the FFT
-    if(graph_->fft_signaled()){
-      graph_->calculate_fft();
-    }
     complex *fft = graph_->get_fft();
-    glLineWidth(6);
+    
+    glLineWidth(1);
+    int bins = graph_->get_fft_length();
     double x = -8, y = -4.7;
-    double bar_width = .057;
+    double bar_width = 14.592 / (1.0 * bins);
     double y_scale = 2.3;
     double R, G, B;
     double y_coord;
+    glPushMatrix();
+        glTranslatef(1, 4.25, 0);
+        draw_text(Disc::spotlight_disc_->get_ugen()->name(), true);
+        glPopMatrix();
 
-    for (int i = 0; i < graph_->get_fft_length(); ++i){
+    spectrum(0, R, G, B);
+    glColor3f(R,G,B);
+    glBegin(GL_LINES);//baseline
+    glVertex3f(x , y - 0.01, 0.01);
+    glVertex3f(x + bins*bar_width, y, 0.01);
+    glEnd();
+
+    glLineWidth(2);
+    for (int i = 0; i < bins; ++i){
       glBegin(GL_LINES);
-      
-      spectrum(.3*log10(1+100*fft[i].normsq()),R, G, B);
+      spectrum(.2*log10(1+100*fft[i].normsq()),R, G, B);
       glColor3f(R,G,B);
-      glVertex3f(x + i*bar_width, y + 0,0);
-      y_coord = fmin(y_scale * log10(1+100*fft[i].normsq()),9.5);
+      glVertex3f(x + i*bar_width, y,0);
+      y_coord = fmin(y_scale * log10(1+5*fft[i].normsq()),9.5);
       glVertex3f(x + i*bar_width, y + y_coord,0);
       glEnd();
-      glPopAttrib();
     }
-    glColor3f(1,1,1);
   }
-    
 }
 
-//check this out... maybe replace with single function and no shift?
 
 
-// Writes words to the screen
-void Menu::draw_text(const char * p, bool large){
-  glPushMatrix();
-  glRasterPos2f(0.0f, 0.0f);
-  if (large){
-    for (; *p; p++){
-      glutBitmapCharacter(GLUT_BITMAP_9_BY_15, *p);
-    }
-  }
-  else {
-    for (; *p; p++){
-      glutBitmapCharacter(GLUT_BITMAP_8_BY_13, *p);
-    }
-  }
-  glPopMatrix();
-
-}
 // Shifts the menu into the left side of the screen
 void Menu::get_origin(double &x, double &y, double &z){
   x=kXShift; y=0; z=0;
@@ -238,6 +244,18 @@ void Menu::prepare_graphics(void){
     menu_texture_loaded_ = true;
   }
 }
+
+void Menu::advance_time(double t){
+  if (graph_->is_new_buffer()){
+    graph_->lock_thread(true);
+    graph_->update_graphics_dependencies();
+    graph_->lock_thread(false);
+  }
+}
+
+
+// #-------------- Moveable ----------------#
+
 
 // Menu doesn't need to move, but a disc might!
 void Menu::move(double x, double y, double z){
@@ -320,6 +338,28 @@ void Menu::unclicked(){
 }
 
 
+// #-------------- Private ----------------#
+
+
+// Writes words to the screen
+void Menu::draw_text(const char * p, bool large){
+  glPushMatrix();
+  glRasterPos2f(0.0f, 0.0f);
+  if (large){
+    for (; *p; p++){
+      glutBitmapCharacter(GLUT_BITMAP_9_BY_15, *p);
+    }
+  }
+  else {
+    for (; *p; p++){
+      glutBitmapCharacter(GLUT_BITMAP_8_BY_13, *p);
+    }
+  }
+  glPopMatrix();
+
+}
+
+
 // Converts the coordinates (x,y) from screen coordinates to
 // image coordinates (a,b)
 void Menu::convert_coords(double x, double y, int &a, int &b){
@@ -355,6 +395,8 @@ GLuint Menu::loadTextureFromFile( const char * filename ){
   return texture;
 }
 
+
+
 // Determines if the mouse click happened within the bounds of some square
 bool inSquare(int x, int y, int a, int b, int w){
   //  A---B   Tell if input (x,y) is in square ABCD
@@ -364,6 +406,8 @@ bool inSquare(int x, int y, int a, int b, int w){
   if (y < b || y > b+w) return false;
   return true; 
 }
+
+
 
 // Requires image coordinates. Handles all button clicks
 void Menu::handle_click(int x, int y){
@@ -433,11 +477,11 @@ void Menu::handle_click(int x, int y){
     }
     // CTRL BUTTON
     if (inSquare(x - 16, y, x_pane_but, y_up_but, sm_but_size)){
-      std::cout << "Clicked CTRL" << std::endl; ctrl_menu_shown_ = true; return;
+      ctrl_menu_shown_ = true; return;
     }
     // FFT BUTTON
     if (inSquare(x - 16, y, x_pane_but, y_down_but, sm_but_size)){
-      std::cout << "Clicked FFT" << std::endl; ctrl_menu_shown_ = false; return;
+      ctrl_menu_shown_ = false; return;
     }
 
     // DELETE BUTTON
@@ -475,15 +519,6 @@ void Menu::handle_click(int x, int y){
 }
 
 
-
-// Links the menu to the audio module
-void Menu::link_ugen_graph(UGenGraphBuilder *gb){
-  graph_= gb;
-}
-
-
-// Allows MIDI disks to be made
-void Menu::enable_midi(){ midi_active_ = true; }
 
 // Creates a new disc whenever a disc button is pressed.
 void Menu::make_disc(int button){
@@ -623,3 +658,26 @@ void Menu::make_disc(int button){
   Graphics::add_moveable(new_disc_);
   Physics::give_physics(new_disc_);
 }
+
+void spectrum(double w, double &R, double &G, double &B){
+  if (w>1)w=1;
+  if (w<0)w=0;
+  
+  w=w*(645-380)+380;
+  
+  if (w >= 380 && w < 440){
+      R = -(w - 440.) /(440. - 350.);  G = 0.0;  B = 1.0;}
+  else if (w >= 440 && w < 490){
+      R = 0.0; G = (w - 440.) / (490. - 440.);  B = 1.0;}
+  else if (w >= 490 && w < 510){
+      R = 0.0; G = 1.0; B = (510-w) / (510. - 490.);}
+  else if (w >= 510 && w < 580){
+      R = (w - 510.) / (580. - 510.); G = 1.0; B = 0.0;}
+  else if (w >= 580 && w < 645){
+      R = 1.0; G = -(w - 645.) / (645. - 580.); B = 0.0;}
+  else if (w >= 645 && w <= 780){
+      R = 1.0; G = 0.0; B = 0.0;}
+  else{
+      R = 0.0; G = 0.0; B = 0.0;}
+}
+

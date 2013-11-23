@@ -17,7 +17,6 @@
 #include "Moveable.h"
 #include "RgbImage.h"
 #include "UGenGraphBuilder.h"
-#include "graphicsutil.h"
 
 #include <iostream> // delete
 
@@ -28,6 +27,17 @@ public:
   
   Menu();
   ~Menu();
+
+
+  // Links the menu to the audio module
+  void link_ugen_graph(UGenGraphBuilder *u);
+  
+  // Allows MIDI discs to be created
+  void enable_midi();
+
+
+  /* ----- Drawable ----- */
+
 
   // Draws the currently showing menu
   void draw();
@@ -47,6 +57,11 @@ public:
   // Loads the graphics, but only on the very first time
   void prepare_graphics(void);
 
+  void advance_time(double t);
+
+  /* ----- Moveable ----- */
+
+
   // Menu doesn't need to move, but a disc might!
   void move(double x, double y, double z);
 
@@ -63,14 +78,14 @@ public:
   // The menu doesn't do anything when right clicked.
   void right_clicked(){}
 
-  // Links the menu to the audio module
-  void link_ugen_graph(UGenGraphBuilder *u);
-  
-  void enable_midi();
+ 
 private:
   // Converts the coordinates (x,y) from screen coordinates to
   // image coordinates (a,b)
   void convert_coords(double x, double y, int &a, int &b);
+
+  // Writes words to the screen. large will increase the size a bit
+  void draw_text(const char * p, bool large);
 
   // Loads a texture from a file, must be in bmp format
   GLuint loadTextureFromFile( const char * filename );
@@ -82,33 +97,36 @@ private:
   // Creates a new disc whenever a disc button is pressed.
   void make_disc(int button);
 
-  // Writes words to the screen. large will increase the size a bit
-  void draw_text(const char * p, bool large);
+
+  
+
+
   // The textures for all of the menus.
   GLuint menu_texture_ctrl_;
   GLuint menu_texture_fft_;
   bool menu_texture_loaded_;
   bool ctrl_menu_shown_;
-
-  // The signal graph that we are linked with
-  UGenGraphBuilder *graph_;
-
-  // Properties of the Menu bitmap
+    // Properties of the Menu bitmap
   int menu_row_pixels_;
   int menu_col_pixels_;
   float height_to_width_;
 
+  // The signal graph that we are linked with
+  UGenGraphBuilder *graph_;
+
   // The newly created disc.
   bool valid_disc_;
   Disc *new_disc_;
-
+  // Used to see if spotlight disc has changed from frame to frame
+  Disc *last_disc_;
+  
   // The parameter slider
   double slider1_, slider2_;
   bool slider1_clicked_, slider2_clicked_;
   bool slider_initial_; 
-  Disc *last_disc_;
   bool show_slider_;
 
+  // If Midi has been activated
   bool midi_active_;
 
 };

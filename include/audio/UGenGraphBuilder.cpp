@@ -10,24 +10,44 @@
 #include "UGenGraphBuilder.h"
 
 
-bool compare_wires (Wire i, Wire j);
+bool compare_wires(Wire i, Wire j);
 
 UGenGraphBuilder::UGenGraphBuilder(int length){
   buffer_length_ = length;
   fft_ = new complex[buffer_length_];
+  buffer_ready_ = false;
 }
 
 UGenGraphBuilder::~UGenGraphBuilder(){
-  /*
-  std::list<UnitGenerator *>::iterator list_iterator;
-  list_iterator = chain_.begin();
-  //Deletes all filters
-  while (chain_.size() > 0 && list_iterator != chain_.end()) {
-    delete (*list_iterator);
-    ++list_iterator;
-  }
-  */
+  delete[] fft_;
 }
+
+
+
+// Prints all data about the graph, including the nodes,
+// their type and positions
+void UGenGraphBuilder::print_all(){
+  std::cout << "********************" << std::endl;
+  std::cout << "Inputs:" << std::endl;
+  for (int i = 0; i < inputs_.size(); ++i){
+    std::cout << "\t"<< inputs_[i]->get_ugen()->name() << " ";
+    std::cout << inputs_[i]->pos_ << std::endl;
+  }
+
+  std::cout << "Midi:" << std::endl;
+  for (int i = 0; i < midi_modules_.size(); ++i){
+    std::cout << "\t"<< midi_modules_[i]->get_ugen()->name() << " ";
+    std::cout << midi_modules_[i]->pos_ << std::endl;
+  }
+
+  std::cout << "Effects:" << std::endl;
+  for (int i = 0; i < fx_.size(); ++i){
+    std::cout << "\t"<< fx_[i]->get_ugen()->name() << " ";
+    std::cout << fx_[i]->pos_ << std::endl;
+  }
+}
+
+
 
 // Recomputes the graph based on the new positions of the discs
 void UGenGraphBuilder::rebuild(){
@@ -39,34 +59,14 @@ void UGenGraphBuilder::rebuild(){
   int num_nodes = num_inputs+ fx_.size();
   if (num_nodes == 0) return;
 
-
-
   bool marked[num_nodes];
   bool is_sink[num_nodes];
-
 
   for (int i = 0; i < num_nodes; ++i){
     data_[indexed(i)] = GraphData();
     marked[i] = false;
-    is_sink[i];
+    is_sink[i] = false;
   }
-/*
-  // Get all of the edges -- I don't actually need this!
-  double dist;
-  for (int i = 0; i < num_nodes; ++i){
-    for (int j = i+1; j < num_nodes; ++j){
-      dist = get_edge_cost(indexed(i),indexed(j));
-      data_[indexed(i)].edges_.push_back(Edge( indexed(j), dist ));
-      data_[indexed(j)].edges_.push_back(Edge( indexed(i), dist ));
-    }
-  }
-  std::cout << "Listing Edges" << std::endl;
-  for (int i = 0; i < num_nodes; ++i){
-    std::cout << indexed(i)->get_ugen()->name() << std::endl;
-    data_[indexed(i)].list_edges();
-  }
-  */
-
 
   // Modified Prim's Algorithm -- May not result in spanning tree 
   // if distances are too far to make a wire! Also, there is the constraint 
@@ -117,8 +117,8 @@ void UGenGraphBuilder::rebuild(){
     }
   }
   
-  // Sorts the wires so that the directionality is stable
-  //std::sort(wires_.begin(), wires_.end(), compare_wires);
+  // Sorts the wires to ensure that the directionality is stable
+  std::sort(wires_.begin(), wires_.end(), compare_wires);
 
   // Make sure inputs are only transmitting
   bool finalized[wires_.size()];
@@ -156,11 +156,11 @@ void UGenGraphBuilder::rebuild(){
     }
   }
 
-  std::cout << "Listing Wires" << std::endl;
+  //std::cout << "Listing Wires" << std::endl;
   for (int i = 0; i < wires_.size(); ++i){
 
-    std::cout << "\t" << wires_[i].first->get_ugen()->name() << " ";
-    std::cout << "\t" << wires_[i].second->get_ugen()->name() << std::endl;
+    //std::cout << "\t" << wires_[i].first->get_ugen()->name() << " ";
+    //std::cout << "\t" << wires_[i].second->get_ugen()->name() << std::endl;
     data_[wires_[i].second].inputs_.push_back(wires_[i].first);
     data_[wires_[i].first].outputs_.push_back(wires_[i].second);
   }
@@ -170,14 +170,8 @@ void UGenGraphBuilder::rebuild(){
       sinks_.push_back(indexed(i));
     }
   }
-  
 }
 
-
-void UGenGraphBuilder::lock_thread(bool lock){
-  if (lock) audio_lock_.lock();
-  else audio_lock_.unlock();
-}
 
 // Sorts the wires by the addresses of their endpoints. This sort isn't 
 // especially meaningful, but it provides stability in the connections 
@@ -188,73 +182,17 @@ bool compare_wires (Wire i, Wire j){
 }
 
 
-void UGenGraphBuilder::switch_wire_direction(Wire &w){
-  Disc *temp = w.first;
-  w.first = w.second;
-  w.second = temp;
-
-}
-
-
-
-// Reverses the push architechture of "out = tick(in)" to recursively pull
-// samples to the output sinks from the inputs
-double UGenGraphBuilder::pull_result(UnitGenerator *k, std::vector<Disc *> inputs){
-  double sum = 0;
-  if (inputs.size() > 0) {
-    std::vector<Disc *>::iterator it;
-    it = inputs.begin();
-      
-    while (it != inputs.end()) {
-      double scale = 1;//pow(data_[*it].inputs_.size(), 0.5);
-      sum += scale * pull_result((*it)->get_ugen(), data_[*it].inputs_);
-      ++it;
-    }
-  }
-  return k->tick(sum);
-}
-
-
-// Reverses the push architechture of "out = tick(in)" to recursively pull
-// samples to the output sinks from the inputs. Works on an entire buffer
-// The buffer out is cleared of any previous contents
-double *UGenGraphBuilder::pull_result_buffer(UnitGenerator *k, std::vector<Disc *> inputs, 
-                                  int length){
-  double *out = new double[length];
-  // Zero out old array
-  for (int i = 0; i < length; ++i) out[i] = 0;
-      
-  if (inputs.size() > 0) {
-    std::vector<Disc *>::iterator it;
-    it = inputs.begin();
-    double *temp;
-    while (it != inputs.end()) {
-      double scale = 1;//pow(data_[*it].inputs_.size(), 0.5);
-      temp = pull_result_buffer((*it)->get_ugen(), data_[*it].inputs_, length);
-      // copy new branch into output buffer
-      for (int i = 0; i < length; ++i){
-        out[i] += temp[i];
-      }
-      ++it;
-    }
-  }
-  
-  return k->process_buffer(out, length);
-
-}
-
-
 // Processes a single sample. Note that you must first handoff audio 
 // and midi data to the graph by using the handoff_audio and 
 // handoff midi functions
 double UGenGraphBuilder::tick(){
   double sum = 0;
   std::vector<Disc *>::iterator it;
-    it = sinks_.begin();
-    while (it != sinks_.end()) {
-      sum += pull_result((*it)->get_ugen(), data_[*it].inputs_);
-      ++it;
-    }
+  it = sinks_.begin();
+  while (it != sinks_.end()) {
+    sum += pull_result((*it)->get_ugen(), data_[*it].inputs_);
+    ++it;
+  }
   return sum;
 }
 
@@ -276,38 +214,24 @@ void UGenGraphBuilder::load_buffer(double *out, int frames){
     }
     ++it;
   }
-
 }
 
 
-// Prints all data about the graph, including the nodes,
-  // their type and positions
-void UGenGraphBuilder::print_all(){
-  std::cout << "********************" << std::endl;
-  std::cout << "Inputs:" << std::endl;
-  for (int i = 0; i < inputs_.size(); ++i){
-    std::cout << "\t"<< inputs_[i]->get_ugen()->name() << " ";
-    std::cout << inputs_[i]->pos_ << std::endl;
-  }
 
-  std::cout << "Midi:" << std::endl;
-  for (int i = 0; i < midi_modules_.size(); ++i){
-    std::cout << "\t"<< midi_modules_[i]->get_ugen()->name() << " ";
-    std::cout << midi_modules_[i]->pos_ << std::endl;
-  }
-
-  std::cout << "Effects:" << std::endl;
-  for (int i = 0; i < fx_.size(); ++i){
-    std::cout << "\t"<< fx_[i]->get_ugen()->name() << " ";
-    std::cout << fx_[i]->pos_ << std::endl;
-  }
+// Changes the mutex. Should be called when using anything related to the 
+// audio path
+void UGenGraphBuilder::lock_thread(bool lock){
+  if (lock) audio_lock_.lock();
+  else audio_lock_.unlock();
 }
+
+
 
 
 // Passes any audio samples to the Input ugens. 
 void UGenGraphBuilder::handoff_audio(double sample){
   int i = 0;
-  //Process each effect in chain
+  // Process each effect in chain
   while (i < inputs_.size()) {
     static_cast<Input *>(inputs_.at(i)->get_ugen())->set_sample( sample );
     ++i;
@@ -317,7 +241,7 @@ void UGenGraphBuilder::handoff_audio(double sample){
 // Passes any audio samples to the Input ugens. 
 void UGenGraphBuilder::handoff_audio_buffer(double buffer[], int length){
   int i = 0;
-  //Process each effect in chain
+  // Process each effect in chain
   while (i < inputs_.size()) {
     static_cast<Input *>(inputs_.at(i)->get_ugen())->set_buffer( buffer, length );
     ++i;
@@ -344,17 +268,38 @@ void UGenGraphBuilder::handoff_midi(int MIDI_pitch, int velocity){
   }
 }
 
-// Allows all ugens to be called uniformly
-Disc *UGenGraphBuilder::indexed(int i){
-  if (i<inputs_.size()) return inputs_[i];
-  if (i<inputs_.size() + midi_modules_.size()){
-    return midi_modules_[i-inputs_.size()];
+
+// Lets the other thread know that the depenencies are ready to compute
+void UGenGraphBuilder::signal_new_buffer(){ buffer_ready_ = true; }
+
+
+void UGenGraphBuilder::update_graphics_dependencies(){
+  calculate_fft();
+  
+  int num_nodes = inputs_.size() + midi_modules_.size() + fx_.size();
+  
+  int outputs;
+  for (int i = 0; i < num_nodes; ++i){
+    indexed(i)->excite(indexed(i)->get_ugen()->buffer_energy());
+
+    // Shuffles Orbs around
+    if (rand()%4 == 0){
+      outputs = data_[indexed(i)].outputs_.size();
+      if (outputs > 0){
+        do{
+          indexed(i)->orb_handoff(data_[indexed(i)].outputs_[rand() % outputs]);
+        }while(indexed(i)->above_capacity());
+      }
+      else{
+        indexed(i)->orb_limit();
+      }
+      indexed(i)->orb_repopulate();
+    }
   }
-  if (i<inputs_.size() + midi_modules_.size() + fx_.size()){
-    return fx_[i - inputs_.size() - midi_modules_.size()];
-  }
-  return NULL;
 }
+
+// #------------ Modify Graph -------------#
+
 
 // Adds a unit generator to the signal chain
 bool UGenGraphBuilder::add_effect(Disc *fx){
@@ -406,22 +351,22 @@ bool UGenGraphBuilder::remove_disc(Disc *d){
   return false;
 }
 
-// Lets the other thread know that the FFT is ready to compute
-void UGenGraphBuilder::signal_fft(){
-  fft_ready_ = true;
-}
+
+// #--------------- FFT ----------------#
+
 
 // The graphics thread can grab this and display it
 void UGenGraphBuilder::calculate_fft(){
-  if (Disc::spotlight_disc_ != NULL){
+  if (Disc::spotlight_disc_ != NULL)
     Disc::spotlight_disc_->get_ugen()->buffer_fft(buffer_length_, fft_);
-    fft_ready_ = false;
-  }
 }
 
-complex *UGenGraphBuilder::get_fft(){
-  return fft_;
-}
+complex *UGenGraphBuilder::get_fft(){ return fft_; }
+
+
+// #------------- Private --------------#
+
+
 
 // The distance between two discs
 double UGenGraphBuilder::get_edge_cost(Disc* a, Disc* b){
@@ -429,15 +374,88 @@ double UGenGraphBuilder::get_edge_cost(Disc* a, Disc* b){
 }
 
 
-GraphData::GraphData(){}
-GraphData::~GraphData(){}
+// Allows all ugens to be called uniformly
+Disc *UGenGraphBuilder::indexed(int i){
+  if (i<inputs_.size()) return inputs_[i];
+  if (i<inputs_.size() + midi_modules_.size()){
+    return midi_modules_[i-inputs_.size()];
+  }
+  if (i<inputs_.size() + midi_modules_.size() + fx_.size()){
+    return fx_[i - inputs_.size() - midi_modules_.size()];
+  }
+  return NULL;
+}
+
+
+
+// Reverses the push architechture of "out = tick(in)" to recursively pull
+// samples to the output sinks from the inputs
+double UGenGraphBuilder::pull_result(UnitGenerator *k, std::vector<Disc *> inputs){
+  double sum = 0;
+  if (inputs.size() > 0) {
+    std::vector<Disc *>::iterator it;
+    it = inputs.begin();
+      
+    while (it != inputs.end()) {
+      double scale = 1;
+      if (data_[*it].outputs_.size()>0){
+        scale = 1 / pow(data_[*it].outputs_.size(), 0.5);
+      }
+      sum += scale * pull_result((*it)->get_ugen(), data_[*it].inputs_);
+      ++it;
+    }
+  }
+  return k->tick(sum);
+}
+
+
+// Reverses the push architechture of "out = tick(in)" to recursively pull
+// samples to the output sinks from the inputs. Works on an entire buffer
+// The buffer out is cleared of any previous contents
+double *UGenGraphBuilder::pull_result_buffer(UnitGenerator *k, std::vector<Disc *> inputs, 
+                                  int length){
+  double *out = new double[length];
+  // Zero out old array
+  for (int i = 0; i < length; ++i) out[i] = 0;
+  
+  if (inputs.size() > 0) {
+    std::vector<Disc *>::iterator it;
+    it = inputs.begin();
+    double *temp;
+    while (it != inputs.end()) {
+      double scale = 1;
+      if (data_[*it].outputs_.size()>0){
+        scale = 1 / pow(data_[*it].outputs_.size(), 0.5);
+      }
+      temp = pull_result_buffer((*it)->get_ugen(), data_[*it].inputs_, length);
+      // copy new branch into output buffer
+      for (int i = 0; i < length; ++i){
+        out[i] += scale * temp[i];
+      }
+      ++it;
+    }
+  }
+  double *out_buffer = k->process_buffer(out, length);
+  delete[] out;
+  return out_buffer;
+
+}
+
+
+// Reverses the "to" and "from" ends of a wire
+void UGenGraphBuilder::switch_wire_direction(Wire &w){
+  Disc *temp = w.first;
+  w.first = w.second;
+  w.second = temp;
+
+}
+
 
 void GraphData::list_edges(){
   for (int i = 0; i < edges_.size(); ++i){
     std::cout << "\t[" << edges_[i].first->get_ugen()->name() << 
                    " " << edges_[i].second << "]" << std::endl;
   }
-
 }
 
 

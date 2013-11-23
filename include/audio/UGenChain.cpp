@@ -10,6 +10,10 @@
 
 bool UGenChain::audio_initialized_ = false;
 bool UGenChain::midi_initialized_ = false;
+// Check to see if the audio and midi has been set up properly
+bool UGenChain::has_audio(){ return audio_initialized_; }
+bool UGenChain::has_midi(){ return midi_initialized_; }
+
 
 
 // #--------------- callback functions ---------------#
@@ -50,14 +54,15 @@ int audioCallback(void *outputBuffer, void *inputBuffer, unsigned int num_frames
   double *out_mono = new double[num_frames];
   graph->lock_thread(true);
   graph->load_buffer(out_mono, num_frames);
-  graph->signal_fft();
+  graph->signal_new_buffer();
+  graph->rebuild();
   graph->lock_thread(false);
 
   //Fills the other channels
   for (unsigned int i = 0; i < num_frames; ++i) {
     for (unsigned int j = 0; j < numChannels; ++j) {
       // Limiting
-      if (fabs(out_mono[i]) > 2.4) out_mono[i] = 0;
+      if (fabs(out_mono[i]) > 5) out_mono[i] = 0;
 
       output_buffer[i * numChannels + j] = out_mono[i];
     }
@@ -85,7 +90,6 @@ UGenChain::UGenChain(){
 UGenChain::~UGenChain(){
   //Make sure we close things gracefully
   stop_audio();
-  
   delete graph_builder_;
   delete anti_aliasing_;
   delete low_pass_;  
@@ -173,7 +177,6 @@ void UGenChain::stop_audio(){
 
 // Process the next sample in the UGenChain
 double UGenChain::tick(){
-
   graph_builder_->rebuild();
   double output = 0;
   output = graph_builder_->tick();
@@ -190,8 +193,6 @@ UGenGraphBuilder *UGenChain::get_signal_graph(){
   return graph_builder_;
 }
 
-// Check to see if the audio and midi has been set up properly
-bool UGenChain::has_audio(){ return audio_initialized_; }
-bool UGenChain::has_midi(){ return midi_initialized_; }
+
 
 

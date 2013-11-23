@@ -10,26 +10,12 @@
 
 #include "UnitGenerator.h"
 
-double interpolate(double *array, int length, double index);
 float interpolate(float *array, int length, double index);
+double interpolate(double *array, int length, double index);
 
 
 // #--------------Unit Generator Base Classes ----------------#
 
-
-double *UnitGenerator::process_buffer(double *buffer, int length){
-
-  if (length != ugen_buffer_size_) printf("Buffer size mismatch");
-    for (int i = 0; i < length; ++i){
-      ugen_buffer_[i] = tick(buffer[i]);  
-  }
-  return ugen_buffer_;
-}
-
-void UnitGenerator::buffer_fft(int full_length, complex *out){
-  if (ugen_buffer_size_ != ugen_buffer_size_) printf("Buffer size mismatch");
-  CFFT::Forward((complex *)ugen_buffer_, out, full_length);
-}
 
 // Allows user to set the generic parameters, bounds must already be set
 void UnitGenerator::set_params(double p1, double p2){
@@ -37,9 +23,37 @@ void UnitGenerator::set_params(double p1, double p2){
   param2_ = clamp(p2);
 }
 
+// Allows entire buffers to be processed at once
+double *UnitGenerator::process_buffer(double *buffer, int length){
+  if (length != ugen_buffer_size_) printf("Buffer size mismatch");
+    for (int i = 0; i < length; ++i){
+      ugen_buffer_[i] = tick(buffer[i]);  
+  }
+  return ugen_buffer_;
+}
+
+double UnitGenerator::buffer_energy(){
+  double sum = 0;
+  for (int i = 0; i < ugen_buffer_size_; ++i){
+    sum += fabs(ugen_buffer_[i]);
+  }
+  return sum / (1.0 * ugen_buffer_size_);
+}
+
+// Gets the FFT of the unit generator's current buffer
+void UnitGenerator::buffer_fft(int full_length, complex *out){
+  if (ugen_buffer_size_ != ugen_buffer_size_) printf("Buffer size mismatch");
+  complex *complex_arr_ = new complex[ugen_buffer_size_];
+  for (int i = 0; i < ugen_buffer_size_; ++i){
+    complex_arr_[i] = ugen_buffer_[i];
+  }
+  CFFT::Forward(complex_arr_, out, full_length);
+  delete[] complex_arr_;
+}
 
 
-// Scales the input to the range 0 - 1
+// Scales the input to the range 0 - 1, requires maximum 
+// and minimum parameters to be set
 double UnitGenerator::get_normalized_param(int param){
 if (param == 1){
     return (param1_-min_param1_)/(max_param1_ - min_param1_);
@@ -71,6 +85,7 @@ double UnitGenerator::clamp(double param_in){
 }
 
 
+// #------------ Midi Unit Generator Classes --------------#
 
 
 
@@ -306,7 +321,7 @@ double BitCrusher::tick(double in){
     sample_ = quantize(in);
   }
 
-  return sample_;
+  return in;//sample_;
 }
 // casts the parameters to ints and restricts them to a certain value
 void BitCrusher::set_params(double p1, double p2){
@@ -652,7 +667,7 @@ Looper::Looper(int sample_rate, int length){
 }
 Looper::~Looper(){
   //destroy float buffer
-  delete[] buffer_;
+  if (params_set_) delete[] buffer_;
 }
 // Processes a single sample in the unit generator
 double Looper::tick(double in){
@@ -837,8 +852,6 @@ Reverb::Reverb(double p1, double p2, int length){
   }  
   ugen_buffer_size_ = length;
   ugen_buffer_ = new double[ugen_buffer_size_];
-
-
 }
 
 Reverb::~Reverb(){
@@ -851,6 +864,7 @@ Reverb::~Reverb(){
   }
   delete fb_;
 }
+
 // Processes a single sample in the unit generator
 double Reverb::tick(double in){
   complex sample = fb_->tick(.125*in);
@@ -923,10 +937,7 @@ void Tremolo::set_params(double p1, double p2){
   p1 = (kMaxFreq - kMinFreq) * pow( param1_, 4) + kMinFreq;
   //sets the rate of the tremolo
   rate_hz_ = 6.2831853 / (1.0 * sample_rate_) * p1;
-  
 }
-
-
 
 
 

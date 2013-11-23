@@ -24,45 +24,50 @@
 class UnitGenerator{
 public: 
   virtual ~UnitGenerator(){ 
-    std::cout << "Deletes buffer" << std::endl;
     delete[] ugen_buffer_; 
   };
 
   // Processes a single sample in the unit generator
   virtual double tick(double in) = 0;
-  double *process_buffer(double buffer[], int length);
-
-  // Get the fft of the buffer's current contents
-  void buffer_fft(int full_length, complex *out);
 
   // Allows user to set the generic parameters, bounds must already be set
   virtual void set_params(double p1, double p2);
-
-  // Scales the input to the range 0 - 1
-  double get_normalized_param(int param);
-
-  // Sets the input using the range 0 - 1, requires maximum 
-  // and minimum parameters to be set
-  void set_normalized_param(double param1, double param2);
 
   // Can things lead into unit generator or is it the first
   // in the chain?
   virtual bool is_input() = 0;
   virtual bool is_midi() = 0;
 
+  // Allows entire buffers to be processed at once
+  double *process_buffer(double *buffer, int length);
+
+  double buffer_energy();
+
+  // Get the fft of the buffer's current contents
+  void buffer_fft(int full_length, complex *out);
+
+  // Scales the input to the range 0 - 1,requires maximum 
+  // and minimum parameters to be set
+  double get_normalized_param(int param);
+
+  // Sets the input using the range 0 - 1, requires maximum 
+  // and minimum parameters to be set
+  void set_normalized_param(double param1, double param2);
+
   const char * name() { return name_;}
   const char * p_name(int i) {return i==1 ? param1_name_ : param2_name_;}
-protected:
-  int ugen_buffer_size_;
-  double *ugen_buffer_;
 
-  
+protected:
   // Sets the bounds on the parameters of the ugen
   void set_limits(double min1, double max1, double min2, double max2);
 
   // Uses the specified minimum and maximum bounds to restrict parameter to
   // valid range
   double clamp(double param_in);
+
+  // Used for block processing of buffer
+  int ugen_buffer_size_;
+  double *ugen_buffer_;
 
   // generic parameters for the unit generator. It is up 
   // to the subclass to define these and make them meaningful
@@ -92,6 +97,7 @@ public:
 protected:
   ClassicWaveform *myCW_;
 };
+
 
 
 
@@ -194,6 +200,7 @@ private:
   double sample_;
   double sample_count_;
 };
+
 
 
 

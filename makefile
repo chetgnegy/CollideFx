@@ -87,7 +87,7 @@ Graphics.o: Graphics.cpp Graphics.h
 Orb.o: Orb.cpp Orb.h
 	$(CXX) $(FLAGS) $(INC) $(V_INCDIR)Orb.cpp
 
-World.o: World.cpp World.h Drawable.h graphicsutil.h
+World.o: World.cpp World.h Drawable.h
 	$(CXX) $(FLAGS) $(INC) $(V_INCDIR)World.cpp
 
 #------------------UI modules----------------#

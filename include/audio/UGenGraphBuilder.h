@@ -19,7 +19,7 @@
 #include "Disc.h"
 #include "Thread.h"
 
-class GraphData;
+struct GraphData;
 
 
 typedef std::pair<Disc *, double > Edge; 
@@ -30,11 +30,20 @@ class UGenGraphBuilder {
 public:
 
   static const double kMaxDist = 7.0;
+
   UGenGraphBuilder(int buffer_length);
   ~UGenGraphBuilder();
 
+  // Prints all data about the graph, including the nodes,
+  // their type and positions
+  void print_all();
+
   // Recomputes the graph based on the new positions of the discs
   void rebuild();
+
+  // Changes the mutex. Should be called when using anything related to the 
+  // audio path
+  void lock_thread(bool lock);
 
   // Processes a single sample. Note that you must first handoff audio 
   // and midi data to the graph by using the handoff_audio and 
@@ -42,9 +51,6 @@ public:
   double tick();
   void load_buffer(double *out, int length); // a whole buffer
 
-  // Prints all data about the graph, including the nodes,
-  // their type and positions
-  void print_all();
 
   // Passes any audio samples to the Input ugens. 
   void handoff_audio(double samples);
@@ -53,6 +59,10 @@ public:
   // Passes any midi notes the MidiUnitGenerators. Decides using the
   // value of velocity whether the event is a note on or a note off
   void handoff_midi(int MIDI_pitch, int velocity);
+
+
+
+  // #------------ Modify Graph -------------#
 
   // Adds a unit generator to the signal chain. Returns false for invalid
   // ugen type
@@ -71,11 +81,14 @@ public:
   // Removes a disc from the graph and deletes the disc
   bool remove_disc(Disc *ugen);
 
-  void lock_thread(bool lock);
+
+  void update_graphics_dependencies();
+
+  // #--------------- FFT ----------------#
 
   // Lets the other thread know that the FFT is ready to compute
-  void signal_fft();
-  bool fft_signaled(){return fft_ready_;}
+  void signal_new_buffer();
+  bool is_new_buffer(){return buffer_ready_;}
 
   // The graphics thread can grab this and display it
   void calculate_fft();
@@ -84,57 +97,49 @@ public:
   int get_fft_length(){return buffer_length_/2;}
   
 
-  std::vector<Wire> wires_;
-
+  std::vector<Wire> wires_;  // Make this private
   std::vector<Disc *> sinks_;
+
 private:
   // The distance between two discs
   double get_edge_cost(Disc* a, Disc* b);
-
-  void find_edges();
 
   // Reverses the push architecture of "out = tick(in)" to recursively pull
   // samples to the output sinks from the inputs
   double pull_result(UnitGenerator *k, std::vector<Disc *> inputs);
   double *pull_result_buffer(UnitGenerator *k, std::vector<Disc *> inputs, int length);
 
+  // Reverses the "to" and "from" ends of a wire
   void switch_wire_direction(Wire &w);
-
-  
 
   // Allows all ugens to be called uniformly
   Disc *indexed(int i);
 
-  // The chain of effects that is processed before being sent to the output
+  int buffer_length_;
+  complex *fft_;
+  bool buffer_ready_;
+
+  
+  // The lists of inputs and effects that are processed for samples
+  std::vector<Disc *> inputs_;
+  std::vector<Disc *> midi_modules_;
   std::vector<Disc *> fx_;
   
-  // The list of audio inputs that receive samples
-  std::vector<Disc *> inputs_;
-  
-  // The list of unit generators that require midi events to work
-  std::vector<Disc *> midi_modules_;
-  
-  
+  // Data containing the current connections
   std::map < Disc *, GraphData > data_;
 
+  // Protects the audio and graphics thread from
+  // concurrency issues
   Mutex audio_lock_;
 
-  int buffer_length_;
-
-  complex *fft_;
-  bool fft_ready_;
 };
 
 
-class GraphData{
-public:
-  GraphData();
-  ~GraphData();
+struct GraphData{
   void list_edges();
   std::vector< Edge > edges_;
   std::vector< Disc* > inputs_;
   std::vector< Disc* > outputs_;
-  
 };
 
 

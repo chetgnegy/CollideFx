@@ -25,17 +25,39 @@ public:
   static const int kNumParticles = 5;
 
   // Pairs the disc with a unit generator, can be set to ghost mode
-  Disc(UnitGenerator *u, double radius, bool ghost, int initial_orbs = 0, int maintain_orbs = 0); 
+  Disc(UnitGenerator *u, double radius, bool ghost, int initial_orbs = 0, int maintain_orbs = 0, int max_orbs = 50); 
   // Cleans up the unit generator
   ~Disc();
   
+  void excite(double brightness){
+    brightness_ = brightness;
+  }
+
   // Sets the color of the disc -- changes material properties
   void set_color(float r, float g, float b);
 
+  // Returns the radius of the disc
   double get_radius(){return r_;} 
 
   // Changes the image on the face of the disc
   void set_texture(int i);
+
+  // Places disc at certain location
+  void set_location(double x, double y);
+
+  // Sets instantaneous velocity of the disc
+  void set_velocity(double x, double y);
+
+  // A pointer to the unit generator associated
+  // with the disc
+  UnitGenerator *get_ugen(){  return ugen_;  }
+
+  // Forwards request for parameter values
+  double get_ugen_params(int param);
+
+  void set_ugen_params(double param1, double param2);
+  
+  /* ----- Orbs ----- */
 
   // Changes the color scheme of any orbs that are created
   void delegate_orb_color_scheme(int color_scheme){
@@ -45,12 +67,19 @@ public:
   // Creates a new orb to hang out around this disc
   void orb_create(int num_orbs = 1);
 
+  // If we have less orbs than we'd like, make more!
+  void orb_repopulate();
+
   // Passes the orb to another disc, d.
   bool orb_handoff(Disc *d);
   
   // Receives an orb from another Disc
   void orb_receive(Orb *);
   
+  bool above_capacity();
+
+  void orb_limit();
+
   // Deletes the orb after removing all references to it
   bool orb_destroy();
   
@@ -58,21 +87,6 @@ public:
   // itself. See Orb::self_destruct();
   bool orb_abandon();
 
-  // Places disc at certain location
-  void set_location(double x, double y);
-
-  // Sets instantaneous velocity of the disc
-  void set_velocity(double x, double y);
-
-  UnitGenerator *get_ugen(){ 
-    return ugen_; 
-  }
-
-  // Forwards request for parameter values
-  double get_ugen_params(int param);
-
-  void set_ugen_params(double param1, double param2);
-  
   /* ----- Drawable ----- */
 
   // OpenGL instructions for drawing a unit disc centered at the origin
@@ -137,33 +151,35 @@ private:
   // Reads in a bitmap file and uses it as a texture.
   GLuint loadTextureFromFile( const char * filename );
 
+
+  static GLuint *tex_;
+  static bool texture_loaded_;
+  static double spotlight_graphic_timer;
+
+
   UnitGenerator *ugen_;
+  double r_;    //radius
   
   //position offsets
   double x_offset_, y_offset_;
   Vector3d pull_point_;
   bool is_clicked_;
 
-  //radius
-  double r_;
   
   //An object that is useful for drawing the cylinder
   GLUquadricObj *quadratic; 
 
+  int which_texture_;
   std::list<Orb *> orbs_;
   Vector3d color_;
   int initial_orbs_;
   int maintain_orbs_;
-
-  bool ghost_;
-
-  static GLuint *tex_;
-  static bool texture_loaded_;
-  int which_texture_;
-
   int orb_color_scheme_;
+  int max_orbs_;
+  double brightness_;
 
-  static double spotlight_graphic_timer;
+  // Has the disc been approved
+  bool ghost_;
 
 };
 

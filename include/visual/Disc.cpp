@@ -9,34 +9,47 @@
 #include "Disc.h"
 
 
-
+// Static variable initialization
 Disc* Disc::spotlight_disc_ = NULL;
 double Disc::spotlight_graphic_timer = 0;
 bool Disc::texture_loaded_ = false;
 GLuint *Disc::tex_ = new GLuint[15];
 
+
+
 // Pairs the disc with a unit generator
-Disc::Disc(UnitGenerator *u, double radius, bool ghost, int initial_orbs, int maintain_orbs){
+Disc::Disc(UnitGenerator *u, double radius, bool ghost, int initial_orbs, int maintain_orbs, int max_orbs){
   ugen_ = u;
   r_ = radius;
+
+  x_offset_ = 0;  y_offset_ = 0;
+  pull_point_ = Vector3d(0, 0, 0);
+  is_clicked_ = false;
+
+  // Inherited from Physical
   m_ = radius * radius;
   I_ = 0.5 * m_ * m_; // 0.5*M*R^2
-  x_offset_ = 0; 
-  y_offset_ = 0;
-  is_clicked_ = false;
-  texture_loaded_ = false;
+  
+  // Drawing and Orbs
+  which_texture_ = -1;
+  color_ = Vector3d(0,0,1);
   initial_orbs_ = initial_orbs;
   maintain_orbs_ = maintain_orbs;
-  color_ = Vector3d(0,0,1);
-  ghost_ = ghost;
-  which_texture_ = -1;
+  max_orbs_ = max(max(max_orbs, initial_orbs_), maintain_orbs_);
   orb_color_scheme_ = 0;
+  brightness_ = 0;
+
+  ghost_ = ghost;
+  
+  quadratic = gluNewQuadric();
+    
 }
 
 // Cleans up the unit generator
 Disc::~Disc(){
   delete ugen_;
 }
+
 
 // Sets the color of the disc -- changes material properties
 void Disc::set_color(float r, float  g, float b){
@@ -48,56 +61,6 @@ void Disc::set_texture(int i){
   which_texture_ = i;
 }
 
-// Creates a new orb to hang out around this disc
-void Disc::orb_create(int num_orbs){
-  for (int i = 0; i < num_orbs; ++i){
-    Orb *roy_orbison = new Orb(&pos_, 2*r_);
-    roy_orbison->use_color_scheme(orb_color_scheme_);
-    orbs_.push_back(roy_orbison);
-    Graphics::add_drawable(roy_orbison);
-    Physics::give_physics(roy_orbison);
-  }
-}
-
-// Passes the orb to another disc, d.
-bool Disc::orb_handoff(Disc *d){
-  if (orbs_.size() > 0) {
-      d->orb_receive(*orbs_.begin());
-      orbs_.erase(orbs_.begin());  
-      return true;
-  }
-  return false;
-}
-
-// Receives an orb from another Disc
-void Disc::orb_receive(Orb *roy_orbison){
-  roy_orbison->reassign(&pos_);
-  roy_orbison->change_hover_distance(r_);
-  orbs_.push_back(roy_orbison);
-}
-
-// Deletes the orb after removing all instances of it
-bool Disc::orb_destroy(){
-  if (orbs_.size() > 0) {
-    Graphics::remove_drawable(*orbs_.begin());
-    Physics::take_physics(*orbs_.begin());
-    delete *orbs_.begin();
-    orbs_.erase(orbs_.begin());  
-    return true;
-  }
-  return false;
-}
-
-// Tells the particle to just fly away. It eventually deletes
-// itself. See Orb::self_destruct();
-bool Disc::orb_abandon(){
-  if (orbs_.size() > 0) {
-    (*orbs_.begin())->unassign();
-    orbs_.erase(orbs_.begin());
-    return true;
-  }
-  return false;
-}
 
 // Places disc at certain location  
 void Disc::set_location(double x, double y){
@@ -123,6 +86,85 @@ void Disc::set_ugen_params(double param1, double param2){
   ugen_->set_normalized_param(param1, param2);
 }
 
+
+
+
+// #------------------ Orbs --------------------#
+
+
+
+// Creates a new orb to hang out around this disc
+void Disc::orb_create(int num_orbs){
+  for (int i = 0; i < num_orbs; ++i){
+    Orb *roy_orbison = new Orb(&pos_, 2*r_);
+    roy_orbison->use_color_scheme(orb_color_scheme_);
+    orbs_.push_back(roy_orbison);
+    Graphics::add_drawable(roy_orbison);
+    Physics::give_physics(roy_orbison);
+  }
+}
+
+// If we have less orbs than we'd like, make more!
+void Disc::orb_repopulate(){
+  orb_create(maintain_orbs_ - orbs_.size());
+}
+
+// Passes the orb to another disc, d.
+bool Disc::orb_handoff(Disc *d){
+  if (orbs_.size() > 0) {
+      d->orb_receive(*orbs_.begin());
+      orbs_.erase(orbs_.begin());  
+      return true;
+  }
+  return false;
+}
+
+// Receives an orb from another Disc
+void Disc::orb_receive(Orb *roy_orbison){
+  roy_orbison->reassign(&pos_);
+  roy_orbison->change_hover_distance(1.5*r_);
+  orbs_.push_back(roy_orbison);
+}
+
+// If we have more orbs than we'd like, kill them!
+bool Disc::above_capacity(){
+  return static_cast<int>(orbs_.size()) > max_orbs_; 
+}
+
+// If we have more orbs than we'd like, kill them!
+void Disc::orb_limit(){
+  for (int i = 0; i < static_cast<int>(orbs_.size()) - max_orbs_; ++i){
+    if (!orb_destroy()) break;
+  }
+}
+
+// Deletes the orb after removing all instances of it
+bool Disc::orb_destroy(){
+  if (orbs_.size() > 0) {
+    Graphics::remove_drawable(*orbs_.begin());
+    Physics::take_physics(*orbs_.begin());
+    delete *orbs_.begin();
+    orbs_.erase(orbs_.begin());  
+    return true;
+  }
+  return false;
+}
+
+// Tells the particle to just fly away. It eventually deletes
+// itself. See Orb::self_destruct();
+bool Disc::orb_abandon(){
+  if (orbs_.size() > 0) {
+    (*orbs_.begin())->unassign();
+    orbs_.erase(orbs_.begin());
+    return true;
+  }
+  return false;
+}
+
+
+// #-------------- Drawable ----------------#
+
+
 // OpenGL instructions for drawing a unit disc centered at the origin
 void Disc::draw(){
  // Ghost mode makes it partially transparent
@@ -132,14 +174,8 @@ void Disc::draw(){
     glScalef(r_, r_, 1);
     int res = 24;
 
-    quadratic=gluNewQuadric();          // Create A Pointer To The Quadric Object ( NEW )
     gluQuadricNormals(quadratic, GLU_SMOOTH);   // Create Smooth Normals ( NEW )
     gluQuadricTexture(quadratic, GL_TRUE);
-    glPushMatrix();
-      glColor4f(0,0,0, alpha);
-      glTranslatef(0,0,.01);
-      gluDisk(quadratic,0.70f,1.0f,res,res);
-      glPopMatrix();
     
     // Animate the selected disc
     if (this == spotlight_disc_){
@@ -180,7 +216,6 @@ void Disc::draw(){
     gluDisk(quadratic,0.0f,1.0f,res,res);
 
     glPopAttrib();
-
     glPopMatrix();
 }
 
@@ -201,7 +236,7 @@ void Disc::set_attributes(){
   GLfloat mat_specular[] = { .5*color_.x, .5*color_.y,  .5*color_.z, 1.0 };
   GLfloat mat_diffuse[] = { color_.x, color_.y,  color_.z, 1.0 };
   GLfloat mat_ambient[] = { color_.x, color_.y,  color_.z, 1.0 };
-  GLfloat mat_shininess[] = { .0};
+  GLfloat mat_shininess[] = { 10 * brightness_ };
   glClearColor (0.0, 0.0, 0.0, 0.0);
   glShadeModel (GL_SMOOTH);
 
@@ -259,6 +294,14 @@ void Disc::advance_time(double t){
   }
 }
 
+
+
+
+// #-------------- Moveable ----------------#
+
+
+
+
 //Responds to the user moving in the interface
 void Disc::move(double x, double y, double z){
   is_clicked_ = true;
@@ -295,6 +338,14 @@ void Disc::right_clicked(){
   spotlight_disc_ = this;
 }
 
+
+
+
+// #-------------- Physics ----------------#
+
+
+
+
 // The forces are handled here. This is called from Physics.cpp during the numerical integration step.
 Vector3d Disc::external_forces(){
   //.5 * 2 * r * Cd * p * v^2 ~= r * v^2
@@ -316,6 +367,8 @@ Vector3d Disc::external_torques(){
   return Vector3d(0,0,0) * 180.0 / 3.1415926535;
 }
 
+
+// #-------------- Private ----------------#
 
 // Loads a texture from a file, must be in bmp format
 GLuint Disc::loadTextureFromFile( const char * filename ){

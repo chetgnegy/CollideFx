@@ -20,10 +20,10 @@ class Orb : public Drawable, public Physical {
 public:
   static const double kDeathTime = 15.0;
 
-  static const double kTransitTime = 1.5;
-  static const double kTransitForce = 20.0;
-  static const double kTransitDamping = 75.0;
-  static const double kTransitWander = 4.0;
+  static const double kTransitTime = 2.5;
+  static const double kTransitForce = 50.0;
+  static const double kTransitDamping = 25.0;
+  static const double kTransitWander = 8.0;
   static const double kStationaryForce = 40.0;
   static const double kStationaryDamping = 2.0;
   static const double kStationaryWander = 1.0;
