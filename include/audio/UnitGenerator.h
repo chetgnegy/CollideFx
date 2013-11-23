@@ -92,6 +92,7 @@ public:
   double tick(double in){ return tick(); }
 
   bool is_input(){ return true; }
+  bool is_looper(){ return false; }
   bool is_midi(){ return true; }
 
 protected:
@@ -112,6 +113,7 @@ public:
   // Pulls the current sample out of the buffer and advances the read index
   double tick(double in);
   bool is_input(){ return true; }
+  bool is_looper(){ return false; }
   bool is_midi(){ return false; }
   // Sets the sample at the current index in the buffer
   void set_sample(double val);
@@ -192,6 +194,7 @@ public:
   void set_params(double p1, double p2);
 
   bool is_input(){ return false; }
+  bool is_looper(){ return false; }
   bool is_midi(){ return false; }
 private:
   // Quantizes the double to the number of bits specified by param1
@@ -229,6 +232,7 @@ public:
   void set_params(double p1, double p2);
 
   bool is_input(){ return false; }
+  bool is_looper(){ return false; }
   bool is_midi(){ return false; }
 private:
   double *buffer_;
@@ -260,6 +264,7 @@ public:
   void set_params(double p1, double p2);
 
   bool is_input(){ return false; }
+  bool is_looper(){ return false; }
   bool is_midi(){ return false; }
 private:
   float *buffer_;
@@ -288,6 +293,7 @@ public:
   double tick(double in);  
   
   bool is_input(){ return false; }
+  bool is_looper(){ return false; }
   bool is_midi(){ return false; }
 };
 
@@ -311,6 +317,7 @@ public:
   void set_lowpass(bool lowpass);
 
   bool is_input(){ return false; }
+  bool is_looper(){ return false; }
   bool is_midi(){ return false; }
 private:
   DigitalFilter *f_;
@@ -333,6 +340,7 @@ public:
   void set_params(double p1, double p2);
 
   bool is_input(){ return false; }
+  bool is_looper(){ return false; }
   bool is_midi(){ return false; }
 private:
   DigitalBandpassFilter *f_;
@@ -361,6 +369,7 @@ public:
   void start_countdown();
 
   bool is_input(){ return false; }
+  bool is_looper(){ return true; }
   bool is_midi(){ return false; }
 
 private:
@@ -403,6 +412,7 @@ public:
   void set_params(double p1, double p2);
 
   bool is_input(){ return false; }
+  bool is_looper(){ return false; }
   bool is_midi(){ return false; }
 private:
   int sample_count_;
@@ -429,6 +439,7 @@ public:
   void set_params(double p1, double p2);
 
   bool is_input(){ return false; }
+  bool is_looper(){ return false; }
   bool is_midi(){ return false; }
 private:
   FilterBank *fb_;
@@ -460,6 +471,7 @@ public:
   void set_params(double p1, double p2);
 
   bool is_input(){ return false; }
+  bool is_looper(){ return false; }
   bool is_midi(){ return false; }
   
 private:

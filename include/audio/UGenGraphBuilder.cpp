@@ -278,7 +278,7 @@ void UGenGraphBuilder::update_graphics_dependencies(){
   
   int num_nodes = inputs_.size() + midi_modules_.size() + fx_.size();
   
-  int outputs;
+  int inputs, outputs;
   for (int i = 0; i < num_nodes; ++i){
     indexed(i)->excite(indexed(i)->get_ugen()->buffer_energy());
 
@@ -293,7 +293,15 @@ void UGenGraphBuilder::update_graphics_dependencies(){
         }while(indexed(i)->above_capacity() && try_handoff);
       }
       else{
-        indexed(i)->orb_limit();
+        inputs = data_[indexed(i)].inputs_.size();
+        if (inputs > 0){
+          indexed(i)->orb_limit();
+        }
+        else if (!indexed(i)->get_ugen()->is_input()){
+          if (rand()%4 == 0) indexed(i)->orb_abandon();
+          else indexed(i)->orb_destroy();
+        }
+
       }
       indexed(i)->orb_repopulate();
     }
