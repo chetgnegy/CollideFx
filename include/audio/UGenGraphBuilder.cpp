@@ -169,6 +169,10 @@ void UGenGraphBuilder::rebuild(){
     if (data_[indexed(i)].outputs_.size() == 0){
       sinks_.push_back(indexed(i));
     }
+    if (data_[indexed(i)].outputs_.size() == 1
+      && data_[indexed(i)].outputs_[0]->get_ugen()->is_looper()){
+      sinks_.push_back(indexed(i));
+    }
   }
 }
 
@@ -288,18 +292,21 @@ void UGenGraphBuilder::update_graphics_dependencies(){
       if (outputs > 0){
         bool try_handoff = true;
         do{
+          // Don't lose orbs while they are in transit!
           try_handoff = indexed(i)->orb_handoff(
                         data_[indexed(i)].outputs_[rand() % outputs]);
         }while(indexed(i)->above_capacity() && try_handoff);
       }
       else{
+        // it's a sink
         inputs = data_[indexed(i)].inputs_.size();
         if (inputs > 0){
           indexed(i)->orb_limit();
         }
-        else if (!indexed(i)->get_ugen()->is_input()){
-          if (rand()%4 == 0) indexed(i)->orb_abandon();
-          else indexed(i)->orb_destroy();
+        else if (!indexed(i)->get_ugen()->is_input()
+                && !indexed(i)->get_ugen()->is_looper()){
+          // Lone discs shed orbs
+          if (rand()%10 == 0) indexed(i)->orb_abandon();
         }
 
       }

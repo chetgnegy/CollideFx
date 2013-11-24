@@ -39,6 +39,7 @@ Menu::Menu(){
   slider1_ = 0;
   slider2_ = 0;
   midi_active_ = false;
+  selector_enabled_ = false;
 }
 
 Menu::~Menu(){}
@@ -84,6 +85,23 @@ void Menu::draw(){
     glEnd();
     glPopAttrib();
   }
+
+  // Grey arrow boxes if not in use
+  if (!selector_enabled_ && ctrl_menu_shown_){
+    glPushAttrib(GL_ALL_ATTRIB_BITS);
+        glEnable(GL_BLEND);
+        glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+      
+    glColor4f(0,0,0,.7);
+    glBegin(GL_QUADS);
+    glTexCoord2f(0.0, 1.0); glVertex3f(0.17*width, -0.5*height, 0);
+    glTexCoord2f(1.0, 1.0); glVertex3f(0.73*width, -0.5*height, 0);
+    glTexCoord2f(1.0, 0.0); glVertex3f(0.73*width, -0.25*height, 0);
+    glTexCoord2f(0.0, 0.0); glVertex3f(0.17*width, -0.25*height, 0);
+    glEnd();
+    glPopAttrib();
+  }
+
   glTranslatef(0,-9,0);
 
   
@@ -117,6 +135,8 @@ void Menu::draw(){
         glPushMatrix();
           glTranslatef(text_x, -1.25, 0);
           draw_text(Disc::spotlight_disc_->get_ugen()->p_name(1), false);
+          //glTranslatef(text_x, -1.25, 0);
+          //draw_text(Disc::spotlight_disc_->get_ugen()->param1(1), false);
           glPopMatrix();
         glTranslatef(-7 + slider1_ * 13.5, 0, 0);
         glutSolidSphere(.6,20,20); // The slider
@@ -435,12 +455,14 @@ void Menu::handle_click(int x, int y){
   }
   else {
     // UP ARROW BUTTON
-    if (inSquare(x - 16, y, x_arrow_but, y_up_but, sm_but_size)){
+    if (selector_enabled_ && 
+        inSquare(x - 16, y, x_arrow_but, y_up_but, sm_but_size)){
       std::cout << "Clicked Up" << std::endl; 
       return;
     }
     // DOWN ARROW BUTTON
-    if (inSquare(x - 16, y, x_arrow_but, y_down_but, sm_but_size)){
+    if (selector_enabled_ && 
+        inSquare(x - 16, y, x_arrow_but, y_down_but, sm_but_size)){
       std::cout << "Clicked Down" << std::endl; return;
     }
     // CTRL BUTTON
@@ -588,7 +610,7 @@ void Menu::make_disc(int button){
     // Looper 
     case 206: {
           Looper *u_loop = new Looper();
-          new_disc_ = new Disc(u_loop, rad, true, 200, 50);
+          new_disc_ = new Disc(u_loop, rad, true, 0, 0);
           new_disc_->set_color(0.9, 0.0, 0.0);
           new_disc_->set_texture(11);
           new_disc_->delegate_orb_color_scheme(1);

@@ -37,6 +37,7 @@ public:
   // in the chain?
   virtual bool is_input() = 0;
   virtual bool is_midi() = 0;
+  virtual bool is_looper() = 0;
 
   // Allows entire buffers to be processed at once
   double *process_buffer(double *buffer, int length);
@@ -372,6 +373,12 @@ public:
   bool is_looper(){ return true; }
   bool is_midi(){ return false; }
 
+  // Used in the disc. Stored here so that we don't allocate
+  // this memory for every disc. Used only for state transitions
+  struct timeval timer; 
+  std::pair<long, long> click_data;
+  void (*pulsefnc)(void *,int);
+  void *data;
 private:
   // Cue Loop to start recording
   void start_recording();

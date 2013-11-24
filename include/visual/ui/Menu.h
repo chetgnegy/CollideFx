@@ -98,7 +98,6 @@ private:
   void make_disc(int button);
 
 
-  
 
 
   // The textures for all of the menus.
@@ -128,7 +127,7 @@ private:
 
   // If Midi has been activated
   bool midi_active_;
-
+  bool selector_enabled_;
 };
 
 #endif

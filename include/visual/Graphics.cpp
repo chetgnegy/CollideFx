@@ -64,8 +64,6 @@ int Graphics::initialize(int argc, char *argv[]){
   // set the mouse function - called on mouse stuff
   glutMouseFunc(mouse);
   glutMotionFunc(mouseMotion);
-  // set the special function - called on special keys events (fn, arrows, pgDown, etc)
-  //glutSpecialFunc(special);
 
   time_now = -1;
   return 0;

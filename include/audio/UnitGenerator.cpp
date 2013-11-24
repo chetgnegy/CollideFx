@@ -308,6 +308,9 @@ BitCrusher::BitCrusher(int p1, int p2, int length){
   sample_count_ = 0;
   ugen_buffer_size_ = length;
   ugen_buffer_ = new double[ugen_buffer_size_];
+
+  printf("Calibrate Bit Crusher...\n");
+  
 }
 
 BitCrusher::~BitCrusher(){}
@@ -321,7 +324,7 @@ double BitCrusher::tick(double in){
     sample_ = quantize(in);
   }
 
-  return in;//sample_;
+  return sample_;
 }
 // casts the parameters to ints and restricts them to a certain value
 void BitCrusher::set_params(double p1, double p2){
@@ -331,7 +334,6 @@ void BitCrusher::set_params(double p1, double p2){
 
 //Quantizes the double to the number of bits specified by param1
 double BitCrusher::quantize(double in){
-  //printf("Check this. We should know if this is exceeding the maximum...\n");
   if (param1_ == 1) return in;
   return round(in * pow(2.0, param1_)) / pow(2.0, param1_);
 }
@@ -663,7 +665,8 @@ Looper::Looper(int sample_rate, int length){
   ugen_buffer_size_ = length;
   ugen_buffer_ = new double[ugen_buffer_size_];
 
-
+  click_data.first = 0;
+  click_data.second = 0;
 }
 Looper::~Looper(){
   //destroy float buffer
@@ -677,6 +680,8 @@ double Looper::tick(double in){
   if (beat_count_ > 60 * sample_rate_ / param1_) {
     pulse();
     beat_count_ = 0;
+    if (counting_down_ || is_recording_)return 1;
+    
   }
   //Stores the current input
   if (is_recording_){
@@ -718,8 +723,9 @@ void Looper::set_params(double a, double b){
 }
 
 void Looper::pulse(){
-  printf("Pulse! %d\n",this_beat_);
+  //printf("Pulse! %d\n",this_beat_);
   if (counting_down_){
+    if (pulsefnc!=NULL) pulsefnc(data, this_beat_);
     this_beat_ = (this_beat_ - 1);
     if (this_beat_ < 0){
       this_beat_ = 0;
@@ -729,19 +735,28 @@ void Looper::pulse(){
   else {
     this_beat_ = (this_beat_+1);//count either way
     //tells it when to stop
+    if ((is_recording_ || has_recording_) 
+                        && pulsefnc!=NULL){ 
+      pulsefnc(data, -100);
+    }
+
     if (this_beat_ == static_cast<int>(param2_)){
       this_beat_ = 0;
       if (is_recording_){
+        
         stop_recording();
+        if (pulsefnc!=NULL) pulsefnc(data, -4);
       }
+    
     }
+    
   }
 }
 
 // Starts counting down beats until recording starts 
 void Looper::start_countdown(){
-  if (!params_set_) return;
-  printf("Counting Down! \n");
+  if (!params_set_) set_params(param1_, param2_);
+  //printf("Counting Down! \n");
   this_beat_ = 4;
   beat_count_ = 0;
   is_recording_ = false;
@@ -751,7 +766,7 @@ void Looper::start_countdown(){
 
 // Cue Loop to start playing
 void Looper::start_recording(){
-  printf("Recording! \n");
+  //printf("Recording! \n");
   this_beat_ = 0;
   buf_write_ = 0;
   is_recording_ = true;
@@ -761,7 +776,7 @@ void Looper::start_recording(){
 
 // Cue Loop to start playing
 void Looper::stop_recording(){
-  printf("Playing Back! \n");
+  //printf("Playing Back! \n");
   this_beat_ = 0;
   buf_read_ = 0;
   is_recording_ = false;

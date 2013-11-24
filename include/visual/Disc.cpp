@@ -38,7 +38,7 @@ Disc::Disc(UnitGenerator *u, double radius, bool ghost, int initial_orbs, int ma
   max_orbs_ = max(max(max_orbs, initial_orbs_), maintain_orbs_);
   orb_color_scheme_ = 0;
   brightness_ = 0;
-
+  pulse_timer_ = 100;
   ghost_ = ghost;
   
   quadratic = gluNewQuadric();
@@ -247,11 +247,26 @@ void Disc::get_rotation(double &w, double &x, double &y, double &z){
 // Sets up the visual attributes for the Disc
 void Disc::set_attributes(){
   glPushAttrib(GL_ALL_ATTRIB_BITS);
+
+  Vector3d c;
+  if (pulse_timer_ < .1){
+    c = color_;
+    color_ = Vector3d(1,1,1);
+  } 
+  
+
   GLfloat mat_specular[] = { .5*color_.x, .5*color_.y,  .5*color_.z, 1.0 };
   GLfloat mat_diffuse[] = { color_.x, color_.y,  color_.z, 1.0 };
   GLfloat mat_ambient[] = { color_.x, color_.y,  color_.z, 1.0 };
+  
+   if (pulse_timer_ < .1){
+    color_ = c;
+  } 
+  
+  
   GLfloat mat_shininess[] = { 10 * brightness_ };
-  glClearColor (0.0, 0.0, 0.0, 0.0);
+
+  
   glShadeModel (GL_SMOOTH);
 
   glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
@@ -310,6 +325,7 @@ void Disc::prepare_graphics(void){
 }
 
 void Disc::advance_time(double t){
+  pulse_timer_ += t;
   if (this == spotlight_disc_){
     spotlight_graphic_timer += t;
   
@@ -342,6 +358,7 @@ void Disc::prepare_move(double x, double y, double z){
 //Checks if positions are within radius of center of object
 bool Disc::check_clicked(double x, double y, double z){
   if (pow(x-pos_.x,2) + pow(y-pos_.y,2) < pow(r_,2)){ 
+    if (get_ugen()->is_looper()) handle_looper_click();
     return true;
   }
   return false;
@@ -354,6 +371,7 @@ void Disc::unclicked(){
     orb_create(initial_orbs_);
     ghost_ = false;
   }
+  else if (get_ugen()->is_looper()) handle_looper_unclick();
 }
 
 
@@ -388,7 +406,7 @@ Vector3d Disc::external_forces(){
 
 // The torques are handled here. This is called from Physics.cpp during the numerical integration step.
 Vector3d Disc::external_torques(){
-  return Vector3d(0,0,0) * 180.0 / 3.1415926535;
+  return Vector3d(0,0,0);// * 180.0 / 3.1415926535;
 }
 
 
@@ -413,4 +431,43 @@ GLuint Disc::loadTextureFromFile( const char * filename ){
   GL_RGB, GL_UNSIGNED_BYTE, theTexMap.ImageData() );
 
   return texture;
+}
+
+
+void loop_pulse_function(void *data, int message);
+
+// first is the time between clicks
+// second is the length of the click that just ended
+void Disc::handle_looper_click(){
+  Looper *loop = static_cast<Looper *>(get_ugen());
+  gettimeofday(&(loop->timer), NULL);  
+  long new_click = (long)(loop->timer.tv_sec*1000000+loop->timer.tv_usec);
+  loop->click_data.second = new_click;
+  loop->click_data.first = new_click - loop->click_data.first;
+}
+
+void Disc::handle_looper_unclick(){
+  Looper *loop = static_cast<Looper *>(get_ugen());
+  gettimeofday(&(loop->timer), NULL);  
+  long new_click = (long)(loop->timer.tv_sec*1000000+loop->timer.tv_usec);
+  loop->click_data.second = new_click - loop->click_data.second;
+  // A double click was made
+  if (loop->click_data.first<200000 && 
+    loop->click_data.second<200000){
+    loop->data = static_cast<void *>(this);
+    loop->pulsefnc = loop_pulse_function;
+    loop->start_countdown();
+  }
+
+
+  loop->click_data.first = new_click;
+}
+
+void loop_pulse_function(void *data, int message){
+  Disc *d = static_cast<Disc *>(data);
+  if (message != -100) d->set_texture(15 + message);
+  if (message == -4){
+    d->set_orb_maintain(100);
+  }
+  d->pulse();
 }

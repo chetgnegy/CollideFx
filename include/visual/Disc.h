@@ -9,6 +9,8 @@
 #ifndef _DISC_H_
 #define _DISC_H_
 
+#include <sys/time.h>
+#include <time.h> // Used for looper
 #include "RgbImage.h"
 #include "UnitGenerator.h"
 #include "Physics.h"
@@ -57,12 +59,20 @@ public:
 
   void set_ugen_params(double param1, double param2);
   
+  void pulse(){
+    pulse_timer_ = 0;
+  }
   /* ----- Orbs ----- */
 
   // Changes the color scheme of any orbs that are created
   void delegate_orb_color_scheme(int color_scheme){
     orb_color_scheme_ = color_scheme;
   }
+  
+  void set_orb_maintain(int maintain){
+    maintain_orbs_ = maintain;
+    max_orbs_ = max(maintain, max_orbs_);
+  };
 
   // Creates a new orb to hang out around this disc
   void orb_create(int num_orbs = 1);
@@ -152,6 +162,9 @@ private:
   GLuint loadTextureFromFile( const char * filename );
 
 
+  void handle_looper_click();
+  void handle_looper_unclick();
+
   static GLuint *tex_;
   static bool texture_loaded_;
   static double spotlight_graphic_timer;
@@ -178,6 +191,7 @@ private:
   int max_orbs_;
   double brightness_;
 
+  double pulse_timer_;
   // Has the disc been approved
   bool ghost_;
 
