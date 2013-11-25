@@ -16,6 +16,7 @@
 #include <vector>
 #include <algorithm>
 #include "UnitGenerator.h"
+#include "DigitalFilter.h" 
 #include "Disc.h"
 #include "Thread.h"
 
@@ -45,11 +46,10 @@ public:
   // audio path
   void lock_thread(bool lock);
 
-  // Processes a single sample. Note that you must first handoff audio 
+  // Processes a single buffer. Note that you must first handoff audio 
   // and midi data to the graph by using the handoff_audio and 
   // handoff midi functions
-  double tick();
-  void load_buffer(double *out, int length); // a whole buffer
+  void load_buffer(double *out, int length);
 
 
   // Passes any audio samples to the Input ugens. 
@@ -105,7 +105,6 @@ private:
 
   // Reverses the push architecture of "out = tick(in)" to recursively pull
   // samples to the output sinks from the inputs
-  double pull_result(Disc *k, std::vector<Disc *> inputs);
   double *pull_result_buffer(Disc *k, std::vector<Disc *> inputs, int length);
 
   // Reverses the "to" and "from" ends of a wire
@@ -133,6 +132,10 @@ private:
   // concurrency issues
   Mutex audio_lock_;
 
+
+  //Filters to process the output. Just for quality's sake...
+  DigitalLowpassFilter *anti_aliasing_;
+  DigitalHighpassFilter *low_pass_;
 };
 
 

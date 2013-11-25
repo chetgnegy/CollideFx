@@ -16,9 +16,13 @@ UGenGraphBuilder::UGenGraphBuilder(int length){
   buffer_length_ = length;
   fft_ = new complex[buffer_length_];
   buffer_ready_ = false;
+  anti_aliasing_ = new DigitalLowpassFilter(10000, 1, 1);
+  low_pass_ = new DigitalHighpassFilter(10, 1, 1);
 }
 
 UGenGraphBuilder::~UGenGraphBuilder(){
+  delete low_pass_;  
+  delete anti_aliasing_;
   delete[] fft_;
 }
 
@@ -187,19 +191,7 @@ bool compare_wires (Wire i, Wire j){
 }
 
 
-// Processes a single sample. Note that you must first handoff audio 
-// and midi data to the graph by using the handoff_audio and 
-// handoff midi functions
-double UGenGraphBuilder::tick(){
-  double sum = 0;
-  std::vector<Disc *>::iterator it;
-  it = sinks_.begin();
-  while (it != sinks_.end()) {
-    sum += pull_result(*it, data_[*it].inputs_);
-    ++it;
-  }
-  return sum;
-}
+
 
 // Processes a whole buffer. Note that you must first handoff audio 
 // and midi data to the graph by using the handoff_audio and 
@@ -220,6 +212,12 @@ void UGenGraphBuilder::load_buffer(double *out, int frames){
     }
     count++;
     ++it;
+  }
+  for (int i = 0; i < frames; ++i){
+    //Filters the signal to remove HF and DC components
+    low_pass_->tick(out[i]);
+    anti_aliasing_->tick(low_pass_->most_recent_sample());
+    out[i] = anti_aliasing_->most_recent_sample().re();
   }
 }
 
@@ -409,27 +407,6 @@ Disc *UGenGraphBuilder::indexed(int i){
 
 
 // Reverses the push architechture of "out = tick(in)" to recursively pull
-// samples to the output sinks from the inputs
-double UGenGraphBuilder::pull_result(Disc *k, std::vector<Disc *> inputs){
-  double sum = 0;
-  if (inputs.size() > 0) {
-    std::vector<Disc *>::iterator it;
-    it = inputs.begin();
-      
-    while (it != inputs.end()) {
-      double scale = 1;
-      if (data_[*it].outputs_.size()>0){
-        scale = 1 / pow(data_[*it].outputs_.size(), 0.5);
-      }
-      sum += scale * pull_result(*it, data_[*it].inputs_);
-      ++it;
-    }
-  }
-  return k->get_ugen()->tick(sum);
-}
-
-
-// Reverses the push architechture of "out = tick(in)" to recursively pull
 // samples to the output sinks from the inputs. Works on an entire buffer
 // The buffer out is cleared of any previous contents
 double *UGenGraphBuilder::pull_result_buffer(Disc *k, std::vector<Disc *> inputs, 
@@ -449,11 +426,15 @@ double *UGenGraphBuilder::pull_result_buffer(Disc *k, std::vector<Disc *> inputs
     int m = 0;
     double wet_level;
     while (it != inputs.end()) {
-      double separation = (k->pos_ - inputs[m]->pos_).length() + 
-                           k->get_radius() + inputs[m]->get_radius();
+      // Finds mix level
+      double separation = (k->pos_ - inputs[m]->pos_).length() - 
+                           k->get_radius() - inputs[m]->get_radius();
+     
+      wet_level = 1 - separation/(
+                  kMaxDist- k->get_radius() - inputs[m]->get_radius());
       m++;
-      wet_level = 1 - separation/kMaxDist;
-      
+ 
+      // Scales for branches
       double scale = 1;
       if (data_[*it].outputs_.size()>0){
         scale = 1 / pow(data_[*it].outputs_.size(), 0.5);
@@ -461,7 +442,7 @@ double *UGenGraphBuilder::pull_result_buffer(Disc *k, std::vector<Disc *> inputs
 
       temp = pull_result_buffer(*it, data_[*it].inputs_, length);
       
-      // copy new branch into output buffer
+      // Computes wet dry mix
       for (int i = 0; i < length; ++i){
         wet[i] += wet_level * scale * temp[i];
         dry[i] += (1-wet_level) * scale * temp[i];
@@ -471,6 +452,8 @@ double *UGenGraphBuilder::pull_result_buffer(Disc *k, std::vector<Disc *> inputs
   }
   double *out_buffer = k->get_ugen()->process_buffer(wet, length);
   data_[k].computed = true;
+
+  // Merges wet and dry
   if (!k->get_ugen()->is_input()){
      for (int i = 0; i < length; ++i){
         out_buffer[i] += dry[i];

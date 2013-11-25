@@ -16,6 +16,7 @@
 #include <string.h>
 #include <list>
 #include <algorithm>
+#include <sstream>
 #include "ClassicWaveform.h"
 #include "DigitalFilter.h"
 #include "complex.h"
@@ -58,7 +59,7 @@ public:
 
   const char * name() { return name_;}
   const char * p_name(int i) {return i==1 ? param1_name_ : param2_name_;}
-
+  const char *report_param(int which);
 protected:
   // Sets the bounds on the parameters of the ugen
   void set_limits(double min1, double max1, double min2, double max2);
@@ -71,11 +72,13 @@ protected:
   int ugen_buffer_size_;
   double *ugen_buffer_;
 
+  void define_printouts(double *report_param1, const char *p1_units, 
+                        double *report_param2, const char *p2_units);
   // generic parameters for the unit generator. It is up 
   // to the subclass to define these and make them meaningful
-  double param1_, max_param1_, min_param1_;
-  double param2_, max_param2_, min_param2_;
-  const char *name_, *param1_name_, *param2_name_;
+  double param1_, max_param1_, min_param1_, *report_param1_;
+  double param2_, max_param2_, min_param2_, *report_param2_;
+  const char *name_, *param1_name_, *param2_name_, *param1_units_, *param2_units_;
 };
 
 class MidiUnitGenerator: public UnitGenerator{
@@ -239,7 +242,7 @@ public:
 private:
   double *buffer_;
   int buf_write_;
-  double rate_hz_, depth_;
+  double rate_hz_, depth_, report_hz_;
   double sample_count_;
   int buffer_size_;
   int sample_rate_;
@@ -269,10 +272,12 @@ public:
   bool is_looper(){ return false; }
   bool is_midi(){ return false; }
 private:
-  float *buffer_;
   int buf_write_;
-  int buffer_size_;
+  int max_buffer_size_;
   int sample_rate_;
+  float *buffer_;
+  double buffer_size_; 
+  
 };
 
 
@@ -425,7 +430,7 @@ public:
 private:
   int sample_count_;
   int sample_rate_;
-  double rate_hz_;
+  double rate_hz_, report_hz_;
 };
 
 
@@ -485,7 +490,7 @@ public:
 private:
   int sample_count_;
   int sample_rate_;
-  double rate_hz_;
+  double rate_hz_, report_hz_;
 
 };
 

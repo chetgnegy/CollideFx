@@ -84,7 +84,20 @@ double UnitGenerator::clamp(double param_in){
   return param_in < min_param1_ ? min_param1_ : param_in;
 }
 
+const char *UnitGenerator::report_param(int which){
+  std::stringstream s;
+  if (which == 1) s << *report_param1_ << " " << param1_units_;
+  else s << *report_param2_ << " " << param2_units_;
+  return s.str().c_str();
+}
 
+void UnitGenerator::define_printouts(double *report_param1, const char *p1_units, 
+                        double *report_param2, const char *p2_units){
+  report_param1_ = report_param1;
+  report_param2_ = report_param2;
+  param1_units_ = p1_units;
+  param2_units_ = p2_units;
+}
 // #------------ Midi Unit Generator Classes --------------#
 
 
@@ -116,7 +129,7 @@ Input::Input(int length){
     param2_name_ = "Not Used";
     set_limits(0, 1, 0, 0);
     set_params(1, 0);
-    
+    define_printouts(&param1_, "", &param2_, "");
     ugen_buffer_size_ = length;
     ugen_buffer_ = new double[ugen_buffer_size_];
     current_index_ = 0;
@@ -128,7 +141,7 @@ Input::~Input(){}
 double Input::tick(double in){ 
   double out = ugen_buffer_[current_index_];
   current_index_ = (current_index_ + 1) % ugen_buffer_size_;
-  return out; 
+  return param1_*out; 
 }  
 
 // Sets the sample at the current index in the buffer
@@ -167,6 +180,7 @@ Sine::Sine(double p1, double p2, int sample_rate, int length){
   param2_name_ = "Sustain";
   myCW_ = new ClassicWaveform("sine", 44100);
   set_limits(0.001, 10, 0.001, 10);
+  define_printouts(&param1_, "s", &param2_, "s");
   set_params(p1, p2);
   ugen_buffer_size_ = length;
   ugen_buffer_ = new double[ugen_buffer_size_];
@@ -204,6 +218,7 @@ Square::Square(double p1, double p2, int sample_rate, int length){
   myCW_ = new ClassicWaveform("square", 44100);
   set_limits(0.001, 10, 0.001, 10);
   set_params(p1, p2);
+  define_printouts(&param1_, "s", &param2_, "s");
   ugen_buffer_size_ = length;
   ugen_buffer_ = new double[ugen_buffer_size_];
 }
@@ -239,6 +254,7 @@ Tri::Tri(double p1, double p2, int sample_rate, int length){
   myCW_ = new ClassicWaveform("tri", 44100);
   set_limits(0.001, 10, 0.001, 10);
   set_params(p1, p2);
+  define_printouts(&param1_, "s", &param2_, "s");
   ugen_buffer_size_ = length;
   ugen_buffer_ = new double[ugen_buffer_size_];
 }
@@ -272,6 +288,7 @@ Saw::Saw(double p1, double p2, int sample_rate, int length){
   myCW_ = new ClassicWaveform("saw", 44100);
   set_limits(0.001, 10, 0.001, 10);
   set_params(p1, p2);
+  define_printouts(&param1_, "s", &param2_, "s");
   ugen_buffer_size_ = length;
   ugen_buffer_ = new double[ugen_buffer_size_];
 }
@@ -304,6 +321,7 @@ BitCrusher::BitCrusher(int p1, int p2, int length){
   param2_name_ = "Downsampling Factor";
   set_limits(1, 16, 1, 16);
   set_params(p1, p2); 
+  define_printouts(&param1_, "", &param2_, "x");
   sample_ = 0;
   sample_count_ = 0;
   ugen_buffer_size_ = length;
@@ -356,6 +374,7 @@ Chorus::Chorus(double p1, double p2, int sample_rate, int length){
   sample_rate_ = sample_rate;
   set_limits(0, 1, 0, 1);
   set_params(p1, p2);
+  define_printouts(&report_hz_, "Hz", &param2_, "");
   buffer_size_ = ceil((kMaxDelay + kDelayCenter)*sample_rate_);
   
   //Makes an empty buffer
@@ -408,6 +427,7 @@ void Chorus::set_params(double p1, double p2){
   param1_ = clamp(p1);
   p1 = (kMaxFreq-kMinFreq) * pow( param1_, 4) + kMinFreq;
   //sets the rate of the chorusing
+  report_hz_ = p1;
   rate_hz_ = 6.2831853 / (1.0 * sample_rate_) * p1;
    
   param2_ = clamp(p2);
@@ -432,14 +452,16 @@ Delay::Delay(double p1, double p2, int sample_rate, int length){
   param1_name_ = "Time";
   param2_name_ = "Feedback";
   sample_rate_ = sample_rate;
-  set_limits(0, 1, 0, 1);
+  set_limits(0.01, 2, 0, 1);
+  define_printouts(&param1_, "s", &param2_, "");
   
   param1_ = p1; 
   param2_ = p2;
-  buffer_size_ = ceil(sample_rate_ * param1_);
+  max_buffer_size_= ceil(sample_rate_ * max_param1_);
+  buffer_size_ = sample_rate_ * param1_;
   //Makes an empty buffer
-  buffer_ = new float[buffer_size_];
-  for (int i = 0; i < buffer_size_; ++i) buffer_[i] = 0;
+  buffer_ = new float[max_buffer_size_];
+  for (int i = 0; i < max_buffer_size_; ++i) buffer_[i] = 0;
   buf_write_ = 0;
   ugen_buffer_size_ = length;
   ugen_buffer_ = new double[ugen_buffer_size_];
@@ -452,12 +474,12 @@ Delay::~Delay(){
 }
 // Processes a single sample in the unit generator
 double Delay::tick(double in){
-  double buf_read = fmod(buf_write_ - sample_rate_ * param1_+ buffer_size_, buffer_size_);
-  double read_sample = interpolate(buffer_, buffer_size_, buf_read);
+  float buf_read = fmod(buf_write_ - buffer_size_ + max_buffer_size_, max_buffer_size_);
+  float read_sample = interpolate(buffer_, max_buffer_size_, buf_read);
   buffer_[buf_write_] = in + param2_ * read_sample;
   double out =  in + read_sample;
   ++buf_write_;
-  buf_write_ %= buffer_size_;
+  buf_write_ %= max_buffer_size_;
   return out;
 }
 
@@ -465,41 +487,10 @@ void Delay::set_params(double p1, double p2){
   param1_ = clamp(p1);
 
   //Reallocates delay buffer
-  if (p1!=param1_){
-    param1_ = p1;
-    //delay must be at least kShortestDelay samples
-    int new_buffer_size = ceil(sample_rate_ * param1_);
-    new_buffer_size = new_buffer_size < kShortestDelay ? kShortestDelay : new_buffer_size;
-    //makes the new buffer
-    float *new_buffer = new float[new_buffer_size];
-    for (int i = 0; i < new_buffer_size; ++i) new_buffer[i] = 0;
-    
-    buf_write_ = 0; // starts back at the beginning
-    double old_sample, fadeout = 1;
-    int last = std::min(new_buffer_size, buffer_size_);
-    
-    for (int i = 0; i < last; ++i) {
-      if (buffer_size_ - i < kShortestDelay){
-        fadeout = (buffer_size_-i)/(1.0*kShortestDelay);
-      } 
-      old_sample = buffer_[(buf_write_ - i + buffer_size_) % buffer_size_]; 
-      new_buffer[new_buffer_size-i-1] = fadeout * old_sample; 
-    }
-    
-    float *trash_buffer = buffer_;
-    //The order change should solve some concurrency issues (may not be necessary).
-    //if (buffer_size_>new_buffer_size){
-      buffer_size_ = new_buffer_size;
-      buffer_ = new_buffer; 
-    //}
-    //else {
-    //  buffer_ = new_buffer; 
-    //  buffer_size_ = new_buffer_size;
-    //}
-    delete[] trash_buffer;
-  }
+  buffer_size_ = ceil(sample_rate_ * param1_);
   
-    param2_ = clamp(p2);
+  
+  param2_ = clamp(p2);
   
 }
 
@@ -526,6 +517,8 @@ Distortion::Distortion(double p1, double p2, int length){
   param2_name_ = "Post-gain";
   set_limits(0, 20, 0, 20);
   set_params(p1, p2);
+  define_printouts(&param1_, "", &param2_, "");
+  
   ugen_buffer_size_ = length;
   ugen_buffer_ = new double[ugen_buffer_size_];
 }
@@ -553,6 +546,8 @@ Filter::Filter(double p1, double p2, int length){
   param1_name_ = "Cutoff Frequency";
   param2_name_ = "Q";
   set_limits(100, 10000, 1, 10);
+  define_printouts(&param1_, "Hz", &param2_, "");
+  
   param1_ = p1;
   param2_ = p2;
   f_ = new DigitalLowpassFilter(param1_, param2_, 1);
@@ -611,6 +606,8 @@ Bandpass::Bandpass(double p1, double p2, int length){
   param1_name_ = "Cutoff Frequency";
   param2_name_ = "Q";
   set_limits(100, 10000, 1, 10);
+  define_printouts(&param1_, "Hz", &param2_, "");
+  
   param1_ = p1;
   param2_ = p2;
 
@@ -651,7 +648,8 @@ Looper::Looper(int sample_rate, int length){
   //declare float buffer
   sample_rate_ = sample_rate;
   set_limits(60, 250, 1, 60);
-
+  define_printouts(&param1_, "BPM", &param2_, "Beats");
+  
   param1_ = 120;
   param2_ = 16;
   params_set_ = false;
@@ -804,6 +802,8 @@ RingMod::RingMod(double p1, double p2, int sample_rate, int length){
   sample_rate_ = sample_rate;
   set_limits(0, 1, 0, 1);
   set_params(p1, p2);
+  define_printouts(&report_hz_, "Hz", &param2_, "");
+  
   sample_count_ = 0;
   ugen_buffer_size_ = length;
   ugen_buffer_ = new double[ugen_buffer_size_];
@@ -827,6 +827,7 @@ void RingMod::set_params(double p1, double p2){
   // Non linear scaling
   p1 = (kMaxFreq - kMinFreq) * pow( param1_, 4) + kMinFreq;
   //sets the rate of the tremolo
+  report_hz_ = p1;
   rate_hz_ = 6.2831853 / (1.0 * sample_rate_) * p1;
 }
 
@@ -851,6 +852,7 @@ Reverb::Reverb(double p1, double p2, int length){
   param1_name_ = "Room Size";
   param2_name_ = "Damping";
   set_limits(0, 1, 0, 1);
+  define_printouts(&param1_, "", &param2_, "");
   
 
   param1_ = p1;
@@ -928,6 +930,8 @@ Tremolo::Tremolo(double p1, double p2, int sample_rate, int length){
   sample_rate_ = sample_rate;
   set_limits(0, 1, 0, 1);
   set_params(p1, p2);
+  define_printouts(&report_hz_, "Hz", &param2_, "");
+  
   sample_count_ = 0;
   ugen_buffer_size_ = length;
   ugen_buffer_ = new double[ugen_buffer_size_];
@@ -950,6 +954,8 @@ void Tremolo::set_params(double p1, double p2){
   param2_ = clamp(p2);
   // Non linear scaling
   p1 = (kMaxFreq - kMinFreq) * pow( param1_, 4) + kMinFreq;
+  report_hz_ = p1;
+  
   //sets the rate of the tremolo
   rate_hz_ = 6.2831853 / (1.0 * sample_rate_) * p1;
 }

@@ -135,8 +135,8 @@ void Menu::draw(){
         glPushMatrix();
           glTranslatef(text_x, -1.25, 0);
           draw_text(Disc::spotlight_disc_->get_ugen()->p_name(1), false);
-          //glTranslatef(text_x, -1.25, 0);
-          //draw_text(Disc::spotlight_disc_->get_ugen()->param1(1), false);
+          glTranslatef(10, 0, 0);
+          draw_text(Disc::spotlight_disc_->get_ugen()->report_param(1), false);
           glPopMatrix();
         glTranslatef(-7 + slider1_ * 13.5, 0, 0);
         glutSolidSphere(.6,20,20); // The slider
@@ -146,6 +146,8 @@ void Menu::draw(){
         glPushMatrix();
           glTranslatef(text_x, -5, 0);
           draw_text(Disc::spotlight_disc_->get_ugen()->p_name(2), false);
+          glTranslatef(10, 0, 0);
+          draw_text(Disc::spotlight_disc_->get_ugen()->report_param(2), false);
           glPopMatrix();
         glTranslatef(-7 + slider2_ * 13.5, 0, 0);
         glTranslatef(0, -3.68, 0);

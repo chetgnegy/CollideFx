@@ -82,8 +82,6 @@ int audioCallback(void *outputBuffer, void *inputBuffer, unsigned int num_frames
 //Creates all structures. You still need to call initialize()!
 UGenChain::UGenChain(){
   graph_builder_ = new UGenGraphBuilder(kBufferFrames);
-  anti_aliasing_ = new DigitalLowpassFilter(10000, 1, 1);
-  low_pass_ = new DigitalHighpassFilter(10, 1, 1);
 }
 
 //Closes the buffer and cleans up objects
@@ -91,8 +89,6 @@ UGenChain::~UGenChain(){
   //Make sure we close things gracefully
   stop_audio();
   delete graph_builder_;
-  delete anti_aliasing_;
-  delete low_pass_;  
   delete midi_;
 }
 
@@ -174,18 +170,6 @@ void UGenChain::stop_audio(){
     adac_->closeStream();
 }
   
-
-// Process the next sample in the UGenChain
-double UGenChain::tick(){
-  graph_builder_->rebuild();
-  double output = 0;
-  output = graph_builder_->tick();
-
-  //Filters the signal to remove HF and DC components
-  low_pass_->tick(output);
-  anti_aliasing_->tick(low_pass_->most_recent_sample());
-  return anti_aliasing_->most_recent_sample().re();
-}
 
 
 // Returns the interconnects of unit generators

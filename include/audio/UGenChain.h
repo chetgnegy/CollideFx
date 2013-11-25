@@ -11,7 +11,6 @@
 
 
 #include <cmath>
-#include "DigitalFilter.h" 
 #include "RtAudio.h"
 #include "RtMidi.h"
 #include "RtError.h"
@@ -42,10 +41,6 @@ public:
   // Stops the audio stream gracefully
   void stop_audio();
 
-  // Process the next sample in the UGenChain. For anything interesting
-  // to happen, be sure to handoff a sample or a midi event to the UGenChain
-  double tick();
-
   // Returns the interconnects of unit generators
   UGenGraphBuilder *get_signal_graph();
 
@@ -65,10 +60,7 @@ private:
   RtAudio *adac_;
   // The RtMidi object listens for MIDI events
   RtMidiIn *midi_;
-  
-  //Filters to process the output. Just for quality's sake...
-  DigitalLowpassFilter *anti_aliasing_;
-  DigitalHighpassFilter *low_pass_;
+
 
 };
  
