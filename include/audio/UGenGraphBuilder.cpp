@@ -166,6 +166,7 @@ void UGenGraphBuilder::rebuild(){
   }
 
   for (int i = 0; i < num_nodes; ++i){
+    data_[indexed(i)].computed = false;
     if (data_[indexed(i)].outputs_.size() == 0){
       sinks_.push_back(indexed(i));
     }
@@ -194,7 +195,7 @@ double UGenGraphBuilder::tick(){
   std::vector<Disc *>::iterator it;
   it = sinks_.begin();
   while (it != sinks_.end()) {
-    sum += pull_result((*it)->get_ugen(), data_[*it].inputs_);
+    sum += pull_result(*it, data_[*it].inputs_);
     ++it;
   }
   return sum;
@@ -210,12 +211,14 @@ void UGenGraphBuilder::load_buffer(double *out, int frames){
   std::vector<Disc *>::iterator it;
   it = sinks_.begin();
   double *temp;
+  int count = 0;
   while (it != sinks_.end()) {
-    temp = pull_result_buffer((*it)->get_ugen(), data_[*it].inputs_, frames);
+    temp = pull_result_buffer(*it, data_[*it].inputs_, frames);
     // copy new branch into output buffer
     for (int i = 0; i < frames; ++i){
       out[i] += temp[i];
     }
+    count++;
     ++it;
   }
 }
@@ -407,7 +410,7 @@ Disc *UGenGraphBuilder::indexed(int i){
 
 // Reverses the push architechture of "out = tick(in)" to recursively pull
 // samples to the output sinks from the inputs
-double UGenGraphBuilder::pull_result(UnitGenerator *k, std::vector<Disc *> inputs){
+double UGenGraphBuilder::pull_result(Disc *k, std::vector<Disc *> inputs){
   double sum = 0;
   if (inputs.size() > 0) {
     std::vector<Disc *>::iterator it;
@@ -418,42 +421,63 @@ double UGenGraphBuilder::pull_result(UnitGenerator *k, std::vector<Disc *> input
       if (data_[*it].outputs_.size()>0){
         scale = 1 / pow(data_[*it].outputs_.size(), 0.5);
       }
-      sum += scale * pull_result((*it)->get_ugen(), data_[*it].inputs_);
+      sum += scale * pull_result(*it, data_[*it].inputs_);
       ++it;
     }
   }
-  return k->tick(sum);
+  return k->get_ugen()->tick(sum);
 }
 
 
 // Reverses the push architechture of "out = tick(in)" to recursively pull
 // samples to the output sinks from the inputs. Works on an entire buffer
 // The buffer out is cleared of any previous contents
-double *UGenGraphBuilder::pull_result_buffer(UnitGenerator *k, std::vector<Disc *> inputs, 
+double *UGenGraphBuilder::pull_result_buffer(Disc *k, std::vector<Disc *> inputs, 
                                   int length){
-  double *out = new double[length];
+
+  if (data_[k].computed) return k->get_ugen()->current_buffer();
+  double *wet = new double[length];
+  double *dry = new double[length];
   // Zero out old array
-  for (int i = 0; i < length; ++i) out[i] = 0;
-  
+  for (int i = 0; i < length; ++i){ 
+    wet[i] = 0; dry[i] = 0;
+  }
   if (inputs.size() > 0) {
     std::vector<Disc *>::iterator it;
     it = inputs.begin();
     double *temp;
+    int m = 0;
+    double wet_level;
     while (it != inputs.end()) {
+      double separation = (k->pos_ - inputs[m]->pos_).length() + 
+                           k->get_radius() + inputs[m]->get_radius();
+      m++;
+      wet_level = 1 - separation/kMaxDist;
+      
       double scale = 1;
       if (data_[*it].outputs_.size()>0){
         scale = 1 / pow(data_[*it].outputs_.size(), 0.5);
       }
-      temp = pull_result_buffer((*it)->get_ugen(), data_[*it].inputs_, length);
+
+      temp = pull_result_buffer(*it, data_[*it].inputs_, length);
+      
       // copy new branch into output buffer
       for (int i = 0; i < length; ++i){
-        out[i] += scale * temp[i];
+        wet[i] += wet_level * scale * temp[i];
+        dry[i] += (1-wet_level) * scale * temp[i];
       }
       ++it;
     }
   }
-  double *out_buffer = k->process_buffer(out, length);
-  delete[] out;
+  double *out_buffer = k->get_ugen()->process_buffer(wet, length);
+  data_[k].computed = true;
+  if (!k->get_ugen()->is_input()){
+     for (int i = 0; i < length; ++i){
+        out_buffer[i] += dry[i];
+    }
+  }
+  delete[] wet;
+  delete[] dry;
   return out_buffer;
 
 }

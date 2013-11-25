@@ -41,6 +41,7 @@ public:
 
   // Allows entire buffers to be processed at once
   double *process_buffer(double *buffer, int length);
+  double *current_buffer(){return ugen_buffer_;}
 
   double buffer_energy();
 

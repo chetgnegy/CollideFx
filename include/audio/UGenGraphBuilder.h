@@ -105,8 +105,8 @@ private:
 
   // Reverses the push architecture of "out = tick(in)" to recursively pull
   // samples to the output sinks from the inputs
-  double pull_result(UnitGenerator *k, std::vector<Disc *> inputs);
-  double *pull_result_buffer(UnitGenerator *k, std::vector<Disc *> inputs, int length);
+  double pull_result(Disc *k, std::vector<Disc *> inputs);
+  double *pull_result_buffer(Disc *k, std::vector<Disc *> inputs, int length);
 
   // Reverses the "to" and "from" ends of a wire
   void switch_wire_direction(Wire &w);
@@ -141,6 +141,7 @@ struct GraphData{
   std::vector< Edge > edges_;
   std::vector< Disc* > inputs_;
   std::vector< Disc* > outputs_;
+  bool computed;
 };
 
 
