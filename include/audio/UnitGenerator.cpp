@@ -19,8 +19,8 @@ double interpolate(double *array, int length, double index);
 
 // Allows user to set the generic parameters, bounds must already be set
 void UnitGenerator::set_params(double p1, double p2){
-  param1_ = clamp(p1);
-  param2_ = clamp(p2);
+  param1_ = clamp(p1, 1);
+  param2_ = clamp(p2, 2);
 }
 
 // Allows entire buffers to be processed at once
@@ -79,9 +79,12 @@ void UnitGenerator::set_limits(double min1, double max1, double min2, double max
 
 // Uses the specified minimum and maximum bounds to restrict parameter to
 // valid range
-double UnitGenerator::clamp(double param_in){
-  param_in = param_in > max_param1_ ? max_param1_ : param_in;
-  return param_in < min_param1_ ? min_param1_ : param_in;
+double UnitGenerator::clamp(double param_in, int which){
+  double min_param, max_param;
+  if (which == 1){max_param = max_param1_;min_param = min_param1_;}
+  else{max_param = max_param2_;min_param = min_param2_;}
+  param_in = param_in > max_param ? max_param : param_in;
+  return param_in < min_param ? min_param : param_in;
 }
 
 const char *UnitGenerator::report_param(int which){
@@ -127,7 +130,7 @@ Input::Input(int length){
     name_ = "Input";
     param1_name_ = "Volume";
     param2_name_ = "Not Used";
-    set_limits(0, 1, 0, 0);
+    set_limits(0, 1, 0, 1);
     set_params(1, 0);
     define_printouts(&param1_, "", &param2_, "");
     ugen_buffer_size_ = length;
@@ -192,8 +195,8 @@ Sine::~Sine(){
 
 // casts the parameters to ints and restricts them to a certain value
 void Sine::set_params(double p1, double p2){
-  param1_ = clamp(p1);
-  param2_ = clamp(p2);
+  param1_ = clamp(p1, 1);
+  param2_ = clamp(p2, 2);
   myCW_->set_attack(param1_);
   myCW_->set_sustain(param2_);
 }
@@ -228,8 +231,8 @@ Square::~Square(){
 // Processes a single sample in the unit generator
 // casts the parameters to ints and restricts them to a certain value
 void Square::set_params(double p1, double p2){
-  param1_ = clamp(p1);
-  param2_ = clamp(p2);
+  param1_ = clamp(p1, 1);
+  param2_ = clamp(p2, 2);
   myCW_->set_attack(param1_);
   myCW_->set_sustain(param2_);
 }
@@ -263,8 +266,8 @@ Tri::~Tri(){
 }
 // casts the parameters to ints and restricts them to a certain value
 void Tri::set_params(double p1, double p2){
-  param1_ = clamp(p1);
-  param2_ = clamp(p2);
+  param1_ = clamp(p1, 1);
+  param2_ = clamp(p2, 2);
   myCW_->set_attack(param1_);
   myCW_->set_sustain(param2_);
 }
@@ -297,8 +300,8 @@ Saw::~Saw(){
 }
 // casts the parameters to ints and restricts them to a certain value
 void Saw::set_params(double p1, double p2){
-  param1_ = clamp(p1);
-  param2_ = clamp(p2);
+  param1_ = clamp(p1, 1);
+  param2_ = clamp(p2, 2);
   myCW_->set_attack(param1_);
   myCW_->set_sustain(param2_);
 }
@@ -346,8 +349,8 @@ double BitCrusher::tick(double in){
 }
 // casts the parameters to ints and restricts them to a certain value
 void BitCrusher::set_params(double p1, double p2){
-  param1_ = clamp(floor(p1));
-  param2_ = clamp(floor(p2));
+  param1_ = clamp(floor(p1), 1);
+  param2_ = clamp(floor(p2), 2);
 }
 
 //Quantizes the double to the number of bits specified by param1
@@ -424,13 +427,13 @@ double Chorus::tick(double in){
 // restricts parameters to range (0,1) and calculates other parameters,
 // including the rate in Hz and the max delay change
 void Chorus::set_params(double p1, double p2){
-  param1_ = clamp(p1);
+  param1_ = clamp(p1, 1);
   p1 = (kMaxFreq-kMinFreq) * pow( param1_, 4) + kMinFreq;
   //sets the rate of the chorusing
   report_hz_ = p1;
   rate_hz_ = 6.2831853 / (1.0 * sample_rate_) * p1;
    
-  param2_ = clamp(p2);
+  param2_ = clamp(p2, 2);
   depth_ = kMaxDelay * param2_;
   
 }
@@ -484,13 +487,13 @@ double Delay::tick(double in){
 }
 
 void Delay::set_params(double p1, double p2){
-  param1_ = clamp(p1);
+  param1_ = clamp(p1, 1);
 
   //Reallocates delay buffer
   buffer_size_ = ceil(sample_rate_ * param1_);
   
   
-  param2_ = clamp(p2);
+  param2_ = clamp(p2, 2);
   
 }
 
@@ -548,8 +551,8 @@ Filter::Filter(double p1, double p2, int length){
   set_limits(100, 10000, 1, 10);
   define_printouts(&param1_, "Hz", &param2_, "");
   
-  param1_ = p1;
-  param2_ = p2;
+  param1_ = clamp(p1, 1);
+  param2_ = clamp(p2, 2);
   f_ = new DigitalLowpassFilter(param1_, param2_, 1);
   f_->calculate_coefficients();
   currently_lowpass_ = true;
@@ -569,8 +572,8 @@ double Filter::tick(double in){
 
 // Tells the filter to change parameters
 void Filter::set_params(double p1, double p2){
-  param1_ = clamp(p1);
-  param2_ = clamp(p2);
+  param1_ = clamp(p1, 1);
+  param2_ = clamp(p2, 2);
   f_->change_parameters(param1_, param2_, 1);
 }
 
@@ -623,8 +626,8 @@ double Bandpass::tick(double in){
   return f_->tick(in).re();
 }
 void Bandpass::set_params(double p1, double p2){
-  param1_ = clamp(p1);
-  param2_ = clamp(p2);
+  param1_ = clamp(p1, 1);
+  param2_ = clamp(p2, 2);
   f_->change_parameters(param1_, param2_, 1);
 }
 
@@ -654,7 +657,7 @@ Looper::Looper(int sample_rate, int length){
   param2_ = 16;
   params_set_ = false;
   
-  buf_write_ =0; buf_read_ = 0;
+  buf_write_ = 0; buf_read_ = 0;
   this_beat_ = 0; beat_count_ = 0;
   // Sets initial state of module
   counting_down_ = false;
@@ -705,19 +708,10 @@ double Looper::tick(double in){
 }
 
 void Looper::set_params(double a, double b){
-  if(params_set_){
-    printf("Loop cannot change parameters. Create new instance.");
-    return;
-  }
-  param1_= static_cast<int>(a); 
-  param2_ = static_cast<int>(b);
-  buffer_size_ = ceil(60* sample_rate_ * param2_ / param1_);
-  //Makes empty buffer
-  buffer_ = new float[buffer_size_];
-  for (int i = 0; i < buffer_size_; ++i) {
-    buffer_[i] = 0;
-  }
-  params_set_ = true;
+  if (is_recording_ || counting_down_ || has_recording_) return;
+  param1_= round(a); 
+  param2_ = round(b);
+  
 }
 
 void Looper::pulse(){
@@ -738,23 +732,28 @@ void Looper::pulse(){
       pulsefnc(data, -100);
     }
 
-    if (this_beat_ == static_cast<int>(param2_)){
+    if (this_beat_ == round(param2_)){
       this_beat_ = 0;
       if (is_recording_){
         
         stop_recording();
         if (pulsefnc!=NULL) pulsefnc(data, -4);
       }
-    
     }
-    
   }
 }
 
 // Starts counting down beats until recording starts 
 void Looper::start_countdown(){
-  if (!params_set_) set_params(param1_, param2_);
-  //printf("Counting Down! \n");
+  if (params_set_) delete[] buffer_;
+  buffer_size_ = ceil(60* sample_rate_ * param2_ / param1_);
+  //Makes empty buffer
+  buffer_ = new float[buffer_size_];
+  for (int i = 0; i < buffer_size_; ++i) {
+    buffer_[i] = 0;
+  }
+  params_set_ = true;
+
   this_beat_ = 4;
   beat_count_ = 0;
   is_recording_ = false;
@@ -764,7 +763,7 @@ void Looper::start_countdown(){
 
 // Cue Loop to start playing
 void Looper::start_recording(){
-  //printf("Recording! \n");
+
   this_beat_ = 0;
   buf_write_ = 0;
   is_recording_ = true;
@@ -822,8 +821,8 @@ double RingMod::tick(double in){
 }
 
 void RingMod::set_params(double p1, double p2){
-  param1_ = clamp(p1);
-  param2_ = clamp(p2);
+  param1_ = clamp(p1, 1);
+  param2_ = clamp(p2, 2);
   // Non linear scaling
   p1 = (kMaxFreq - kMinFreq) * pow( param1_, 4) + kMinFreq;
   //sets the rate of the tremolo
@@ -897,8 +896,8 @@ double Reverb::tick(double in){
 }  
 
 void Reverb::set_params(double p1, double p2){
-  param1_ = clamp(p1);
-  param2_ = clamp(p2);
+  param1_ = clamp(p1, 1);
+  param2_ = clamp(p2, 2);
   
   int i = 0;
   std::list<DigitalFilter *>::iterator it;
@@ -950,8 +949,8 @@ double Tremolo::tick(double in){
 }
 // restricts parameters to range (0,1) and calculates other params
 void Tremolo::set_params(double p1, double p2){
-  param1_ = clamp(p1);
-  param2_ = clamp(p2);
+  param1_ = clamp(p1, 1);
+  param2_ = clamp(p2, 2);
   // Non linear scaling
   p1 = (kMaxFreq - kMinFreq) * pow( param1_, 4) + kMinFreq;
   report_hz_ = p1;

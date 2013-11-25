@@ -66,7 +66,7 @@ protected:
 
   // Uses the specified minimum and maximum bounds to restrict parameter to
   // valid range
-  double clamp(double param_in);
+  double clamp(double param_in, int which);
 
   // Used for block processing of buffer
   int ugen_buffer_size_;

@@ -107,21 +107,13 @@ void Menu::draw(){
   
 
   if (ctrl_menu_shown_){
-    // Checks to see if disc was JUST clicked, sets initial
+    
     // slider positions
-    if (Disc::spotlight_disc_ != NULL && slider_initial_){
+    if (Disc::spotlight_disc_ != NULL){
       slider1_ = Disc::spotlight_disc_->get_ugen_params(1);
       slider2_ = Disc::spotlight_disc_->get_ugen_params(2);
-      last_disc_ = Disc::spotlight_disc_;
-      slider_initial_ = false; 
     }
-    // Disc just unclicked
-    if (Disc::spotlight_disc_ != last_disc_){
-      slider_initial_ = true;
-      show_slider_ = false;
-    }
-
- 
+    
     // Disc clicked, show slider
     if (Disc::spotlight_disc_ != NULL || show_slider_){
       double text_x = -7.125;
@@ -139,7 +131,7 @@ void Menu::draw(){
           draw_text(Disc::spotlight_disc_->get_ugen()->report_param(1), false);
           glPopMatrix();
         glTranslatef(-7 + slider1_ * 13.5, 0, 0);
-        glutSolidSphere(.6,20,20); // The slider
+        glutSolidSphere(.6,20,20);
         glPopMatrix();
       glPushMatrix();
         // Second Slider
@@ -151,7 +143,7 @@ void Menu::draw(){
           glPopMatrix();
         glTranslatef(-7 + slider2_ * 13.5, 0, 0);
         glTranslatef(0, -3.68, 0);
-        glutSolidSphere(.6,20,20); // The slider
+        glutSolidSphere(.6,20,20);
         glPopMatrix();
     }
 
@@ -224,7 +216,7 @@ void Menu::set_attributes(void){
 
 }
 
-// Pops the attriubtes stack
+// Pops the attributes stack
 void Menu::remove_attributes(void){
   glPopAttrib();
 }
@@ -266,7 +258,9 @@ void Menu::move(double x, double y, double z){
     x = fmax(x,-22.71);
     slider2_ = (x+22.71)/(22.71 - 8.695); 
   }
-    
+  if (Disc::spotlight_disc_ != NULL && (slider1_clicked_ || slider2_clicked_)){
+    Disc::spotlight_disc_->set_ugen_params(slider1_, slider2_);
+  }
 }
 
 // Prepares any discs that are being created for motion

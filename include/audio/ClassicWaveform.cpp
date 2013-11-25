@@ -120,7 +120,7 @@ bool ClassicWaveform::stop_note(int MIDI_pitch){
 // Gets the next sample for a single note
 double ClassicWaveform::next_sample(Note *n){
   ++(n->samples);
-  double envelope = compute_envelope(n);
+  double envelope = n->velocity / 127.0 * compute_envelope(n);
   double digital_freq = 6.2831853 * n->pitch  / sample_rate_;
   return envelope * wave_func_(digital_freq * n->samples);
 }
