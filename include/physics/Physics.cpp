@@ -196,43 +196,79 @@ bool Physics::check_reduce_timestep(){
 
 void Physics::check_in_bounds(double update_time){
   if (all_.size() > 0) {
-      double mu = 3;
-      std::list<Physical *>::iterator it;
-      it = all_.begin();
+      double mu = .7;
+      auto it = all_.begin();
       while (it != all_.end()) {
-        if ((*it)->has_collisions()){
-          double impulse = 2 * (*it)->m_ * (*it)->intersection_distance() / update_time / (*it)->I_;
+        Physical *p = (*it);
+        double r = p->intersection_distance();
+        if (p->has_collisions()){
+          double impulse = 2 * p->m_ * p->intersection_distance() / p->I_ * mu;
             
           //Left Wall
-          if ((*it)->pos_.x - (*it)->intersection_distance() < x_min_ && (*it)->vel_.x < 0){
-            (*it)->pos_.x =  x_min_ + (*it)->intersection_distance();
-            (*it)->vel_.x = -(*it)->vel_.x;
-            if((*it)->acc_.x < 0) (*it)->acc_.x = 0;
-            (*it)->ang_acc_.z +=  (*it)->vel_.x * (*it)->vel_.y / (*it)->vel_.length() * impulse * mu;
+          if (p->pos_.x - p->intersection_distance() < x_min_ && p->vel_.x < 0){
+            p->pos_.x =  x_min_ + p->intersection_distance();
+            p->vel_.x = -p->vel_.x;
+            if(p->acc_.x < 0) p->acc_.x = 0;
+            p->ang_vel_.z += -impulse / fabs(p->vel_.y);
+            p->vel_.y +=  p->intersection_distance() * impulse / fabs(p->vel_.y);
           }
 
           //Right Wall
-          else if ((*it)->pos_.x + (*it)->intersection_distance() > x_max_ && (*it)->vel_.x > 0){
-            (*it)->pos_.x =  x_max_ - (*it)->intersection_distance();
-            (*it)->vel_.x = -(*it)->vel_.x;
-            if((*it)->acc_.x > 0) (*it)->acc_.x = 0;
-            (*it)->ang_acc_.z +=  (*it)->vel_.x * (*it)->vel_.y / (*it)->vel_.length() * impulse * mu;
+          else if (p->pos_.x + p->intersection_distance() > x_max_ && p->vel_.x > 0){
+            p->pos_.x =  x_max_ - p->intersection_distance();
+            p->vel_.x = -p->vel_.x * .9;
+            if(p->acc_.x > 0) p->acc_.x = 0;
+
+              std::cout << "pos" << " " << p->pos_ << " " << std::endl;
+              std::cout << "vel" << " " << p->vel_ << " " << std::endl;
+              std::cout << "acc" << " " << p->acc_ << " " << std::endl;
+              std::cout << "apos" << " " << p->ang_pos_ << " " << std::endl;
+              std::cout << "avel" << " " << p->ang_vel_ << " " << std::endl;
+              std::cout << "aacc" << " " << p->ang_acc_ << " " << std::endl;
+
+            impulse = fabs(2 * p->m_ * p->vel_.x / update_time);
+            double wallv = -(p->vel_.y  + p->intersection_distance() * p->ang_vel_.z);
+            double dir = wallv/fabs(wallv);
+            double f_fric_max = impulse ;
+            double t_fric_max = f_fric_max * r;
+            double a_fric_max = t_fric_max / p->I_;
+            double dw_fric_max = a_fric_max * update_time * mu;
+            double dv_fric_max = dw_fric_max * r * mu;
+            dv_fric_max = fmin(fabs(dv_fric_max), fabs(p->vel_.y));
+
+              std::cout << "mag_imp" << " " << impulse << " " << std::endl;
+              std::cout << "dir" << " " << dir << " " << std::endl;
+              std::cout << "f_fric_max" << " " << f_fric_max << " " << std::endl;
+              std::cout << "t_fric_max" << " " << t_fric_max << " " << std::endl;
+              std::cout << "a_fric_max" << " " << a_fric_max << " " << std::endl;
+              std::cout << "dw_fric_max" << " " << dw_fric_max << " " << std::endl;
+              std::cout << "dv_fric_max" << " " << dv_fric_max << " " << std::endl;
+              
+            p->ang_vel_.z +=  dw_fric_max * dir;
+            p->vel_.y += dv_fric_max * dir;
+             
+              std::cout << ".avel" << " " << p->ang_vel_ << " " << std::endl;
+              std::cout << ".vel" << " " << p->vel_ << " " << std::endl;
+              
+            
           }
 
           //Bottom Wall
-          if ((*it)->pos_.y - (*it)->intersection_distance() < y_min_ && (*it)->vel_.y < 0){
-            (*it)->pos_.y =  y_min_ + (*it)->intersection_distance();
-            (*it)->vel_.y = -(*it)->vel_.y;
-            if((*it)->acc_.y < 0) (*it)->acc_.y = 0;
-            (*it)->ang_acc_.z +=  (*it)->vel_.x * (*it)->vel_.y / (*it)->vel_.length() * impulse * mu;
+          if (p->pos_.y - p->intersection_distance() < y_min_ && p->vel_.y < 0){
+            p->pos_.y =  y_min_ + p->intersection_distance();
+            p->vel_.y = -p->vel_.y;
+            if(p->acc_.y < 0) p->acc_.y = 0;
+            p->ang_vel_.z += impulse / fabs(p->vel_.x);
+            p->vel_.x += -p->intersection_distance() * impulse / fabs(p->vel_.x);
           }
 
           //Top Wall
-          else if ((*it)->pos_.y + (*it)->intersection_distance() > y_max_ && (*it)->vel_.y > 0){
-            (*it)->pos_.y =  y_max_ - (*it)->intersection_distance();
-            (*it)->vel_.y = -(*it)->vel_.y;
-            if((*it)->acc_.y > 0) (*it)->acc_.y = 0;
-            (*it)->ang_acc_.z +=  (*it)->vel_.x * (*it)->vel_.y / (*it)->vel_.length() * impulse * mu;
+          else if (p->pos_.y + p->intersection_distance() > y_max_ && p->vel_.y > 0){
+            p->pos_.y =  y_max_ - p->intersection_distance();
+            p->vel_.y = -p->vel_.y;
+            if(p->acc_.y > 0) p->acc_.y = 0;
+            p->ang_vel_.z += impulse / fabs(p->vel_.x);
+            p->vel_.x += -p->intersection_distance() * impulse / fabs(p->vel_.x);
           }
           
         } 

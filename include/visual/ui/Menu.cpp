@@ -102,11 +102,6 @@ void Menu::draw(){
     glPopAttrib();
   }
   glTranslatef(0,-9,0);
-
-  
-
-    
-    
     
     // Disc clicked, show slider
     if (Disc::spotlight_disc_ != NULL){
@@ -197,7 +192,7 @@ void Menu::draw(){
       y_coord = fmin(y_scale * .8*log10(1+400*fft[i].normsq()), 10.8);
       // The bar
       glBegin(GL_LINES);
-      glVertex3f(x + 20*log10(i*bar_width+1), y, 0 );
+      glVertex3f(x + 20*log10(i*bar_width+1), y, 0);
       glVertex3f(x + 20*log10(i*bar_width+1), y + y_coord,0);
       glEnd();
     }
