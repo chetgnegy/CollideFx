@@ -18,6 +18,7 @@ UGenGraphBuilder::UGenGraphBuilder(int length){
   buffer_ready_ = false;
   anti_aliasing_ = new DigitalLowpassFilter(10000, 1, 1);
   low_pass_ = new DigitalHighpassFilter(10, 1, 1);
+
 }
 
 UGenGraphBuilder::~UGenGraphBuilder(){
@@ -56,7 +57,8 @@ void UGenGraphBuilder::print_all(){
 // Recomputes the graph based on the new positions of the discs
 void UGenGraphBuilder::rebuild(){
   wires_.clear();
-  data_.clear();
+
+
   sinks_.clear();
 
   int num_inputs = inputs_.size() + midi_modules_.size();
@@ -67,7 +69,16 @@ void UGenGraphBuilder::rebuild(){
   bool is_sink[num_nodes];
 
   for (int i = 0; i < num_nodes; ++i){
-    data_[indexed(i)] = GraphData();
+    if (data_.count(indexed(i))){
+      data_[indexed(i)].past_inputs_ = data_[indexed(i)].inputs_;
+      data_[indexed(i)].past_outputs_ = data_[indexed(i)].outputs_;
+      data_[indexed(i)].inputs_.clear();
+      data_[indexed(i)].outputs_.clear();
+      
+    }
+    else {
+      data_[indexed(i)] = GraphData();
+    }
     marked[i] = false;
     is_sink[i] = false;
   }
@@ -90,7 +101,8 @@ void UGenGraphBuilder::rebuild(){
           //Connecting an attached node to an unattached node
           if (!marked[j]){
             // Not connecting two inputs
-            if (i >= num_inputs || j >= num_inputs){
+            if (!indexed(i)->get_ugen()->is_input() ||
+                !indexed(j)->get_ugen()->is_input() ){
                 
               this_dist = get_edge_cost(indexed(i), indexed(j));
               if (this_dist < min_dist && this_dist < kMaxDist){
@@ -126,7 +138,7 @@ void UGenGraphBuilder::rebuild(){
 
   // Make sure inputs are only transmitting
   bool finalized[wires_.size()];
-  for (int i = 0; i < wires_.size(); ++i)finalized[i] = false;
+  for (int i = 0; i < wires_.size(); ++i) finalized[i] = false;
   // First pass
   for (int i = 0; i < wires_.size(); ++i){
     if (wires_[i].second->get_ugen()->is_input()){
@@ -136,7 +148,10 @@ void UGenGraphBuilder::rebuild(){
     else if (wires_[i].first->get_ugen()->is_input()){
       finalized[i] = true;
     }
-
+    // Give some preference to the looper
+    else if (wires_[i].second->get_ugen()->is_looper()){
+      switch_wire_direction(wires_[i]);
+    }
   }
   //Iterate until convergence
   while (!nothing_happened){
@@ -200,12 +215,11 @@ void UGenGraphBuilder::load_buffer(double *out, int frames){
   // Zero out old array
   for (int i = 0; i < frames; ++i) out[i] = 0;
       
-  std::vector<Disc *>::iterator it;
-  it = sinks_.begin();
+  auto it = sinks_.begin();
   double *temp;
   int count = 0;
   while (it != sinks_.end()) {
-    temp = pull_result_buffer(*it, data_[*it].inputs_, frames);
+    temp = pull_result_buffer(*it, frames);
     // copy new branch into output buffer
     for (int i = 0; i < frames; ++i){
       out[i] += temp[i];
@@ -321,7 +335,8 @@ void UGenGraphBuilder::update_graphics_dependencies(){
 
 // Adds a unit generator to the signal chain
 bool UGenGraphBuilder::add_effect(Disc *fx){
-  if (!fx->get_ugen()->is_input() && !fx->get_ugen()->is_midi()){
+  if (!fx->get_ugen()->is_input() && !fx->get_ugen()->is_midi() 
+                       || fx->get_ugen()->is_looper()){
     fx_.push_back(fx);
     return true;
   }
@@ -332,7 +347,7 @@ bool UGenGraphBuilder::add_effect(Disc *fx){
 // Adds midi unit generator to a list of objects that must be checked
 // when new midi event is created
 bool UGenGraphBuilder::add_input(Disc *input){
-  if (input->get_ugen()->is_input()){
+  if (input->get_ugen()->is_input() && !input->get_ugen()->is_looper()){
     inputs_.push_back(input);
     return true;
   }
@@ -351,14 +366,23 @@ bool UGenGraphBuilder::add_midi_ugen(Disc *mugen){
 
 bool UGenGraphBuilder::remove_disc(Disc *d){
   std::vector<Disc *> *vec;
+  if (data_.count(d)){
+    auto itr = data_.begin();
+    while (itr != data_.end()) {
+      if (itr->first == d) {
+        data_.erase(itr);
+        break;
+      } ++itr;
+    }
+  }
   // Figures out which vector to look in
-  if (d->get_ugen()->is_input()){
+  if (d->get_ugen()->is_input() && !d->get_ugen()->is_looper()){
     if (d->get_ugen()->is_midi()) vec = &midi_modules_;
     else vec = &inputs_;
   }
   else vec = &fx_;
 
-  std::vector<Disc *>::iterator it = vec->begin();
+  auto it = vec->begin();
   while (it != vec->end()){
     if ((*it) == d){
       delete *it;
@@ -409,8 +433,7 @@ Disc *UGenGraphBuilder::indexed(int i){
 // Reverses the push architechture of "out = tick(in)" to recursively pull
 // samples to the output sinks from the inputs. Works on an entire buffer
 // The buffer out is cleared of any previous contents
-double *UGenGraphBuilder::pull_result_buffer(Disc *k, std::vector<Disc *> inputs, 
-                                  int length){
+double *UGenGraphBuilder::pull_result_buffer(Disc *k, int length){
 
   if (data_[k].computed) return k->get_ugen()->current_buffer();
   double *wet = new double[length];
@@ -419,37 +442,41 @@ double *UGenGraphBuilder::pull_result_buffer(Disc *k, std::vector<Disc *> inputs
   for (int i = 0; i < length; ++i){ 
     wet[i] = 0; dry[i] = 0;
   }
-  if (inputs.size() > 0) {
-    std::vector<Disc *>::iterator it;
-    it = inputs.begin();
+
+  // Current Inputs
+  if (data_[k].inputs_.size() > 0) {
+    auto it = data_[k].inputs_.begin();
     double *temp;
     int m = 0;
-    double wet_level;
-    while (it != inputs.end()) {
+    double wet_level, separation, both_radii;
+    while (it != data_[k].inputs_.end()) {
       // Finds mix level
-      double separation = (k->pos_ - inputs[m]->pos_).length() - 
-                           k->get_radius() - inputs[m]->get_radius();
-     
-      wet_level = 1 - separation/(
-                  kMaxDist- k->get_radius() - inputs[m]->get_radius());
+      both_radii = k->get_radius() - data_[k].inputs_[m]->get_radius();
+      separation = (k->pos_ - data_[k].inputs_[m]->pos_).length() - 
+                           both_radii;
+      wet_level = 1 - separation/(kMaxDist- both_radii);
       m++;
  
-      // Scales for branches
+      // Scales down due to fan out
       double scale = 1;
       if (data_[*it].outputs_.size()>0){
         scale = 1 / pow(data_[*it].outputs_.size(), 0.5);
       }
 
-      temp = pull_result_buffer(*it, data_[*it].inputs_, length);
+      // Computes buffer coming from previous iteration
+      temp = pull_result_buffer(*it, length);
       
       // Computes wet dry mix
+      double crossfade;
       for (int i = 0; i < length; ++i){
-        wet[i] += wet_level * scale * temp[i];
-        dry[i] += (1-wet_level) * scale * temp[i];
+        crossfade = 1;//i / (1.0 * length);
+        wet[i] += wet_level * scale * temp[i] * crossfade;
+        dry[i] += (1-wet_level) * scale * temp[i] * crossfade;
       }
       ++it;
     }
   }
+
   double *out_buffer = k->get_ugen()->process_buffer(wet, length);
   data_[k].computed = true;
 
@@ -474,12 +501,68 @@ void UGenGraphBuilder::switch_wire_direction(Wire &w){
 
 }
 
-
-void GraphData::list_edges(){
-  for (int i = 0; i < edges_.size(); ++i){
-    std::cout << "\t[" << edges_[i].first->get_ugen()->name() << 
-                   " " << edges_[i].second << "]" << std::endl;
+void UGenGraphBuilder::handle_up_press(){
+  if (Disc::spotlight_disc_ != NULL){
+    if (strcmp("Filter", Disc::spotlight_disc_->get_ugen()->name())==0){
+      Filter *f = static_cast<Filter *>(Disc::spotlight_disc_->get_ugen());
+      f->set_lowpass(!f->is_lowpass()); // Flips filter type
+    }
+    else if (strcmp("Looper", Disc::spotlight_disc_->get_ugen()->name())==0){
+      Looper *l = static_cast<Looper *>(Disc::spotlight_disc_->get_ugen());
+      l->set_start_counter((l->get_start_counter()) % 7 + 1);
+    }
   }
 }
 
+void UGenGraphBuilder::handle_down_press(){
+  if (Disc::spotlight_disc_ != NULL){
+    if (strcmp("Filter", Disc::spotlight_disc_->get_ugen()->name())==0){
+      Filter *f = static_cast<Filter *>(Disc::spotlight_disc_->get_ugen());
+      f->set_lowpass(!f->is_lowpass()); // Flips filter type
+    }
+    else if (strcmp("Looper", Disc::spotlight_disc_->get_ugen()->name())==0){
+      Looper *l = static_cast<Looper *>(Disc::spotlight_disc_->get_ugen());
+      l->set_start_counter((l->get_start_counter() + 5) % 7 + 1);
+    }
+  }
+}
 
+bool UGenGraphBuilder::selector_activated(){
+  if (Disc::spotlight_disc_ != NULL){
+    if (strcmp("Filter", Disc::spotlight_disc_->get_ugen()->name())==0){
+      return true;
+    }
+    else if (strcmp("Looper", Disc::spotlight_disc_->get_ugen()->name())==0){
+      return true;
+    }
+  }
+  return false;
+}
+
+const char *UGenGraphBuilder::text_box_content(){
+  if (Disc::spotlight_disc_ != NULL){
+    if (strcmp("Filter", Disc::spotlight_disc_->get_ugen()->name())==0){
+      Filter *f = static_cast<Filter *>(Disc::spotlight_disc_->get_ugen());
+      if(f->is_lowpass())
+        return "LPF";
+      return "HPF";
+    }
+    if (strcmp("Looper", Disc::spotlight_disc_->get_ugen()->name())==0){
+      Looper *l = static_cast<Looper *>(Disc::spotlight_disc_->get_ugen());
+      std::stringstream s;
+      s << " " << l->get_start_counter() << " ";
+      return s.str().c_str();
+    }
+  }
+  return "";
+}
+
+const char *UGenGraphBuilder::text_box_label(){
+  if (Disc::spotlight_disc_ != NULL){
+
+    if (strcmp("Looper", Disc::spotlight_disc_->get_ugen()->name())==0){
+      return "Count In";
+    }
+  }
+  return "";
+}

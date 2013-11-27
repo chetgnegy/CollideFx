@@ -15,6 +15,7 @@
 #include <cmath>
 #include <string.h>
 #include <list>
+#include <vector>
 #include <algorithm>
 #include <sstream>
 #include "ClassicWaveform.h"
@@ -322,6 +323,7 @@ public:
 
   // True for lowpass, False for highpass
   void set_lowpass(bool lowpass);
+  bool is_lowpass(){return currently_lowpass_;};
 
   bool is_input(){ return false; }
   bool is_looper(){ return false; }
@@ -355,6 +357,43 @@ private:
 };
 
 
+
+
+/*
+The granular effect plays the signal back some time later
+  param1 = granule length
+  param2 = 
+*/
+
+// First int is start sample, second is end sample in buffer, third is
+// granule current position
+struct Granule{
+  int start; int end; int at; int win_length;
+};
+
+class Granular : public UnitGenerator {
+public:
+  Granular(double p1 = 600, double p2 = .5, int sample_rate = 44100, int length = 512);
+  ~Granular();
+  // Processes a single sample in the unit generator
+  double tick(double in);  
+  // reallocates the buffer if the delay length changes
+  void set_params(double p1, double p2);
+
+  bool is_input(){ return false; }
+  bool is_looper(){ return false; }
+  bool is_midi(){ return false; }
+private:
+  int buf_write_;
+  int sample_rate_;
+  double *buffer_;
+  int buffer_size_; 
+  std::vector<Granule> granules_;
+};
+
+
+
+
 /*
 The looper effect keeps a section of the input in a buffer and loops it back
   param1 = beats per second
@@ -374,8 +413,10 @@ public:
   
   // Starts counting down beats until recording starts 
   void start_countdown();
+  void set_start_counter(int num);
+  int get_start_counter();
 
-  bool is_input(){ return false; }
+  bool is_input(){ return has_recording_; }
   bool is_looper(){ return true; }
   bool is_midi(){ return false; }
 
@@ -385,6 +426,8 @@ public:
   std::pair<long, long> click_data;
   void (*pulsefnc)(void *,int);
   void *data;
+
+  
 private:
   // Cue Loop to start recording
   void start_recording();
@@ -395,6 +438,7 @@ private:
   // Cue for a single beat
   void pulse();
 
+  int start_counter_;
   bool params_set_;
   float *buffer_;
   int buf_write_, buf_read_;

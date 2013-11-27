@@ -15,6 +15,7 @@
 #include <queue>
 #include <vector>
 #include <algorithm>
+#include <string>
 #include "UnitGenerator.h"
 #include "DigitalFilter.h" 
 #include "Disc.h"
@@ -96,6 +97,13 @@ public:
   complex *get_fft();
   int get_fft_length(){return buffer_length_/2;}
   
+   // #--------------- UI ----------------#
+
+  void handle_up_press();
+  void handle_down_press();
+  bool selector_activated();
+  const char *text_box_content();
+  const char *text_box_label();
 
   std::vector<Disc *> sinks_;
 
@@ -105,10 +113,11 @@ private:
 
   // Reverses the push architecture of "out = tick(in)" to recursively pull
   // samples to the output sinks from the inputs
-  double *pull_result_buffer(Disc *k, std::vector<Disc *> inputs, int length);
+  double *pull_result_buffer(Disc *k, int length);
 
   // Reverses the "to" and "from" ends of a wire
   void switch_wire_direction(Wire &w);
+
 
   // Allows all ugens to be called uniformly
   Disc *indexed(int i);
@@ -140,10 +149,10 @@ private:
 
 
 struct GraphData{
-  void list_edges();
-  std::vector< Edge > edges_;
   std::vector< Disc* > inputs_;
   std::vector< Disc* > outputs_;
+  std::vector< Disc* > past_inputs_;
+  std::vector< Disc* > past_outputs_;
   bool computed;
 };
 

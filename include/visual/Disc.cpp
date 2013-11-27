@@ -305,7 +305,7 @@ void Disc::prepare_graphics(void){
     tex_[7] = loadTextureFromFile( "graphics/delay.bmp" );
     tex_[8] = loadTextureFromFile( "graphics/distortion.bmp" );
     tex_[9] = loadTextureFromFile( "graphics/filter.bmp" );
-    tex_[10] = loadTextureFromFile( "graphics/bandpass.bmp" );
+    tex_[10] = loadTextureFromFile( "graphics/granular.bmp" );
     tex_[11] = loadTextureFromFile( "graphics/looper.bmp" );
     tex_[12] = loadTextureFromFile( "graphics/ringmod.bmp" );
     tex_[13] = loadTextureFromFile( "graphics/reverb.bmp" );

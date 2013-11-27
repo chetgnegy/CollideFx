@@ -89,8 +89,10 @@ double UnitGenerator::clamp(double param_in, int which){
 
 const char *UnitGenerator::report_param(int which){
   std::stringstream s;
-  if (which == 1) s << *report_param1_ << " " << param1_units_;
-  else s << *report_param2_ << " " << param2_units_;
+  if (which == 1 & report_param1_ != NULL) 
+    s << *report_param1_ << " " << param1_units_;
+  else if (report_param2_ != NULL) 
+    s << *report_param2_ << " " << param2_units_;
   return s.str().c_str();
 }
 
@@ -132,9 +134,13 @@ Input::Input(int length){
     param2_name_ = "Not Used";
     set_limits(0, 1, 0, 1);
     set_params(1, 0);
-    define_printouts(&param1_, "", &param2_, "");
+    define_printouts(&param1_, "", NULL, "");
     ugen_buffer_size_ = length;
     ugen_buffer_ = new double[ugen_buffer_size_];
+    for (int i = 0; i < ugen_buffer_size_; i++){
+      ugen_buffer_[i] = 0;
+    }
+
     current_index_ = 0;
     current_value_ = 0;
   }
@@ -187,6 +193,9 @@ Sine::Sine(double p1, double p2, int sample_rate, int length){
   set_params(p1, p2);
   ugen_buffer_size_ = length;
   ugen_buffer_ = new double[ugen_buffer_size_];
+  for (int i = 0; i < ugen_buffer_size_; i++){
+    ugen_buffer_[i] = 0;
+  }
 }
 
 Sine::~Sine(){
@@ -224,6 +233,9 @@ Square::Square(double p1, double p2, int sample_rate, int length){
   define_printouts(&param1_, "s", &param2_, "s");
   ugen_buffer_size_ = length;
   ugen_buffer_ = new double[ugen_buffer_size_];
+  for (int i = 0; i < ugen_buffer_size_; i++){
+    ugen_buffer_[i] = 0;
+  }
 }
 Square::~Square(){
   delete myCW_;
@@ -260,6 +272,9 @@ Tri::Tri(double p1, double p2, int sample_rate, int length){
   define_printouts(&param1_, "s", &param2_, "s");
   ugen_buffer_size_ = length;
   ugen_buffer_ = new double[ugen_buffer_size_];
+  for (int i = 0; i < ugen_buffer_size_; i++){
+    ugen_buffer_[i] = 0;
+  }
 }
 Tri::~Tri(){
   delete myCW_;
@@ -294,6 +309,9 @@ Saw::Saw(double p1, double p2, int sample_rate, int length){
   define_printouts(&param1_, "s", &param2_, "s");
   ugen_buffer_size_ = length;
   ugen_buffer_ = new double[ugen_buffer_size_];
+  for (int i = 0; i < ugen_buffer_size_; i++){
+    ugen_buffer_[i] = 0;
+  }
 }
 Saw::~Saw(){
   delete myCW_;
@@ -329,7 +347,9 @@ BitCrusher::BitCrusher(int p1, int p2, int length){
   sample_count_ = 0;
   ugen_buffer_size_ = length;
   ugen_buffer_ = new double[ugen_buffer_size_];
-
+  for (int i = 0; i < ugen_buffer_size_; i++){
+    ugen_buffer_[i] = 0;
+  }
   printf("Calibrate Bit Crusher...\n");
   
 }
@@ -389,6 +409,9 @@ Chorus::Chorus(double p1, double p2, int sample_rate, int length){
 
   ugen_buffer_size_ = length;
   ugen_buffer_ = new double[ugen_buffer_size_];
+  for (int i = 0; i < ugen_buffer_size_; i++){
+    ugen_buffer_[i] = 0;
+  }
 }
 Chorus::~Chorus(){
   delete[] buffer_;
@@ -466,9 +489,12 @@ Delay::Delay(double p1, double p2, int sample_rate, int length){
   buffer_ = new float[max_buffer_size_];
   for (int i = 0; i < max_buffer_size_; ++i) buffer_[i] = 0;
   buf_write_ = 0;
+
   ugen_buffer_size_ = length;
   ugen_buffer_ = new double[ugen_buffer_size_];
-
+  for (int i = 0; i < ugen_buffer_size_; i++){
+    ugen_buffer_[i] = 0;
+  }
 
 }
 
@@ -521,9 +547,13 @@ Distortion::Distortion(double p1, double p2, int length){
   set_limits(0, 20, 0, 20);
   set_params(p1, p2);
   define_printouts(&param1_, "", &param2_, "");
-  
+
+
   ugen_buffer_size_ = length;
   ugen_buffer_ = new double[ugen_buffer_size_];
+  for (int i = 0; i < ugen_buffer_size_; i++){
+    ugen_buffer_[i] = 0;
+  }
 }
 Distortion::~Distortion(){}
 // Processes a single sample in the unit generator
@@ -556,8 +586,12 @@ Filter::Filter(double p1, double p2, int length){
   f_ = new DigitalLowpassFilter(param1_, param2_, 1);
   f_->calculate_coefficients();
   currently_lowpass_ = true;
+
   ugen_buffer_size_ = length;
   ugen_buffer_ = new double[ugen_buffer_size_];
+  for (int i = 0; i < ugen_buffer_size_; i++){
+    ugen_buffer_[i] = 0;
+  }
 }
 
 
@@ -584,12 +618,15 @@ void Filter::set_lowpass(bool lowpass){
     delete f_;
     f_ = new DigitalLowpassFilter(param1_, param2_, 1);
     f_->calculate_coefficients();
+    currently_lowpass_ = !currently_lowpass_;
   }
   else if (!lowpass && currently_lowpass_){
     delete f_;
     f_ = new DigitalHighpassFilter(param1_, param2_, 1);
     f_->calculate_coefficients();
+    currently_lowpass_ = !currently_lowpass_;
   }
+
 }
 
 
@@ -618,6 +655,9 @@ Bandpass::Bandpass(double p1, double p2, int length){
   f_->calculate_coefficients();
   ugen_buffer_size_ = length;
   ugen_buffer_ = new double[ugen_buffer_size_];
+  for (int i = 0; i < ugen_buffer_size_; i++){
+    ugen_buffer_[i] = 0;
+  }
 }
 
 Bandpass::~Bandpass(){}
@@ -635,6 +675,83 @@ void Bandpass::set_params(double p1, double p2){
 
 
 
+
+/*
+The delay effect plays the signal back some time later
+  param1 = time in seconds until delay repeats
+  param2 = amount of feedback in delay buffer
+*/
+Granular::Granular(double p1, double p2, int sample_rate, int length){
+  name_ = "Granular";
+  param1_name_ = "Granule Length";
+  param2_name_ = "Density";
+  sample_rate_ = sample_rate;
+  set_limits(30, 10000, 0.01, 1);
+  define_printouts(&param1_, "samples", &param2_, "");
+  
+  param1_ = p1; 
+  param2_ = p2;
+  buffer_size_= ceil(sample_rate_);
+  //Makes an empty buffer
+  buffer_ = new double[buffer_size_];
+  for (int i = 0; i < buffer_size_; ++i) buffer_[i] = 0;
+  buf_write_ = 0;
+  
+  ugen_buffer_size_ = length;
+  ugen_buffer_ = new double[ugen_buffer_size_];
+  for (int i = 0; i < ugen_buffer_size_; i++){
+    ugen_buffer_[i] = 0;
+  }
+
+}
+
+Granular::~Granular(){
+  delete[] buffer_;
+}
+
+// Processes a single sample in the unit generator
+double Granular::tick(double in){
+  buffer_[buf_write_] = in;
+  if (rand()%static_cast<int>(1000*(1.01-param2_)) == 0 && granules_.size() < 10){
+    Granule g;
+    g.win_length = static_cast<int>(param1_);
+    g.start = buf_write_ - (rand() % (buffer_size_ - g.win_length) - g.win_length);
+    g.start = (g.start + buffer_size_)%buffer_size_;
+    g.end = (g.start + g.win_length +
+                    buffer_size_) % buffer_size_;
+    g.at = 0;
+    //std::cout << g.start << " " << g.end << " " << buf_write_ << std::endl;
+    granules_.push_back(g);
+  }
+    
+  double sum = 0;
+  double window,window_length;
+  int this_sample;
+  auto it = granules_.begin();
+  while (it != granules_.end()){
+    this_sample = (it->start + it->at)%buffer_size_;
+    if (it->end == (it->start + it->at)%buffer_size_ ){
+      it = granules_.erase(it);
+    }
+    else{
+      window = 0.5 * (1 - cos(6.2831853 * (++(it->at))/it->win_length));
+      sum += buffer_[this_sample] * window;
+      ++it;
+      
+     
+    }
+  }
+  ++buf_write_;
+  buf_write_ %= buffer_size_;
+  
+  return sum;
+}
+
+void Granular::set_params(double p1, double p2){
+  param1_ = clamp(round(p1), 1);
+  param2_ = clamp(p2, 2);
+  
+}
 
 
 
@@ -659,12 +776,16 @@ Looper::Looper(int sample_rate, int length){
   
   buf_write_ = 0; buf_read_ = 0;
   this_beat_ = 0; beat_count_ = 0;
+  start_counter_ = 4;
   // Sets initial state of module
   counting_down_ = false;
   is_recording_ = false;
   has_recording_ = false;
   ugen_buffer_size_ = length;
   ugen_buffer_ = new double[ugen_buffer_size_];
+  for (int i = 0; i < ugen_buffer_size_; i++){
+    ugen_buffer_[i] = 0;
+  }
 
   click_data.first = 0;
   click_data.second = 0;
@@ -745,7 +866,7 @@ void Looper::pulse(){
 
 // Starts counting down beats until recording starts 
 void Looper::start_countdown(){
-  if (params_set_) delete[] buffer_;
+  if (params_set_) delete[] buffer_; // Makes a new recording
   buffer_size_ = ceil(60* sample_rate_ * param2_ / param1_);
   //Makes empty buffer
   buffer_ = new float[buffer_size_];
@@ -754,11 +875,20 @@ void Looper::start_countdown(){
   }
   params_set_ = true;
 
-  this_beat_ = 4;
+  this_beat_ = start_counter_;
   beat_count_ = 0;
   is_recording_ = false;
   has_recording_ = false;
   counting_down_ = true;
+}
+
+void Looper::set_start_counter(int num){
+  if (is_recording_ || counting_down_) return;
+  start_counter_ = num;
+}
+
+int Looper::get_start_counter(){
+  return start_counter_;
 }
 
 // Cue Loop to start playing
@@ -801,11 +931,14 @@ RingMod::RingMod(double p1, double p2, int sample_rate, int length){
   sample_rate_ = sample_rate;
   set_limits(0, 1, 0, 1);
   set_params(p1, p2);
-  define_printouts(&report_hz_, "Hz", &param2_, "");
+  define_printouts(&report_hz_, "Hz", NULL, "");
   
   sample_count_ = 0;
   ugen_buffer_size_ = length;
   ugen_buffer_ = new double[ugen_buffer_size_];
+  for (int i = 0; i < ugen_buffer_size_; i++){
+    ugen_buffer_[i] = 0;
+  }
 }
 
 RingMod::~RingMod(){}
@@ -868,6 +1001,9 @@ Reverb::Reverb(double p1, double p2, int length){
   }  
   ugen_buffer_size_ = length;
   ugen_buffer_ = new double[ugen_buffer_size_];
+  for (int i = 0; i < ugen_buffer_size_; i++){
+    ugen_buffer_[i] = 0;
+  }
 }
 
 Reverb::~Reverb(){
@@ -934,6 +1070,9 @@ Tremolo::Tremolo(double p1, double p2, int sample_rate, int length){
   sample_count_ = 0;
   ugen_buffer_size_ = length;
   ugen_buffer_ = new double[ugen_buffer_size_];
+  for (int i = 0; i < ugen_buffer_size_; i++){
+    ugen_buffer_[i] = 0;
+  }
 
 }  
 Tremolo::~Tremolo(){}

@@ -87,6 +87,7 @@ void Menu::draw(){
   }
 
   // Grey arrow boxes if not in use
+  selector_enabled_ = graph_->selector_activated();
   if (!selector_enabled_ && ctrl_menu_shown_){
     glPushAttrib(GL_ALL_ATTRIB_BITS);
         glEnable(GL_BLEND);
@@ -120,6 +121,10 @@ void Menu::draw(){
       glPushMatrix();
         glTranslatef(text_x, 1.5, 0);
         draw_text(Disc::spotlight_disc_->get_ugen()->name(), true);
+        glTranslatef(11.8, 1.8, 0);
+        draw_text(graph_->text_box_content(), true);
+        glTranslatef(-2.5, -2, 0);
+        draw_text(graph_->text_box_label(), false);
         glPopMatrix();
 
       glPushMatrix();
@@ -168,7 +173,7 @@ void Menu::draw(){
     glColor3f(R,G,B);
     glBegin(GL_LINES);//baseline
     glVertex3f(x , y - 0.01, 0.01);
-    glVertex3f(x + bins*bar_width, y, 0.01);
+    glVertex3f(x + bins * bar_width, y, 0.01);
     glEnd();
 
     glLineWidth(2);
@@ -453,13 +458,14 @@ void Menu::handle_click(int x, int y){
     // UP ARROW BUTTON
     if (selector_enabled_ && 
         inSquare(x - 16, y, x_arrow_but, y_up_but, sm_but_size)){
-      std::cout << "Clicked Up" << std::endl; 
-      return;
+        graph_->handle_up_press();
+        return;
     }
     // DOWN ARROW BUTTON
     if (selector_enabled_ && 
         inSquare(x - 16, y, x_arrow_but, y_down_but, sm_but_size)){
-      std::cout << "Clicked Down" << std::endl; return;
+        graph_->handle_down_press();
+        return;
     }
     // CTRL BUTTON
     if (inSquare(x - 16, y, x_pane_but, y_up_but, sm_but_size)){
@@ -597,9 +603,9 @@ void Menu::make_disc(int button){
     }
     // Bandpass
     case 205: {
-          Bandpass *u_bp = new Bandpass();
-          new_disc_ = new Disc(u_bp, rad, true);
-          new_disc_->set_color(0.5, 0.5, 0.5);
+          Granular *u_gn = new Granular();
+          new_disc_ = new Disc(u_gn, rad, true);
+          new_disc_->set_color(0.1, 0.1, 0.8);
           new_disc_->set_texture(10);
           break;
     }

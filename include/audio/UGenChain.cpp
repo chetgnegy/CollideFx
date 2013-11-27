@@ -35,7 +35,7 @@ void midiCallback( double dt, std::vector< unsigned char > *message, void *data 
     }
 }
 
-
+double k = 0;
 // This callback deals directly with the audio callback buffers. All interaction with 
 // the soundcard happens in this function
 int audioCallback(void *outputBuffer, void *inputBuffer, unsigned int num_frames, double streamTime, RtAudioStreamStatus status, void * data) {
@@ -67,6 +67,7 @@ int audioCallback(void *outputBuffer, void *inputBuffer, unsigned int num_frames
       output_buffer[i * numChannels + j] = 0.1 * out_mono[i];
     }
   }
+
   delete[] out_mono;
 
   return 0;
