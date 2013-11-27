@@ -181,7 +181,7 @@ double square(double phase) {
   double n = 1;
   double nPi, coeff;
 
-  while (n < 10) {
+  while (n < 15) {
     nPi = n * 3.1415926535;
     coeff = sin(nPi / 2) / nPi;
     sum += coeff * cos(n * phase);
@@ -206,7 +206,7 @@ double tri(double phase) {
   double ww = 2 * width;
   double ww_neg = 2 * (width - 1);
 
-  while (n < 10) {
+  while (n < 15) {
     nPi = n * 3.1415926535;
     sum_n = 0;
 
@@ -241,7 +241,7 @@ double saw(double phase) {
   double ww = 2 * width;
   double ww_neg = 2 * (width - 1);
 
-  while (n < 10) {
+  while (n < 15) {
     nPi = n * 3.1415926535;
     sum_n = 0;
 

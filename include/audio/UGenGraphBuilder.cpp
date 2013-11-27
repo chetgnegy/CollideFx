@@ -14,7 +14,7 @@ bool compare_wires(Wire i, Wire j);
 
 UGenGraphBuilder::UGenGraphBuilder(int length){
   buffer_length_ = length;
-  fft_ = new complex[buffer_length_];
+  fft_visual_ = new complex[buffer_length_];
   buffer_ready_ = false;
   anti_aliasing_ = new DigitalLowpassFilter(10000, 1, 1);
   low_pass_ = new DigitalHighpassFilter(10, 1, 1);
@@ -24,7 +24,7 @@ UGenGraphBuilder::UGenGraphBuilder(int length){
 UGenGraphBuilder::~UGenGraphBuilder(){
   delete low_pass_;  
   delete anti_aliasing_;
-  delete[] fft_;
+  delete[] fft_visual_;
 }
 
 
@@ -321,7 +321,7 @@ void UGenGraphBuilder::update_graphics_dependencies(){
         else if (!indexed(i)->get_ugen()->is_input()
                 && !indexed(i)->get_ugen()->is_looper()){
           // Lone discs shed orbs
-          if (rand()%10 == 0) indexed(i)->orb_abandon();
+          if (rand()%7 == 0) indexed(i)->orb_abandon();
         }
 
       }
@@ -399,11 +399,35 @@ bool UGenGraphBuilder::remove_disc(Disc *d){
 
 // The graphics thread can grab this and display it
 void UGenGraphBuilder::calculate_fft(){
-  if (Disc::spotlight_disc_ != NULL)
+  int num_fft_stored = 16;
+  if (Disc::spotlight_disc_ != NULL){
+    complex *fft_ = new complex[buffer_length_];
     Disc::spotlight_disc_->get_ugen()->buffer_fft(buffer_length_, fft_);
+    fft_list_.push_back(fft_);
+    if (fft_list_.size() > num_fft_stored){
+      delete[] *fft_list_.begin();
+      fft_list_.pop_front();
+    }
+  }
+  
+  for (int i = 0; i < buffer_length_; ++i){
+    fft_visual_[i] = 0;
+  }
+  double weight, weight_total = 0;
+  int k = 0;
+  for (auto it = fft_list_.begin(); it!=fft_list_.end(); ++it){
+    weight = 1/(++k*1.0+7);
+    for (int i = 0; i < buffer_length_; ++i){
+      fft_visual_[i]+= (*it)[i] * weight;
+    }
+    weight_total += weight;
+  }
+  for (int i = 0; i < buffer_length_; ++i){
+    fft_visual_[i] /= weight_total;
+  }
 }
 
-complex *UGenGraphBuilder::get_fft(){ return fft_; }
+complex *UGenGraphBuilder::get_fft(){ return fft_visual_; }
 
 
 // #------------- Private --------------#
@@ -436,50 +460,33 @@ Disc *UGenGraphBuilder::indexed(int i){
 double *UGenGraphBuilder::pull_result_buffer(Disc *k, int length){
 
   if (data_[k].computed) return k->get_ugen()->current_buffer();
+  
   double *wet = new double[length];
   double *dry = new double[length];
-  // Zero out old array
   for (int i = 0; i < length; ++i){ 
     wet[i] = 0; dry[i] = 0;
   }
 
+  double *temp, wet_level, scale;
   // Current Inputs
-  if (data_[k].inputs_.size() > 0) {
-    auto it = data_[k].inputs_.begin();
-    double *temp;
-    int m = 0;
-    double wet_level, separation, both_radii;
-    while (it != data_[k].inputs_.end()) {
-      // Finds mix level
-      both_radii = k->get_radius() - data_[k].inputs_[m]->get_radius();
-      separation = (k->pos_ - data_[k].inputs_[m]->pos_).length() - 
-                           both_radii;
-      wet_level = 1 - separation/(kMaxDist- both_radii);
-      m++;
- 
-      // Scales down due to fan out
-      double scale = 1;
-      if (data_[*it].outputs_.size()>0){
-        scale = 1 / pow(data_[*it].outputs_.size(), 0.5);
-      }
+  for (auto it = data_[k].inputs_.begin(); it != data_[k].inputs_.end(); ++it) {
+    // Finds mix level and scaledown factor
+    wet_level = compute_mix_level(k, *it);
+    scale = scale_factor(data_[*it].outputs_.size());
 
-      // Computes buffer coming from previous iteration
-      temp = pull_result_buffer(*it, length);
-      
-      // Computes wet dry mix
-      double crossfade;
-      for (int i = 0; i < length; ++i){
-        crossfade = 1;//i / (1.0 * length);
-        wet[i] += wet_level * scale * temp[i] * crossfade;
-        dry[i] += (1-wet_level) * scale * temp[i] * crossfade;
-      }
-      ++it;
-    }
+    // Computes buffer coming from previous ugen
+    temp = pull_result_buffer(*it, length);
+    
+    // Computes wet dry mix
+    for (int i = 0; i < length; ++i){
+      wet[i] += wet_level * scale * temp[i];
+      dry[i] += (1-wet_level) * scale * temp[i];
+    }  
   }
 
   double *out_buffer = k->get_ugen()->process_buffer(wet, length);
-  data_[k].computed = true;
 
+  data_[k].computed = true;
   // Merges wet and dry
   if (!k->get_ugen()->is_input()){
      for (int i = 0; i < length; ++i){
@@ -489,7 +496,22 @@ double *UGenGraphBuilder::pull_result_buffer(Disc *k, int length){
   delete[] wet;
   delete[] dry;
   return out_buffer;
+}
 
+
+double UGenGraphBuilder::compute_mix_level(Disc *a, Disc *b){
+  double both_radii = a->get_radius() - b->get_radius();
+  double separation = (a->pos_ - b->pos_).length() - both_radii;
+  return 1 - separation/(kMaxDist- both_radii);
+}
+
+// Scales down due to fan out
+double UGenGraphBuilder::scale_factor(int factor){
+  double scale = 1;
+  if (factor>0){
+    scale = 1 / pow(factor, 0.5);
+  }
+  return scale;
 }
 
 
@@ -500,6 +522,7 @@ void UGenGraphBuilder::switch_wire_direction(Wire &w){
   w.second = temp;
 
 }
+
 
 void UGenGraphBuilder::handle_up_press(){
   if (Disc::spotlight_disc_ != NULL){

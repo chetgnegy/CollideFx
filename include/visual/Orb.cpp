@@ -206,6 +206,10 @@ void Orb::advance_time(double t){
     wander_.x += rand()/(1.0*RAND_MAX)-.5;
     wander_.y += rand()/(1.0*RAND_MAX)-.5;
   }
+    // Clamp down the wander vector
+    wander_.x = fmin(10,fmax(-10, wander_.x));
+    wander_.y = fmin(10,fmax(-10, wander_.y));
+    wander_.z = fmin(10,fmax(-10, wander_.z));
 }
 
 // If a particle is unassigned, this could result in a call to 

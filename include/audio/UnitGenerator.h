@@ -413,6 +413,7 @@ public:
   
   // Starts counting down beats until recording starts 
   void start_countdown();
+  // Getters and setters for the number of count in beats
   void set_start_counter(int num);
   int get_start_counter();
 

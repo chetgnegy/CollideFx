@@ -118,12 +118,15 @@ private:
   // Reverses the "to" and "from" ends of a wire
   void switch_wire_direction(Wire &w);
 
+  double compute_mix_level(Disc *a, Disc *b);
+  double scale_factor(int factor);
 
   // Allows all ugens to be called uniformly
   Disc *indexed(int i);
 
   int buffer_length_;
-  complex *fft_;
+  std::list<complex *> fft_list_;
+  complex *fft_visual_;
   bool buffer_ready_;
 
   

@@ -35,7 +35,6 @@ Menu::Menu(){
   slider1_clicked_ = false;
   slider2_clicked_ = false;
   slider_initial_ = false;
-  show_slider_ = false;
   slider1_ = 0;
   slider2_ = 0;
   midi_active_ = false;
@@ -102,88 +101,104 @@ void Menu::draw(){
     glEnd();
     glPopAttrib();
   }
-
   glTranslatef(0,-9,0);
 
   
 
-  if (ctrl_menu_shown_){
     
-    // slider positions
-    if (Disc::spotlight_disc_ != NULL){
-      slider1_ = Disc::spotlight_disc_->get_ugen_params(1);
-      slider2_ = Disc::spotlight_disc_->get_ugen_params(2);
-    }
+    
     
     // Disc clicked, show slider
-    if (Disc::spotlight_disc_ != NULL || show_slider_){
+    if (Disc::spotlight_disc_ != NULL){
+      // slider positions
+      slider1_ = Disc::spotlight_disc_->get_ugen_params(1);
+      slider2_ = Disc::spotlight_disc_->get_ugen_params(2);
+      
       double text_x = -7.125;
-      glPushMatrix();
-        glTranslatef(text_x, 1.5, 0);
-        draw_text(Disc::spotlight_disc_->get_ugen()->name(), true);
-        glTranslatef(11.8, 1.8, 0);
-        draw_text(graph_->text_box_content(), true);
-        glTranslatef(-2.5, -2, 0);
-        draw_text(graph_->text_box_label(), false);
-        glPopMatrix();
-
+      if (ctrl_menu_shown_){
+        glPushMatrix();
+          glTranslatef(text_x, 1.5, 0);
+          draw_text(Disc::spotlight_disc_->get_ugen()->name(), true);
+          glTranslatef(11.8, 1.8, 0);
+          draw_text(graph_->text_box_content(), true);
+          glTranslatef(-2.5, -2, 0);
+          draw_text(graph_->text_box_label(), false);
+          glPopMatrix();
+      }
+      
       glPushMatrix();
         // First Slider
         glPushMatrix();
           glTranslatef(text_x, -1.25, 0);
           draw_text(Disc::spotlight_disc_->get_ugen()->p_name(1), false);
-          glTranslatef(10, 0, 0);
+          glTranslatef(9, 0, 0);
           draw_text(Disc::spotlight_disc_->get_ugen()->report_param(1), false);
           glPopMatrix();
         glTranslatef(-7 + slider1_ * 13.5, 0, 0);
-        glutSolidSphere(.6,20,20);
+        glutSolidSphere(.4,20,20);
         glPopMatrix();
       glPushMatrix();
         // Second Slider
         glPushMatrix();
           glTranslatef(text_x, -5, 0);
           draw_text(Disc::spotlight_disc_->get_ugen()->p_name(2), false);
-          glTranslatef(10, 0, 0);
+          glTranslatef(9, 0, 0);
           draw_text(Disc::spotlight_disc_->get_ugen()->report_param(2), false);
           glPopMatrix();
         glTranslatef(-7 + slider2_ * 13.5, 0, 0);
         glTranslatef(0, -3.68, 0);
-        glutSolidSphere(.6,20,20);
-        glPopMatrix();
+        glutSolidSphere(.4,20,20);
+        glPopMatrix(); 
     }
-
-  }
-  else if (Disc::spotlight_disc_ != NULL){
+    if (!ctrl_menu_shown_){
+      if (Disc::spotlight_disc_ == NULL) glColor4f(0,0,0,1);
+      else glColor4f(0,0,0,.8);
+      glPushAttrib(GL_ALL_ATTRIB_BITS);
+      glEnable(GL_BLEND);
+      glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    
+      glBegin(GL_QUADS);
+      glTexCoord2f(0.0, 1.0); glVertex3f(-8, -5.2, 0);
+      glTexCoord2f(1.0, 1.0); glVertex3f(6.8, -5.2, 0);
+      glTexCoord2f(1.0, 0.0); glVertex3f(8.5, 2, 0);
+      glTexCoord2f(0.0, 0.0); glVertex3f(-8, 2, 0);
+      glEnd();
+      glPopAttrib();
+    }
+  
+  if (!ctrl_menu_shown_ && Disc::spotlight_disc_ != NULL){
     // Draws the FFT
     complex *fft = graph_->get_fft();
     
-    glLineWidth(1);
     int bins = graph_->get_fft_length();
-    double x = -8, y = -4.7;
-    double bar_width = 14.592 / (1.0 * bins);
+    double x = -9, y = -5.4;
+    double bar_width = 5.32 / (1.0 * bins);
     double y_scale = 2.3;
     double R, G, B;
     double y_coord;
+    glColor4f(1,1,1,0);
     glPushMatrix();
-        glTranslatef(1, 4.25, 0);
-        draw_text(Disc::spotlight_disc_->get_ugen()->name(), true);
-        glPopMatrix();
-
-    spectrum(0, R, G, B);
-    glColor3f(R,G,B);
-    glBegin(GL_LINES);//baseline
-    glVertex3f(x , y - 0.01, 0.01);
-    glVertex3f(x + bins * bar_width, y, 0.01);
-    glEnd();
-
+      glTranslatef(1, 4.25, 0);
+      draw_text(Disc::spotlight_disc_->get_ugen()->name(), true);
+      glPopMatrix();
+    double col;
     glLineWidth(2);
     for (int i = 0; i < bins; ++i){
-      glBegin(GL_LINES);
-      spectrum(.2*log10(1+100*fft[i].normsq()),R, G, B);
+      // The color of the bin
+      col = 0;
+      for (int j = -5; j < 5; ++j){
+        if (i+j>0 && i+j < bins)
+        col += .4*log10(1+100*fft[i+j].normsq());
+      }
+      spectrum(col/10.0,R, G, B);
       glColor3f(R,G,B);
-      glVertex3f(x + i*bar_width, y,0);
-      y_coord = fmin(y_scale * log10(1+5*fft[i].normsq()),9.5);
-      glVertex3f(x + i*bar_width, y + y_coord,0);
+      glLineWidth(400*(log10(i*bar_width+1) -log10((i-1)*bar_width+1)));
+      // Limit max coord
+      y_coord = fmin(y_scale * .8*log10(1+400*fft[i].normsq()), 10.8);
+      // The bar
+      glBegin(GL_LINES);
+      glVertex3f(x + 20*log10(i*bar_width+1), y, 0 );
+      glVertex3f(x + 20*log10(i*bar_width+1), y + y_coord,0);
       glEnd();
     }
   }

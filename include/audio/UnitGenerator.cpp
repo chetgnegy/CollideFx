@@ -544,7 +544,7 @@ Distortion::Distortion(double p1, double p2, int length){
   name_ = "Distortion";
   param1_name_ = "Pre-gain";
   param2_name_ = "Post-gain";
-  set_limits(0, 20, 0, 20);
+  set_limits(1, 100, 0, 5);
   set_params(p1, p2);
   define_printouts(&param1_, "", &param2_, "");
 
@@ -882,11 +882,13 @@ void Looper::start_countdown(){
   counting_down_ = true;
 }
 
+// Sets the number of count in beats
 void Looper::set_start_counter(int num){
   if (is_recording_ || counting_down_) return;
   start_counter_ = num;
 }
 
+// Gets the number of count in beats
 int Looper::get_start_counter(){
   return start_counter_;
 }

@@ -123,8 +123,7 @@ private:
   double slider1_, slider2_;
   bool slider1_clicked_, slider2_clicked_;
   bool slider_initial_; 
-  bool show_slider_;
-
+  
   // If Midi has been activated
   bool midi_active_;
   bool selector_enabled_;
