@@ -140,7 +140,7 @@ void Physics::collision_prevention(double update_time){
 // Handles a collision using conservation of linear momentum;
 void Physics::collide(Physical* a, Physical* b, double update_time){
   Vector3d between = b->pos_ - a->pos_;
-  double impulse, ra, rb, j, mu = .2;
+  double impulse, ra, rb, j, mu = .7;
   Vector3d tang_v, fric_dir, f_fric_max, dw_fric_max, dv_fric_max;
   
   ra = a->intersection_distance();
@@ -150,10 +150,17 @@ void Physics::collide(Physical* a, Physical* b, double update_time){
   if (between.length() < rb + ra && 
      (between.dotProduct(a->vel_)>0 || between.dotProduct(b->vel_)<0)){
 
-      double d = between.lengthSq();
+      // Separate the discs from each other
+      double move_dist = between.length() - rb - ra;
+      a->pos_ += between * move_dist/2.0;
+      b->pos_ += -between * move_dist/2.0;
+      
+      between.normalize();
+      
+      std::cout << "after "<< a->pos_ << " " << b->pos_ << std::endl;
       // Project vectors onto vector connecting radii
-      Vector3d vb_norm = between * between.dotProduct(b->vel_)/d;
-      Vector3d va_norm = between * between.dotProduct(a->vel_)/d;
+      Vector3d vb_norm = between * between.dotProduct(b->vel_);
+      Vector3d va_norm = between * between.dotProduct(a->vel_);
       // Perfectly inelastic collison. Momentum is conserved.
       double term1_1 = (a->m_-b->m_) / (a->m_ + b->m_);
       double term1_2 = (2*b->m_) / (a->m_ + b->m_);
@@ -167,14 +174,14 @@ void Physics::collide(Physical* a, Physical* b, double update_time){
       
       
       Vector3d na = -between, nb = between;
-      na.normalize(); nb.normalize();
-
-      j = 2 / ( 1/a->m_ + 1/b->m_ + ra*ra/a->I_ + rb*ra/b->I_ );
+      
+      j = 2 / ( 1/a->m_ + 1/b->m_ + ra*ra/a->I_ + rb*rb/b->I_ );
 
       // The impulse in the direction normal to the wall
       impulse = a->vel_.dotProduct(na) * j * a->m_ ;
       // The direction of the friction
-      tang_v = -(a->vel_ + na.crossProduct(a->ang_vel_) * ra - b->vel_ - nb.crossProduct(b->ang_vel_) * rb);
+      tang_v = -(a->vel_ + na.crossProduct(a->ang_vel_)*ra - b->vel_ - nb.crossProduct(b->ang_vel_)*rb);
+      
       fric_dir = tang_v - na.projectOnto(tang_v);
       
       // Will cause divide by zero. This is a head on collision
@@ -187,7 +194,7 @@ void Physics::collide(Physical* a, Physical* b, double update_time){
       dv_fric_max = fric_dir * dw_fric_max.length() * ra;
       // Limit friction              
       dv_fric_max = fric_dir * fmin(fabs(dv_fric_max.length()), fabs(a->vel_.dotProduct(fric_dir)));
-
+      
       a->ang_vel_ +=  dw_fric_max;
       a->vel_ += dv_fric_max; 
     

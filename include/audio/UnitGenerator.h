@@ -293,7 +293,7 @@ The distortion effect clips the input to a speficied level
 class Distortion : public UnitGenerator {
 public:
   
-  Distortion(double p1 = 18.0, double p2 = 0.6, int length = 512);
+  Distortion(double p1 = 18.0, double p2 = 1.0, int length = 512);
   ~Distortion();
   // Processes a single sample in the unit generator
 
