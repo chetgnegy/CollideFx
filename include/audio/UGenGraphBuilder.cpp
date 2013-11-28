@@ -57,8 +57,6 @@ void UGenGraphBuilder::print_all(){
 // Recomputes the graph based on the new positions of the discs
 void UGenGraphBuilder::rebuild(){
   wires_.clear();
-
-
   sinks_.clear();
 
   int num_inputs = inputs_.size() + midi_modules_.size();
@@ -86,7 +84,6 @@ void UGenGraphBuilder::rebuild(){
   // Modified Prim's Algorithm -- May not result in spanning tree 
   // if distances are too far to make a wire! Also, there is the constraint 
   // that two inpput nodes cannot connect with each other
-
   double this_dist, min_dist;
   int next_i = 0, next_j =0;
 
@@ -175,11 +172,8 @@ void UGenGraphBuilder::rebuild(){
     }
   }
 
-  //std::cout << "Listing Wires" << std::endl;
   for (int i = 0; i < wires_.size(); ++i){
 
-    //std::cout << "\t" << wires_[i].first->get_ugen()->name() << " ";
-    //std::cout << "\t" << wires_[i].second->get_ugen()->name() << std::endl;
     data_[wires_[i].second].inputs_.push_back(wires_[i].first);
     data_[wires_[i].first].outputs_.push_back(wires_[i].second);
   }
@@ -291,7 +285,8 @@ void UGenGraphBuilder::handoff_midi(int MIDI_pitch, int velocity){
 // Lets the other thread know that the depenencies are ready to compute
 void UGenGraphBuilder::signal_new_buffer(){ buffer_ready_ = true; }
 
-
+// Recalculates the FFT and moves the orbs around. This is called in between
+// audio buffers. It is called from the graphics thread
 void UGenGraphBuilder::update_graphics_dependencies(){
   calculate_fft();
   
@@ -397,7 +392,8 @@ bool UGenGraphBuilder::remove_disc(Disc *d){
 // #--------------- FFT ----------------#
 
 
-// The graphics thread can grab this and display it
+// The graphics thread can grab this and display it. This keeps an average of the
+// most recent spectra
 void UGenGraphBuilder::calculate_fft(){
   int num_fft_stored = 16;
   if (Disc::spotlight_disc_ != NULL){
@@ -429,6 +425,79 @@ void UGenGraphBuilder::calculate_fft(){
 
 complex *UGenGraphBuilder::get_fft(){ return fft_visual_; }
 
+
+// #--------------- UI ----------------#
+
+// This is called when the up button is pressed in the menu
+void UGenGraphBuilder::handle_up_press(){
+  if (Disc::spotlight_disc_ != NULL){
+    if (strcmp("Filter", Disc::spotlight_disc_->get_ugen()->name())==0){
+      Filter *f = static_cast<Filter *>(Disc::spotlight_disc_->get_ugen());
+      f->set_lowpass(!f->is_lowpass()); // Flips filter type
+    }
+    else if (strcmp("Looper", Disc::spotlight_disc_->get_ugen()->name())==0){
+      Looper *l = static_cast<Looper *>(Disc::spotlight_disc_->get_ugen());
+      l->set_start_counter((l->get_start_counter()) % 7 + 1);
+    }
+  }
+}
+
+// This is called when the down button is pressed in the menu
+void UGenGraphBuilder::handle_down_press(){
+  if (Disc::spotlight_disc_ != NULL){
+    if (strcmp("Filter", Disc::spotlight_disc_->get_ugen()->name())==0){
+      Filter *f = static_cast<Filter *>(Disc::spotlight_disc_->get_ugen());
+      f->set_lowpass(!f->is_lowpass()); // Flips filter type
+    }
+    else if (strcmp("Looper", Disc::spotlight_disc_->get_ugen()->name())==0){
+      Looper *l = static_cast<Looper *>(Disc::spotlight_disc_->get_ugen());
+      l->set_start_counter((l->get_start_counter() + 5) % 7 + 1);
+    }
+  }
+}
+
+// This lets the menu know whether or not the arrows will do anything
+bool UGenGraphBuilder::selector_activated(){
+  if (Disc::spotlight_disc_ != NULL){
+    if (strcmp("Filter", Disc::spotlight_disc_->get_ugen()->name())==0){
+      return true;
+    }
+    else if (strcmp("Looper", Disc::spotlight_disc_->get_ugen()->name())==0){
+      return true;
+    }
+  }
+  return false;
+}
+
+// The text that appears in the little box next to the arrows on the menu
+const char *UGenGraphBuilder::text_box_content(){
+  if (Disc::spotlight_disc_ != NULL){
+    if (strcmp("Filter", Disc::spotlight_disc_->get_ugen()->name())==0){
+      Filter *f = static_cast<Filter *>(Disc::spotlight_disc_->get_ugen());
+      if(f->is_lowpass())
+        return "LPF";
+      return "HPF";
+    }
+    if (strcmp("Looper", Disc::spotlight_disc_->get_ugen()->name())==0){
+      Looper *l = static_cast<Looper *>(Disc::spotlight_disc_->get_ugen());
+      std::stringstream s;
+      s << " " << l->get_start_counter() << " ";
+      return s.str().c_str();
+    }
+  }
+  return "";
+}
+
+// The label that appears below the little box next to the arrows on the menu
+const char *UGenGraphBuilder::text_box_label(){
+  if (Disc::spotlight_disc_ != NULL){
+
+    if (strcmp("Looper", Disc::spotlight_disc_->get_ugen()->name())==0){
+      return "Count In";
+    }
+  }
+  return "";
+}
 
 // #------------- Private --------------#
 
@@ -523,69 +592,3 @@ void UGenGraphBuilder::switch_wire_direction(Wire &w){
 
 }
 
-
-void UGenGraphBuilder::handle_up_press(){
-  if (Disc::spotlight_disc_ != NULL){
-    if (strcmp("Filter", Disc::spotlight_disc_->get_ugen()->name())==0){
-      Filter *f = static_cast<Filter *>(Disc::spotlight_disc_->get_ugen());
-      f->set_lowpass(!f->is_lowpass()); // Flips filter type
-    }
-    else if (strcmp("Looper", Disc::spotlight_disc_->get_ugen()->name())==0){
-      Looper *l = static_cast<Looper *>(Disc::spotlight_disc_->get_ugen());
-      l->set_start_counter((l->get_start_counter()) % 7 + 1);
-    }
-  }
-}
-
-void UGenGraphBuilder::handle_down_press(){
-  if (Disc::spotlight_disc_ != NULL){
-    if (strcmp("Filter", Disc::spotlight_disc_->get_ugen()->name())==0){
-      Filter *f = static_cast<Filter *>(Disc::spotlight_disc_->get_ugen());
-      f->set_lowpass(!f->is_lowpass()); // Flips filter type
-    }
-    else if (strcmp("Looper", Disc::spotlight_disc_->get_ugen()->name())==0){
-      Looper *l = static_cast<Looper *>(Disc::spotlight_disc_->get_ugen());
-      l->set_start_counter((l->get_start_counter() + 5) % 7 + 1);
-    }
-  }
-}
-
-bool UGenGraphBuilder::selector_activated(){
-  if (Disc::spotlight_disc_ != NULL){
-    if (strcmp("Filter", Disc::spotlight_disc_->get_ugen()->name())==0){
-      return true;
-    }
-    else if (strcmp("Looper", Disc::spotlight_disc_->get_ugen()->name())==0){
-      return true;
-    }
-  }
-  return false;
-}
-
-const char *UGenGraphBuilder::text_box_content(){
-  if (Disc::spotlight_disc_ != NULL){
-    if (strcmp("Filter", Disc::spotlight_disc_->get_ugen()->name())==0){
-      Filter *f = static_cast<Filter *>(Disc::spotlight_disc_->get_ugen());
-      if(f->is_lowpass())
-        return "LPF";
-      return "HPF";
-    }
-    if (strcmp("Looper", Disc::spotlight_disc_->get_ugen()->name())==0){
-      Looper *l = static_cast<Looper *>(Disc::spotlight_disc_->get_ugen());
-      std::stringstream s;
-      s << " " << l->get_start_counter() << " ";
-      return s.str().c_str();
-    }
-  }
-  return "";
-}
-
-const char *UGenGraphBuilder::text_box_label(){
-  if (Disc::spotlight_disc_ != NULL){
-
-    if (strcmp("Looper", Disc::spotlight_disc_->get_ugen()->name())==0){
-      return "Count In";
-    }
-  }
-  return "";
-}

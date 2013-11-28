@@ -45,10 +45,9 @@ public:
   // in the envelope to the next
   double compute_envelope(Note *n);
 
+  // Computes the envelope parameters in samples
   void set_attack(double seconds);
-
   void set_sustain(double seconds);
-
   void set_release(double seconds);
 
 private:

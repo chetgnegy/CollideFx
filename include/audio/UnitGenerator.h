@@ -13,7 +13,6 @@
 
 
 #include <cmath>
-#include <string.h>
 #include <list>
 #include <vector>
 #include <algorithm>
@@ -35,8 +34,7 @@ public:
   // Allows user to set the generic parameters, bounds must already be set
   virtual void set_params(double p1, double p2);
 
-  // Can things lead into unit generator or is it the first
-  // in the chain?
+  // Allows outside world to distinguish between types of UnitGenerators
   virtual bool is_input() = 0;
   virtual bool is_midi() = 0;
   virtual bool is_looper() = 0;
@@ -45,6 +43,8 @@ public:
   double *process_buffer(double *buffer, int length);
   double *current_buffer(){return ugen_buffer_;}
 
+  // The absolute average of the samples in the buffer. Used to 
+  // calculate brightness
   double buffer_energy();
 
   // Get the fft of the buffer's current contents
@@ -97,6 +97,7 @@ public:
   // A wrapper for the UnitGenerator's tick function
   double tick(double in){ return tick(); }
 
+  // Allows outside world to distinguish between types of UnitGenerators
   bool is_input(){ return true; }
   bool is_looper(){ return false; }
   bool is_midi(){ return true; }

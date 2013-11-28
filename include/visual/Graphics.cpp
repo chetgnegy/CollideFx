@@ -5,13 +5,8 @@
   GraphicBox.cpp
   This file the object that interacts with OpenGL.
 */
-#include <iostream>
-#include "Graphics.h"
-#include "Physics.h"
-#include <sys/time.h>
-#include <time.h>
 
-#include "Menu.h"
+#include "Graphics.h"
 
 void display();
 void glInitialize();
@@ -19,11 +14,13 @@ void idle();
 void mouse(int, int, int, int);
 void mouseMotion(int, int);
 void recoverClick(int, int, double &, double &);
+void keyboard(unsigned char key, int, int);
 void reshape(int width, int height);
 
 std::list<Drawable *> Graphics::draw_list_;
 std::list<int> Graphics::draw_priority_;
 std::list<Moveable *> Graphics::move_list_;
+
 Moveable *clicked;
 bool valid_clicked;
 long time_now;
@@ -31,9 +28,18 @@ struct timeval timer;
 float z_distance = -20.0;
 float scale = .45;
 
+GLuint Graphics::splash_;
+bool Graphics::show_splash_ = false;
+bool Graphics::splash_loaded_ = false;
+
+
 Graphics::Graphics(int w, int h){
   w_ = w;
   h_ = h;
+  GLuint splash_ = 0;
+  bool show_splash_ = false;
+  bool splash_loaded_ = false;
+
 }
 
 Graphics::~Graphics(){}
@@ -59,13 +65,13 @@ int Graphics::initialize(int argc, char *argv[]){
   glutDisplayFunc(display);
   // set the reshape function - called when client area changes
   glutReshapeFunc(reshape);
-  // set the keyboard function - called on keyboard events
-  //glutKeyboardFunc(keyboard);
   // set the mouse function - called on mouse stuff
   glutMouseFunc(mouse);
   glutMotionFunc(mouseMotion);
-
+  glutKeyboardFunc(keyboard);
   time_now = -1;
+
+
   return 0;
 }
 
@@ -115,6 +121,7 @@ bool Graphics::remove_drawable(Drawable *k){
   return false;
 }
 
+
 void Graphics::add_moveable(Moveable *k){ move_list_.push_back(k); }
 
 // Removes an item from the move list
@@ -133,6 +140,30 @@ bool Graphics::remove_moveable(Moveable *k){
   return false;
 }
 
+
+ void Graphics::show_splash_screen(){
+    if (!splash_loaded_) {
+      glGenTextures( 1, &splash_ );
+      glBindTexture(GL_TEXTURE_2D, splash_);
+
+      RgbImage theTexMap( "graphics/splash.bmp" ); // instantiation
+
+      // Set the interpolation settings to best quality.
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+      gluBuild2DMipmaps(GL_TEXTURE_2D, GL_RGB,
+      theTexMap.GetNumCols(), theTexMap.GetNumRows(),
+      GL_RGB, GL_UNSIGNED_BYTE, theTexMap.ImageData() );
+      splash_loaded_ = true;
+    }
+    show_splash_ = true;
+ }
+// #----------GLUT CODE -----------------#
+
+
+
 //Is the main loop. Runs repeatedly.
 void display() {
   usleep(2000);
@@ -143,9 +174,6 @@ void display() {
   if (time_now > 0){
     Physics::update(time_diff*1.0e-6);
   }
-
-  //char input;
-  //std::cin.get(input);
   
   // clear the color and depth buffers
   glMatrixMode (GL_MODELVIEW);
@@ -187,7 +215,39 @@ void display() {
       glPopMatrix();
     }
   }
+  
+  if (Graphics::show_splash_){
+    glPushAttrib(GL_ALL_ATTRIB_BITS);
+    glEnable(GL_BLEND);
+    glColor4f(0,0,0,.7);
+    glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glBegin(GL_QUADS);
+    glTexCoord2f(0.0, 1.0); glVertex3f(-29, 19, 0);
+    glTexCoord2f(1.0, 1.0); glVertex3f(29, 19, 0);
+    glTexCoord2f(1.0, 0.0); glVertex3f(29, -19, 0);
+    glTexCoord2f(0.0, 0.0); glVertex3f(-29, -19, 0);
+    glEnd();
+    glPopAttrib();
+
+    glPushAttrib(GL_ALL_ATTRIB_BITS);
+    glEnable(GL_BLEND);
+    glShadeModel(GL_FLAT);
+    glDisable(GL_DEPTH_TEST);  // disable depth-testing
+    glEnable(GL_TEXTURE_2D);
+    glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+    glBindTexture(GL_TEXTURE_2D, Graphics::splash_);
+    glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_COLOR);
+    glBegin(GL_QUADS);
+    glTexCoord2f(0.0, 1.0); glVertex3f(-26, 16.5, 0);
+    glTexCoord2f(1.0, 1.0); glVertex3f(26, 16.5, 0);
+    glTexCoord2f(1.0, 0.0); glVertex3f(26, -15.5, 0);
+    glTexCoord2f(0.0, 0.0); glVertex3f(-26, -15.5, 0);
+    glEnd();
+    glPopAttrib();
+
+  }
   glPopMatrix();
+
   // flush!
   glFlush();
   // swap the double buffer
@@ -208,6 +268,10 @@ void mouse(int button, int state, int x, int y) {
     // when left mouse button is down, move left
 
       if (state == GLUT_DOWN) {
+        Graphics::show_splash_ = false;
+        glDeleteTextures(1, &Graphics::splash_);
+        Graphics::splash_loaded_ = false;
+
         if (Graphics::move_list_.size() > 0) {
           std::list<Moveable *>::iterator it;
           it = Graphics::move_list_.begin();
@@ -283,7 +347,14 @@ void recoverClick(int iX, int iY, double &oX, double &oY){
 }
 
 
-
+void keyboard(unsigned char key, int x, int y){
+  std::cout << key << std::endl;
+  switch (key){
+    case ('x'):
+      exit(0);
+    break;
+  }
+}
 
 void glInitialize() {
   GLfloat light_position[] = { -2.0, 1.0, 0.8, 0.0 };

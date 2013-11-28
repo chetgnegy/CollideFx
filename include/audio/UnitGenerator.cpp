@@ -32,6 +32,8 @@ double *UnitGenerator::process_buffer(double *buffer, int length){
   return ugen_buffer_;
 }
 
+// The absolute average of the samples in the buffer. Used to 
+// calculate brightness
 double UnitGenerator::buffer_energy(){
   double sum = 0;
   for (int i = 0; i < ugen_buffer_size_; ++i){
@@ -125,8 +127,6 @@ double MidiUnitGenerator::tick(){
 
 
 // #------------Unit Generator Inherited Classes --------------#
-
-
 
 Input::Input(int length){
     name_ = "Input";

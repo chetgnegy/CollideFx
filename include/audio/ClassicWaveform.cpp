@@ -8,7 +8,7 @@
 */
 
 #include "ClassicWaveform.h"
-#include <iostream>//remove
+
 
 double square(double phase);
 double saw(double phase);
@@ -160,14 +160,13 @@ double ClassicWaveform::compute_envelope(Note *n){
   return envelope;
 }
 
+// Computes the envelope parameters in samples
 void ClassicWaveform::set_attack(double seconds){
   attack_samples_ = sample_rate_ * seconds;
 }
-
 void ClassicWaveform::set_sustain(double seconds){
   sustain_samples_ = sample_rate_ * seconds;
 }
-
 void ClassicWaveform::set_release(double seconds){
   release_samples_ = sample_rate_ * seconds;
 }

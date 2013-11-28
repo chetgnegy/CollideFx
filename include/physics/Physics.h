@@ -27,22 +27,19 @@ public:
   static void update(double timestep);
 
   // Uses Velocity Verlet integration to compute the next positions of the object
-  static void velocity_verlet(double timestep, Physical* object);
+  static void integrate_translational(double timestep, Physical* object);
 
   // Velocity Verlet algorithm applied to the angular motion
-  static void angular_verlet(double timestep, Physical* object);
+  static void integrate_rotational(double timestep, Physical* object);
 
   // Uses vector projections to make sure things don't get too close to each other
-  static void collision_prevention(double update_time);
+  static void collision_prevention();
 
   // Handles a collision using conservation of linear momentum
-  static void collide(Physical* a, Physical* b, double update_time);
-
-  // Check to see if two objects are so close that we should reduce the timestep
-  static bool check_reduce_timestep();
+  static void collide(Physical* a, Physical* b);
 
   // Handles collision detection with world
-  static void check_in_bounds(double update_time);
+  static void check_in_bounds();
 
   // Defines the bounds for the collision detection with the walls
   static void set_bounds(double size_x, double size_y, double x, double y);

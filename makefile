@@ -17,7 +17,7 @@ FLAGS=-D__UNIX_JACK__ -c
 LIBS=-lasound -lpthread -ljack -lstdc++ -lm
 endif
 ifeq ($(UNAME), Darwin)
-FLAGS=-D__MACOSX_CORE__ -c -g
+FLAGS=-D__MACOSX_CORE__ -c
 LIBS=-framework CoreAudio -framework CoreMIDI -framework CoreFoundation \
 	-framework IOKit -framework Carbon -framework OpenGL \
 	-framework GLUT -framework Foundation -framework AppKit \

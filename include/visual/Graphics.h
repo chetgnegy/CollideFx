@@ -11,9 +11,14 @@
 
 #include <list>
 #include <math.h>
+#include <sys/time.h>
+#include <time.h>
+
 #include "Drawable.h"
 #include "Moveable.h"
-  
+#include "Physics.h"
+#include "RgbImage.h"
+
 #ifdef __MACOSX_CORE__
   #include <GLUT/glut.h>
 #else
@@ -21,7 +26,6 @@
   #include <GL/glu.h>
   #include <GL/glut.h>
 #endif
-
 
 
 class Graphics{
@@ -34,6 +38,9 @@ public:
   // Starts the main loop
   void start_graphics();
 
+  // Starts up to a friendly splash screen
+  static void show_splash_screen();
+
   // Marks something to be drawn. Things without transparency
   // should be pushed to the front of the list. 
   static void add_drawable(Drawable *, int priority = 999999);
@@ -44,11 +51,17 @@ public:
   static std::list<Drawable *> draw_list_;
   static std::list<Moveable *> move_list_;
   static std::list<int> draw_priority_;
+
+  static GLuint splash_;
+  static bool show_splash_;
+  static bool splash_loaded_;
+
 private:
   void display_function();
   int w_, h_;
 
-  
+
+    
 };
 
 

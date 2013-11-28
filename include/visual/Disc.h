@@ -86,8 +86,10 @@ public:
   // Receives an orb from another Disc
   void orb_receive(Orb *);
   
+  // Are we above the orb limit?
   bool above_capacity();
 
+  // Gets the max number of supported orbs
   void orb_limit();
 
   // Deletes the orb after removing all references to it

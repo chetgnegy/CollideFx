@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.1415926-2.5-1.40.14 (TeX Live 2013) (format=pdflatex 2013.5.30)  20 NOV 2013 16:44
+This is pdfTeX, Version 3.1415926-2.5-1.40.14 (TeX Live 2013) (format=pdflatex 2013.5.30)  28 NOV 2013 02:38
 entering extended mode
  \write18 enabled.
  %&-line parsing enabled.
@@ -916,73 +916,93 @@ LaTeX Font Info:    Font shape `T1/ptm/bx/n' in size <10> not available
 (Font)              Font shape `T1/ptm/b/n' tried instead on input line 66.
 LaTeX Font Info:    Font shape `T1/ptm/bx/n' in size <12> not available
 (Font)              Font shape `T1/ptm/b/n' tried instead on input line 66.
-LaTeX Font Info:    External font `cmex10' loaded for size
-(Font)              <7> on input line 71.
-LaTeX Font Info:    External font `cmex10' loaded for size
-(Font)              <5> on input line 71.
+ <flow.png, id=75, 2200.22pt x 1316.92pt>
+File: flow.png Graphic file (type png)
 
-Underfull \hbox (badness 10000) in paragraph at lines 74--76
-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 77--78
-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 79--80
-
- []
-
-[1
-
-{/usr/local/texlive/2013/texmf-var/fonts/map/pdftex/updmap/pdftex.map}]
-[2]
-LaTeX Font Info:    Try loading font information for OMS+ptm on input line 122.
-
- (/usr/local/texlive/2013/texmf-dist/tex/latex/psnfss/omsptm.fd
-File: omsptm.fd 
+<use flow.png>
+Package pdftex.def Info: flow.png used on input line 72.
+(pdftex.def)             Requested size: 483.69687pt x 289.50226pt.
+LaTeX Font Info:    Try loading font information for T1+phv on input line 73.
+ (/usr/local/texlive/2013/texmf-dist/tex/latex/psnfss/t1phv.fd
+File: t1phv.fd 2001/06/04 scalable font definitions for T1/phv.
 )
-LaTeX Font Info:    Font shape `OMS/ptm/m/n' in size <10> not available
-(Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 122.
- [3]
-Overfull \hbox (65.38725pt too wide) in paragraph at lines 159--163
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <7> on input line 80.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <5> on input line 80.
+
+Underfull \hbox (badness 10000) in paragraph at lines 83--84
+
+ []
+
+
+Underfull \vbox (badness 1478) has occurred while \output is active []
+
+ [1
+
+{/usr/local/texlive/2013/texmf-var/fonts/map/pdftex/updmap/pdftex.map} <./flow.
+png>]
+[2]
+Underfull \hbox (badness 10000) in paragraph at lines 125--126
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 127--128
+
+ []
+
+[3] [4] [5]
+Overfull \hbox (65.38725pt too wide) in paragraph at lines 255--260
 []\T1/ptm/m/n/10 [1] http://www.music.mcgill.ca/ gary/rtaudio/ [2] Jon Dat-torr
 o - Part 2: Delay-Line Mod-u-la-tion and Cho-rus https://ccrma.stanford.edu/ da
 t-
  []
 
-Package atveryend Info: Empty hook `BeforeClearDocument' on input line 164.
-[4]
-Package atveryend Info: Empty hook `AfterLastShipout' on input line 164.
+
+Overfull \hbox (34.93706pt too wide) in paragraph at lines 255--260
+\T1/ptm/m/n/10 torro/EffectDesignPart2.pdf [3]https://ccrma.stanford.edu/ jos/p
+asp/Freeverb.html [4]http://www.myphysicslab.com/collision.html 
+ []
+
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 260.
+[6]
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 260.
  (./docs.aux)
-Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 164.
-Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 164.
+Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 260.
+Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 260.
 Package rerunfilecheck Info: File `docs.out' has not changed.
-(rerunfilecheck)             Checksum: 6C0E4CB167AB541882678C3CFAB5E1A7;856.
-Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 164.
+(rerunfilecheck)             Checksum: F805F03D1D619E8ADF078943F76A5055;1010.
+
+
+LaTeX Warning: Label(s) may have changed. Rerun to get cross-references right.
+
+Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 260.
  ) 
 Here is how much of TeX's memory you used:
- 14648 strings out of 493315
- 248874 string characters out of 6137904
- 334550 words of memory out of 5000000
- 17798 multiletter control sequences out of 15000+600000
- 20911 words of font info for 34 fonts, out of 8000000 for 9000
+ 14726 strings out of 493315
+ 249735 string characters out of 6137904
+ 338163 words of memory out of 5000000
+ 17853 multiletter control sequences out of 15000+600000
+ 25445 words of font info for 37 fonts, out of 8000000 for 9000
  957 hyphenation exceptions out of 8191
- 49i,6n,53p,1401b,330s stack positions out of 5000i,500n,10000p,200000b,80000s
+ 49i,6n,53p,1402b,417s stack positions out of 5000i,500n,10000p,200000b,80000s
 {/usr/local/texlive/2013/texmf-dist/fonts/enc/dvips/base/8r.enc}</usr/local/t
 exlive/2013/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></usr/local/te
-xlive/2013/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi7.pfb></usr/local/texl
-ive/2013/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/local/texliv
-e/2013/texmf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb></usr/local/texlive/2
-013/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/local/texlive/20
-13/texmf-dist/fonts/type1/urw/times/utmb8a.pfb></usr/local/texlive/2013/texmf-d
-ist/fonts/type1/urw/times/utmr8a.pfb>
-Output written on docs.pdf (4 pages, 87580 bytes).
+xlive/2013/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi5.pfb></usr/local/texl
+ive/2013/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi7.pfb></usr/local/texliv
+e/2013/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/local/texlive/
+2013/texmf-dist/fonts/type1/public/amsfonts/cm/cmr5.pfb></usr/local/texlive/201
+3/texmf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb></usr/local/texlive/2013/t
+exmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/local/texlive/2013/te
+xmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb></usr/local/texlive/2013/texm
+f-dist/fonts/type1/urw/helvetic/uhvr8a.pfb></usr/local/texlive/2013/texmf-dist/
+fonts/type1/urw/times/utmb8a.pfb></usr/local/texlive/2013/texmf-dist/fonts/type
+1/urw/times/utmr8a.pfb>
+Output written on docs.pdf (6 pages, 224853 bytes).
 PDF statistics:
- 123 PDF objects out of 1000 (max. 8388607)
- 108 compressed objects within 2 object streams
- 20 named destinations out of 1000 (max. 500000)
- 133 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 192 PDF objects out of 1000 (max. 8388607)
+ 169 compressed objects within 2 object streams
+ 39 named destinations out of 1000 (max. 500000)
+ 154 words of extra memory for PDF output out of 10000 (max. 10000000)
 

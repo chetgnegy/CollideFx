@@ -11,14 +11,11 @@
 #define _MENU_H_
 
 #include "math.h"
-
 #include "Disc.h"
 #include "Drawable.h"
 #include "Moveable.h"
 #include "RgbImage.h"
 #include "UGenGraphBuilder.h"
-
-#include <iostream> // delete
 
 class Menu : public Drawable, public Moveable {
 public:
@@ -28,6 +25,8 @@ public:
   Menu();
   ~Menu();
 
+  // Deletes the spotlight disc
+  void delete_spotlight();
 
   // Links the menu to the audio module
   void link_ugen_graph(UGenGraphBuilder *u);
@@ -77,7 +76,6 @@ public:
 
   // The menu doesn't do anything when right clicked.
   void right_clicked(){}
-
  
 private:
   // Converts the coordinates (x,y) from screen coordinates to
@@ -96,8 +94,6 @@ private:
   
   // Creates a new disc whenever a disc button is pressed.
   void make_disc(int button);
-
-
 
 
   // The textures for all of the menus.

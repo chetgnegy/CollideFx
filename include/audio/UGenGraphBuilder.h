@@ -12,17 +12,15 @@
 #define _UGENGRAPHBUILDER_H_
 
 #include <map>
-#include <queue>
 #include <vector>
 #include <algorithm>
-#include <string>
+#include <iostream>
 #include "UnitGenerator.h"
 #include "DigitalFilter.h" 
 #include "Disc.h"
 #include "Thread.h"
 
 struct GraphData;
-
 
 typedef std::pair<Disc *, double > Edge; 
 typedef std::pair<Disc *, Disc * > Wire; 
@@ -61,6 +59,8 @@ public:
   // value of velocity whether the event is a note on or a note off
   void handoff_midi(int MIDI_pitch, int velocity);
 
+  // Recalculates the FFT and moves the orbs around. This is called in between
+  // audio buffers. It is called from the graphics thread
   void update_graphics_dependencies();
 
   // Lets the other thread know that the FFT is ready to compute
@@ -91,18 +91,28 @@ public:
   // #--------------- FFT ----------------#
 
   
-  // The graphics thread can grab this and display it
+  // The graphics thread can grab this and display it. This keeps an average of the
+  // most recent spectra
   void calculate_fft();
 
   complex *get_fft();
   int get_fft_length(){return buffer_length_/2;}
   
-   // #--------------- UI ----------------#
+  // #--------------- UI ----------------#
 
+  // This is called when the up button is pressed in the menu
   void handle_up_press();
+
+  // This is called when the down button is pressed in the menu
   void handle_down_press();
+
+  // This lets the menu know whether or not the arrows will do anything
   bool selector_activated();
+
+  // The text that appears in the little box next to the arrows on the menu
   const char *text_box_content();
+
+  // The label that appears below the little box next to the arrows on the menu
   const char *text_box_label();
 
   std::vector<Disc *> sinks_;
@@ -118,7 +128,9 @@ private:
   // Reverses the "to" and "from" ends of a wire
   void switch_wire_direction(Wire &w);
 
+  // Finds the mix level for two discs based on their proximity
   double compute_mix_level(Disc *a, Disc *b);
+  // Returns 1/sqrt(factor)
   double scale_factor(int factor);
 
   // Allows all ugens to be called uniformly

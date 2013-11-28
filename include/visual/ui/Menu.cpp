@@ -11,8 +11,10 @@
 
 #include "Menu.h"
 
+// Converts a double from 0 to 1 to the visible light spectrum
 void spectrum(double w, double &R, double &G, double &B);
-bool inSquare(int,int,int,int,int);
+// Tests to see if some coordinates are inside of a square
+bool inSquare(int x, int y, int a, int b, int w);
 
 Menu::Menu(){
   GLuint menu_texture_ctrl_ = 0;
@@ -50,9 +52,7 @@ void Menu::enable_midi(){ midi_active_ = true; }
 void Menu::link_ugen_graph(UGenGraphBuilder *gb){ graph_= gb; }
 
 
-
 // #-------------- Drawable ----------------#
-
 
 
 // Draws the currently showing menu
@@ -421,6 +421,7 @@ void Menu::handle_click(int x, int y){
   int y_up_but = 914, y_down_but = 994;
   int x_arrow_but = 579;
   int x_pane_but = 823;
+  int y_help = 1252;
   int y_trash = 1341;
 
   int x_slider = 147, slider_length = 680;
@@ -486,23 +487,15 @@ void Menu::handle_click(int x, int y){
       ctrl_menu_shown_ = false; return;
     }
 
+    // HELP BUTTON
+    if (inSquare(x - 16, y, x_pane_but, y_help, sm_but_size)){
+      Graphics::show_splash_screen();
+      return;
+    }
+
     // DELETE BUTTON
     if (inSquare(x - 16, y, x_pane_but, y_trash, sm_but_size)){
-      if (Disc::spotlight_disc_ != NULL){
-        while(Disc::spotlight_disc_->orb_abandon()){}
-        Graphics::remove_drawable(Disc::spotlight_disc_);
-        Graphics::remove_moveable(Disc::spotlight_disc_);
-        Physics::take_physics(Disc::spotlight_disc_);
-    
-        //Graphics thread is also using this
-        graph_->lock_thread(true);
-        // This also deletes the disc
-        graph_->remove_disc(Disc::spotlight_disc_);
-        graph_->rebuild();
-        graph_->lock_thread(false);
-        Disc::spotlight_disc_ = NULL;
-
-      }
+      delete_spotlight();
       return;
     }
     // PARAMETER SLIDER
@@ -520,7 +513,22 @@ void Menu::handle_click(int x, int y){
 
 }
 
+void Menu::delete_spotlight(){
+  if (Disc::spotlight_disc_ != NULL){
+    while(Disc::spotlight_disc_->orb_abandon()){}
+    Graphics::remove_drawable(Disc::spotlight_disc_);
+    Graphics::remove_moveable(Disc::spotlight_disc_);
+    Physics::take_physics(Disc::spotlight_disc_);
 
+    //Graphics thread is also using this
+    graph_->lock_thread(true);
+    // This also deletes the disc
+    graph_->remove_disc(Disc::spotlight_disc_);
+    graph_->rebuild();
+    graph_->lock_thread(false);
+    Disc::spotlight_disc_ = NULL;
+  }
+}
 
 // Creates a new disc whenever a disc button is pressed.
 void Menu::make_disc(int button){
