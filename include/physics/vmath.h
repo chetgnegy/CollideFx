@@ -836,6 +836,15 @@ public:
 	}
 
 	/**
+	 * Dot product of two vectors.
+	 * @param rhs Right hand side argument of binary operator.
+	 */
+	Vector3<T> projectOnto(const Vector3<T>& rhs) const
+	{	
+		return *this * this->dotProduct(rhs) / this->lengthSq();
+	}
+
+	/**
 	 * Cross product operator
 	 * @param rhs Right hand side argument of binary operator.
 	 */

@@ -194,9 +194,11 @@ bool Physics::check_reduce_timestep(){
   return false;
 }
 
+
+
 void Physics::check_in_bounds(double update_time){
   if (all_.size() > 0) {
-      double mu = .7;
+      double mu = .2;
       auto it = all_.begin();
       while (it != all_.end()) {
         Physical *p = (*it);
@@ -219,6 +221,9 @@ void Physics::check_in_bounds(double update_time){
             p->vel_.x = -p->vel_.x * .9;
             if(p->acc_.x > 0) p->acc_.x = 0;
 
+            // Handle divide by zero cases!!
+
+            Vector3d n(-1, 0, 0); // Normal vector for wall
               std::cout << "pos" << " " << p->pos_ << " " << std::endl;
               std::cout << "vel" << " " << p->vel_ << " " << std::endl;
               std::cout << "acc" << " " << p->acc_ << " " << std::endl;
@@ -226,26 +231,33 @@ void Physics::check_in_bounds(double update_time){
               std::cout << "avel" << " " << p->ang_vel_ << " " << std::endl;
               std::cout << "aacc" << " " << p->ang_acc_ << " " << std::endl;
 
-            impulse = fabs(2 * p->m_ * p->vel_.x / update_time);
-            double wallv = -(p->vel_.y  + p->intersection_distance() * p->ang_vel_.z);
-            double dir = wallv/fabs(wallv);
-            double f_fric_max = impulse ;
-            double t_fric_max = f_fric_max * r;
-            double a_fric_max = t_fric_max / p->I_;
-            double dw_fric_max = a_fric_max * update_time * mu;
-            double dv_fric_max = dw_fric_max * r * mu;
-            dv_fric_max = fmin(fabs(dv_fric_max), fabs(p->vel_.y));
+            // The impulse in the direction normal to the wall
+            double impulse = p->vel_.dotProduct(n) * 2 * p->m_ / update_time;
+
+            Vector3d wallv = -(p->vel_ + n.crossProduct(p->ang_vel_) * r);
+            Vector3d fric_dir = wallv - n.projectOnto(wallv);
+            fric_dir.normalize();
+              
+              std::cout << "fric direction" << " " << fric_dir << " " << std::endl;
+              
+            Vector3d f_fric_max = fric_dir * impulse * mu;
+            Vector3d t_fric_max = -n.crossProduct(f_fric_max) * r;
+            Vector3d a_fric_max = t_fric_max / p->I_;
+            Vector3d dw_fric_max = a_fric_max * update_time;
+            Vector3d dv_fric_max = fric_dir * dw_fric_max.length() * r;
+            std::cout << "dv_fric_max1" << " " << dv_fric_max << " " << std::endl;
+              
+            dv_fric_max = fric_dir * fmin(fabs(dv_fric_max.length()), fabs(p->vel_.dotProduct(fric_dir)));
 
               std::cout << "mag_imp" << " " << impulse << " " << std::endl;
-              std::cout << "dir" << " " << dir << " " << std::endl;
               std::cout << "f_fric_max" << " " << f_fric_max << " " << std::endl;
               std::cout << "t_fric_max" << " " << t_fric_max << " " << std::endl;
               std::cout << "a_fric_max" << " " << a_fric_max << " " << std::endl;
               std::cout << "dw_fric_max" << " " << dw_fric_max << " " << std::endl;
               std::cout << "dv_fric_max" << " " << dv_fric_max << " " << std::endl;
               
-            p->ang_vel_.z +=  dw_fric_max * dir;
-            p->vel_.y += dv_fric_max * dir;
+            p->ang_vel_ +=  dw_fric_max;
+            p->vel_ += dv_fric_max;
              
               std::cout << ".avel" << " " << p->ang_vel_ << " " << std::endl;
               std::cout << ".vel" << " " << p->vel_ << " " << std::endl;
