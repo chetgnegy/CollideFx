@@ -406,7 +406,7 @@ Vector3d Disc::external_forces(){
 
 // The torques are handled here. This is called from Physics.cpp during the numerical integration step.
 Vector3d Disc::external_torques(){
-  return -ang_vel_ * .01 * 180.0 / 3.1415926535;
+  return -ang_vel_ * .006 * 180.0 / 3.1415926535;
 }
 
 

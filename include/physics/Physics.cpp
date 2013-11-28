@@ -99,7 +99,7 @@ void Physics::velocity_verlet(double timestep, Physical* obj){
 // Velocity Verlet algorithm applied to the angular motion
 void Physics::angular_verlet(double timestep, Physical* obj){
   //kinetic friction
-  double mu_loss = 0.7;
+  double mu_loss = 0.99;
      
   // Friction
   if (obj->uses_friction()){
@@ -140,29 +140,71 @@ void Physics::collision_prevention(double update_time){
 // Handles a collision using conservation of linear momentum;
 void Physics::collide(Physical* a, Physical* b, double update_time){
   Vector3d between = b->pos_ - a->pos_;
-              
-  if (between.length() < b->intersection_distance() 
-    + a->intersection_distance() && (between.dotProduct(a->vel_)>0 || between.dotProduct(b->vel_)<0)){
+  double impulse, ra, rb, j, mu = .2;
+  Vector3d tang_v, fric_dir, f_fric_max, dw_fric_max, dv_fric_max;
+  
+  ra = a->intersection_distance();
+  rb = b->intersection_distance();
+
+  // They are intersecting and one is moving towards the other
+  if (between.length() < rb + ra && 
+     (between.dotProduct(a->vel_)>0 || between.dotProduct(b->vel_)<0)){
 
       double d = between.lengthSq();
       // Project vectors onto vector connecting radii
-      Vector3d b_proj = between * between.dotProduct(b->vel_)/d;
-      Vector3d a_proj = between * between.dotProduct(a->vel_)/d;
-      //Perfectly inelastic collison. Momentum is conserved.
+      Vector3d vb_norm = between * between.dotProduct(b->vel_)/d;
+      Vector3d va_norm = between * between.dotProduct(a->vel_)/d;
+      // Perfectly inelastic collison. Momentum is conserved.
       double term1_1 = (a->m_-b->m_) / (a->m_ + b->m_);
       double term1_2 = (2*b->m_) / (a->m_ + b->m_);
       double term2_1 = (2*a->m_) / (a->m_ + b->m_);
       double term2_2 = (b->m_-a->m_) / (a->m_ + b->m_);
-      Vector3d a_tang = a->vel_ - a_proj;
-      Vector3d b_tang = b->vel_ - b_proj;
-      a->vel_ = a->vel_ - a_proj + a_proj * term1_1 + b_proj * term1_2;
-      b->vel_ = b->vel_ - b_proj + a_proj * term2_1 + b_proj * term2_2;
-        
-      double mu = 3;
-      double impulse   = 2 * a->m_ * a->intersection_distance() / update_time / a->I_;
-      //a->ang_acc_.z += a_proj.length() / a->vel_.length() * impulse   * mu * a_proj.length();
-      double impulse_b = 2 * b->m_ * b->intersection_distance() / update_time / b->I_;
-      //b->ang_acc_.z += b_proj.length() / b->vel_.length() * impulse_b * mu * b_proj.length();
+      Vector3d va_tang = a->vel_ - va_norm;
+      Vector3d vb_tang = b->vel_ - vb_norm;
+      // Handles motion normal to collision
+      a->vel_ = a->vel_ - va_norm + va_norm * term1_1 + vb_norm * term1_2;
+      b->vel_ = b->vel_ - vb_norm + va_norm * term2_1 + vb_norm * term2_2;
+      
+      
+      Vector3d na = -between, nb = between;
+      na.normalize(); nb.normalize();
+
+      j = 2 / ( 1/a->m_ + 1/b->m_ + ra*ra/a->I_ + rb*ra/b->I_ );
+
+      // The impulse in the direction normal to the wall
+      impulse = a->vel_.dotProduct(na) * j * a->m_ ;
+      // The direction of the friction
+      tang_v = -(a->vel_ + na.crossProduct(a->ang_vel_) * ra - b->vel_ - nb.crossProduct(b->ang_vel_) * rb);
+      fric_dir = tang_v - na.projectOnto(tang_v);
+      
+      // Will cause divide by zero. This is a head on collision
+      if (fric_dir.length()==0) return;
+      
+      fric_dir.normalize();
+      // Amount of rotation and velocity change to add
+      f_fric_max = fric_dir * impulse * mu;
+      dw_fric_max = -na.crossProduct(f_fric_max) * ra / a->I_;
+      dv_fric_max = fric_dir * dw_fric_max.length() * ra;
+      // Limit friction              
+      dv_fric_max = fric_dir * fmin(fabs(dv_fric_max.length()), fabs(a->vel_.dotProduct(fric_dir)));
+
+      a->ang_vel_ +=  dw_fric_max;
+      a->vel_ += dv_fric_max; 
+    
+
+      // The impulse in the direction normal to the wall
+      impulse = b->vel_.dotProduct(nb) * j * b->m_ ;
+      // The direction of the friction
+      fric_dir = -fric_dir;
+      // Amount of rotation and velocity change to add
+      f_fric_max = fric_dir * impulse * mu;
+      dw_fric_max = -nb.crossProduct(f_fric_max) * rb / b->I_;
+      dv_fric_max = fric_dir * dw_fric_max.length() * rb;
+      // Limit friction              
+      dv_fric_max = fric_dir * fmin(fabs(dv_fric_max.length()), fabs(b->vel_.dotProduct(fric_dir)));
+
+      b->ang_vel_ +=  dw_fric_max;
+      b->vel_ += dv_fric_max; 
       
   }
 }
@@ -200,68 +242,34 @@ void Physics::check_in_bounds(double update_time){
   if (all_.size() > 0) {
       double mu = .2;
       auto it = all_.begin();
+      double impulse, r;
+      Vector3d tang_v, fric_dir, f_fric_max, dw_fric_max, dv_fric_max;
+      
       while (it != all_.end()) {
         Physical *p = (*it);
-        double r = p->intersection_distance();
+        r = p->intersection_distance();
         if (p->has_collisions()){
-          double impulse = 2 * p->m_ * p->intersection_distance() / p->I_ * mu;
-            
+          // Wall Normal Vector    
+          Vector3d n;
+          bool collides = false;
           //Left Wall
           if (p->pos_.x - p->intersection_distance() < x_min_ && p->vel_.x < 0){
             p->pos_.x =  x_min_ + p->intersection_distance();
             p->vel_.x = -p->vel_.x;
             if(p->acc_.x < 0) p->acc_.x = 0;
-            p->ang_vel_.z += -impulse / fabs(p->vel_.y);
-            p->vel_.y +=  p->intersection_distance() * impulse / fabs(p->vel_.y);
+
+            n = Vector3d(1, 0, 0); // Normal vector for wall
+            collides = true;
           }
 
           //Right Wall
           else if (p->pos_.x + p->intersection_distance() > x_max_ && p->vel_.x > 0){
             p->pos_.x =  x_max_ - p->intersection_distance();
-            p->vel_.x = -p->vel_.x * .9;
+            p->vel_.x = -p->vel_.x;
             if(p->acc_.x > 0) p->acc_.x = 0;
 
-            // Handle divide by zero cases!!
-
-            Vector3d n(-1, 0, 0); // Normal vector for wall
-              std::cout << "pos" << " " << p->pos_ << " " << std::endl;
-              std::cout << "vel" << " " << p->vel_ << " " << std::endl;
-              std::cout << "acc" << " " << p->acc_ << " " << std::endl;
-              std::cout << "apos" << " " << p->ang_pos_ << " " << std::endl;
-              std::cout << "avel" << " " << p->ang_vel_ << " " << std::endl;
-              std::cout << "aacc" << " " << p->ang_acc_ << " " << std::endl;
-
-            // The impulse in the direction normal to the wall
-            double impulse = p->vel_.dotProduct(n) * 2 * p->m_ / update_time;
-
-            Vector3d wallv = -(p->vel_ + n.crossProduct(p->ang_vel_) * r);
-            Vector3d fric_dir = wallv - n.projectOnto(wallv);
-            fric_dir.normalize();
-              
-              std::cout << "fric direction" << " " << fric_dir << " " << std::endl;
-              
-            Vector3d f_fric_max = fric_dir * impulse * mu;
-            Vector3d t_fric_max = -n.crossProduct(f_fric_max) * r;
-            Vector3d a_fric_max = t_fric_max / p->I_;
-            Vector3d dw_fric_max = a_fric_max * update_time;
-            Vector3d dv_fric_max = fric_dir * dw_fric_max.length() * r;
-            std::cout << "dv_fric_max1" << " " << dv_fric_max << " " << std::endl;
-              
-            dv_fric_max = fric_dir * fmin(fabs(dv_fric_max.length()), fabs(p->vel_.dotProduct(fric_dir)));
-
-              std::cout << "mag_imp" << " " << impulse << " " << std::endl;
-              std::cout << "f_fric_max" << " " << f_fric_max << " " << std::endl;
-              std::cout << "t_fric_max" << " " << t_fric_max << " " << std::endl;
-              std::cout << "a_fric_max" << " " << a_fric_max << " " << std::endl;
-              std::cout << "dw_fric_max" << " " << dw_fric_max << " " << std::endl;
-              std::cout << "dv_fric_max" << " " << dv_fric_max << " " << std::endl;
-              
-            p->ang_vel_ +=  dw_fric_max;
-            p->vel_ += dv_fric_max;
-             
-              std::cout << ".avel" << " " << p->ang_vel_ << " " << std::endl;
-              std::cout << ".vel" << " " << p->vel_ << " " << std::endl;
-              
+            n = Vector3d(-1, 0, 0); // Normal vector for wall
+            collides = true;
             
           }
 
@@ -270,8 +278,8 @@ void Physics::check_in_bounds(double update_time){
             p->pos_.y =  y_min_ + p->intersection_distance();
             p->vel_.y = -p->vel_.y;
             if(p->acc_.y < 0) p->acc_.y = 0;
-            p->ang_vel_.z += impulse / fabs(p->vel_.x);
-            p->vel_.x += -p->intersection_distance() * impulse / fabs(p->vel_.x);
+            n = Vector3d(0, 1, 0); // Normal vector for wall
+            collides = true;
           }
 
           //Top Wall
@@ -279,10 +287,27 @@ void Physics::check_in_bounds(double update_time){
             p->pos_.y =  y_max_ - p->intersection_distance();
             p->vel_.y = -p->vel_.y;
             if(p->acc_.y > 0) p->acc_.y = 0;
-            p->ang_vel_.z += impulse / fabs(p->vel_.x);
-            p->vel_.x += -p->intersection_distance() * impulse / fabs(p->vel_.x);
+            n = Vector3d(0, -1, 0); // Normal vector for wall
+            collides = true;
           }
           
+          if (collides && p->vel_.dotProduct(n) != p->vel_.length()){// Handles divide by zero cases
+            // The impulse in the direction normal to the wall
+            impulse = p->vel_.dotProduct(n) * 2 * p->m_ ;
+            // The direction of the friction
+            tang_v = -(p->vel_ + n.crossProduct(p->ang_vel_) * r);
+            fric_dir = tang_v - n.projectOnto(tang_v);
+            fric_dir.normalize();
+            // Amount of rotation and velocity change to add
+            f_fric_max = fric_dir * impulse * mu;
+            dw_fric_max = -n.crossProduct(f_fric_max) * r / p->I_;
+            dv_fric_max = fric_dir * dw_fric_max.length() * r;
+            // Limit friction              
+            dv_fric_max = fric_dir * fmin(fabs(dv_fric_max.length()), fabs(p->vel_.dotProduct(fric_dir)));
+  
+            p->ang_vel_ +=  dw_fric_max;
+            p->vel_ += dv_fric_max; 
+          }
         } 
         ++it;
       }
