@@ -4,4 +4,4 @@
 *.a
 /exclude
 /exclude/**/*
-
+/Documentation/**/*

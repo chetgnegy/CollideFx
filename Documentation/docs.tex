@@ -63,11 +63,19 @@
 
 \maketitle
 
+\begin{figure}[h!]
+  \centering
+    \includegraphics[width=.8\textwidth]{cfxscreenshot.png}
+
+\end{figure}
+
+
 \section{Introduction}
 The purpose of this project is to create a real-time audio effects processor with a graphical interface that integrates the physics of real objects as well as the actions of the user into the parameter space of the signal chain. The basic design is as follows: There are a bunch of different modules that can be placed in a 2D plane, each of these modules has physical properties assigned to it and can impact the sound of some input source. The modules are represented by short cylinders, called Discs. The Discs are each associated with some unit generator, whether it be an input source or an audio effect. The proximity of the Discs to one another will determine the signal path as well as the mix level for the effects. The user, who can interact with the environment through clicking, can drag the Discs around the world, changing signal flow graph. The Discs are bound to the laws of physics, however, and will bounce off of one another as well as with the walls of the environment. The physics engine is also responsible for computing friction and angular velocities, the latter of which could also be mapped to a parameter of the unit generators in future iterations.
 
+\pagebreak
 
-\begin{figure}[b!]
+\begin{figure}[t!]
   \centering
     \includegraphics[width=\textwidth]{flow.png}
     \caption{The system diagram.}
@@ -80,7 +88,7 @@ The purpose of this project is to create a real-time audio effects processor wit
 This software utilizes the RtAudio$_{[1]}$ engine, which conveniently allows the system to communicate with the sound card by periodically filling buffers with audio data. To keep the system modular, the graphical display and the audio components are completely independent of each other and interact only through the parameter space of the Disc objects. The RtAudio callbacks are handled through by UGenChain class. UGenChain contains a graph of UnitGenerators that pass the audio signal from the input source to the next element in the chain and finally to the array designated as the output buffer. The graph is stored in the UGenGraphBuilder.
 
 \subsection{Signal Path}
-The UGenChain class has three main responsibilities: handling the audio stream, providing the next sample of audio data on request, and making sure that Midi information is delegated to the signal flow graph. The first of these responsibilities involves only initializing the RtAudio engine and opening the audio stream. The provision of the next sample is fairly straightforward given that the chain of unit generators. We simply "tick", or compute one sample, of audio from each unit generator in order and pass the result from the next. We of course start with an input source, who simply returns a sample of the audio input. Midi sources return a single frame of audio data based on the Midi information provided and the type of waveform. The effects units are similar but involve some calculation, often state-based depending on its parameters, and also on the samples that have been processed by it at previous times.\\
+The UGenChain class has three main responsibilities: handling the audio stream, providing the next sample of audio data on request, and making sure that Midi information is delegated to the signal flow graph. The first of these responsibilities involves only initializing the RtAudio engine and opening the audio stream. The provision of the next sample is fairly straightforward given that the chain of unit generators. We simply "tick", or compute one sample, of audio from each unit generator in order and pass the result from the next. We of course start with an input source, who simply returns a sample of the audio input. Midi sources return a single frame of audio data based on the Midi information provided and the type of waveform. The effects units are similar but involve some calculation, often state-based depending on its parameters, and also on the samples that have been processed by it at previous times.
 
 \subsection{Unit Generators}
 Several unit generators have been defined for this software. Many of them are loosely based around well known DSP algorithms. The unit generators feature two main methods, "tick" and "set\_params". As previously mentioned, "tick" processes a single sample of audio data. The method "set\_params" allows for the parameters of the unit generator to be changed. This does not include the parameters that are determined by the position of the Discs, but some internal parameters to the unit generator. The UGenGraphBuilder and UGenChain classes provide the input data to the unit generators in the form of an audio buffer or a midi event. In the following section, we discuss the various types of unit generators.
@@ -119,15 +127,14 @@ This is an implementation of Freeverb$_{[3]}$ using feedback comb filters and al
 The tremolo module provides simple low frequency amplitude modulation with a sinusoidal carrier wave. The modulation rate, $f_t$ is bounded on the range 0.02 - 10.0 Hz.
 
 
-
-
 \subsection{Graph-based Signal Flow}
-Finally, the signal chain is determined. This is done by the UGenGraphBuilder class. The UGenGraphBuilder considers the locations of the Discs in the world and contsructs a Minimal Spanning Tree, where the Discs are treated as Nodes, and the connections between them as Edges. A modified version of Prim's Algorithm is used to construct the tree. This provides an intuitive looking graph, (i.e., the nodes closest to each other are connected). It also prevents the formation of cycles, which would cause the system to possibly be unstable. The algorithm is modified in three ways, the connections will not be made if the distance between two nodes exceeds some maximum distance. There is also a condition that prevents two input discs to be connected to each other. This includes the audio and midi inputs, but not the looper effect (discussed later), though it can provide input to the other generators. Because the nodes can be too far away, the tree may be completely disconnected, or in sections. Prim's algorithm does not deal with disjoint trees, so we include a final modification such that all nodes must be at least attempt to connect to the tree. The algorithm runs until all nodes are designate ``marked" either by connecting them to a tree or by running through the algorithm and finding that a connection cannot be made. These connections are recorded in objects called Wires.\\
+Finally, the signal chain is determined. This is done by the UGenGraphBuilder class. The UGenGraphBuilder considers the locations of the Discs in the world and contsructs a Minimal Spanning Tree, where the Discs are treated as Nodes, and the connections between them as Edges. A modified version of Prim's Algorithm is used to construct the tree. This provides an intuitive looking graph, (i.e., the nodes closest to each other are connected). It also prevents the formation of cycles, which would cause the system to possibly be unstable. The algorithm is modified in three ways, the connections will not be made if the distance between two nodes exceeds some maximum distance. There is also a condition that prevents two input discs to be connected to each other. This includes the audio and midi inputs, but not the looper effect (discussed later), though it can provide input to the other generators. Because the nodes can be too far away, the tree may be completely disconnected, or in sections. Prim's algorithm does not deal with disjoint trees, so we include a final modification such that all nodes must be at least attempt to connect to the tree. The algorithm runs until all nodes are designate ``marked" either by connecting them to a tree or by running through the algorithm and finding that a connection cannot be made. These connections are recorded in objects called Wires.
 
-The signal must be passed from source to the implicit sinks (a unit generator with no output), this implies that the directionality of the Wires is critical. We resolve the directionality of the network of wires iteratively. We start by ensuring that any nodes labeled as inputs are on the ``From" end of the wire. The discs on the ``To" end of these wires must naturally be the ``From" end of any wires leading out of those discs. We iteratively swap wires from the beginning to the ends of the chain to make sure that paths are leading away from inputs. Because the directionality may be sensitive to the order that it falls in the wire list, we first sort the wire list. The wire list is sorted using the addresses of the connected discs using the ``From" disc as a key, and the ``To" disc as a secondary key. The addresses are used because they will not change over the course of their lifetime and because they should be roughly independent of any properties of the disc.\\
+The signal must be passed from source to the implicit sinks (a unit generator with no output), this implies that the directionality of the Wires is critical. We resolve the directionality of the network of wires iteratively. We start by ensuring that any nodes labeled as inputs are on the ``From" end of the wire. The discs on the ``To" end of these wires must naturally be the ``From" end of any wires leading out of those discs. We iteratively swap wires from the beginning to the ends of the chain to make sure that paths are leading away from inputs. Because the directionality may be sensitive to the order that it falls in the wire list, we first sort the wire list. The wire list is sorted using the addresses of the connected discs using the ``From" disc as a key, and the ``To" disc as a secondary key. The addresses are used because they will not change over the course of their lifetime and because they should be roughly independent of any properties of the disc.
 
 Once the chain is computed, a data structure that holds the inputs and outputs of each disc is linked to the discs. Sinks are marked and pulled for output samples. We recursively ask the sink nodes for their outputs, which compute something based on their inputs. To get the inputs we ask the input connections for their output samples. Of course, the inputs need computed before the outputs, so, we use a tail recursive tick function to calculate this conveniently. This function scales down the signal amplitudes by a factor of $\frac{1}{\sqrt{k}}$, where $k$ is the fanout of the previous unit generator in the chain. This keeps the signal at roughly the same amplitude even when the signal branches out many times. The square root is used because loudness is proportional to the square of amplitude. The mix levels are also computed here. 
 
+\vspace{1cm}
 
 \section{Graphics}
 The OpenGL library is used to provide a graphical interface for the project. The two main classes of displayable objects are the "World" and the "Disc". Each instance of these classes implements an interface Drawable, which allows for clean integration with the OpenGL module. OpenGL need only hold on to a list of Drawable objects, and the individual classes are responsible for their own rendering instructions. The drawable objects have an associated priority. High priority objects sit at the beginning of the list and are drawn first. The menu and the world have the highest priority, followed by the discs and the particles that float around them, called orbs. There is also an interface, Moveable, that allows the user to manually operate on the objects in the world using the mouse.
@@ -144,6 +151,9 @@ The discs are simple cylinders with orbs floating around them. The discs feature
 \subsection{Orbs}
 The orbs are made from textures that use additive blending. They do not interact with the world, other than when they are passed from disc to disc, which is indicative of signal flow. The orbs are given an anchor point, usually the center of a disc and they are pulled around as the disc moves. The orbs have a repulsive force, an inverse square law, that keeps them from getting to close to the center of the disc as well as an attractive force that keeps them from straying too far. They maintain an average distance of twice the radius of the disc from the disc's center. They also wander around randomly within this region to make it more visually appealing. We use a damping force to reduce oscillations just as we did for the discs. The discs can be assigned to any disc, or none at all. If they are unassigned, they fly upwards towards the viewer. Once they are out of the field of view, they delete themselves and all references to them and also free the associated memory. When orbs are reassigned to another disc, they start moving towards that disc, using a different weighting for the force computations. There is decreased attraction and increased damping. This is for visuals mostly, but it also prevents oscillation.
 
+\vspace{1cm}
+
+
 \section{User Interaction}
 The graphics module also contains a list of items that implement the interface, Moveable. As previously mentioned, these are items that can be moved by the user. When the user clicks on the screen, a ray is casted into the screen from the camera through the point where the user has clicked. The coordinate at which it intersects the plane containing the top face of the Discs is returned. This is done using OpenGL's unproject functionality. When a disc is clicked, an offset from the center is stored so that the object moves around the clicked point rather than the center of mass. There is also a menu on the left half of the screen that allows the user to create new discs. By clicking on one of the buttons we can create a disc and drag it onto the world. Once it is dropped into the world, it begins to interact with other modules both as a physical entity and as a audio unit generator. Discs dropped onto other discs or not within the bounds of the world are discarded.
 
@@ -152,6 +162,9 @@ The menu provides the user with the ability to create, modify, and destroy unit 
 
 \subsection{Parameter Modification}
 If the user right clicks on a disc, the menu will display its parameters in the lower control menu. Here the user can drag sliders to change the parameters of the unit generators. To prevent the constant reallocation of buffers, the parameters do not smoothly drag, but only change once the user has removed the click.
+
+\vspace{1cm}
+
 
 \section{Physics}
 The translational motion of the discs is implemented using a simple rectangular integration. Because the physics is mainly for providing a means of user interaction, and not an important source of quantitative data, we are satisfied with rectangular integration over more complicated methods such as Verlet Integration or Runge Kutta algorithms. For every frame of graphics that is computed, 50 time steps are computed.
@@ -249,18 +262,31 @@ We limit both the angular and translational changes in velocities due to frictio
 For the case where the disc bounces off of the wall, this simplifies a bit. We use a value of $j$, the impulse parameter equal to 2. In other words, we reverse the velocity component of the disc normal to the wall, $
 \Delta\vec{v} = 2\vec{v}$.  Additionally, the calculation for $\vec{v}_{f,tot}$ simplifies to $ - \vec{v}_a - (\vec{r_a}\times\vec{\omega}_a)$. The normal vector for these calculations is a unit vector pointing normal to the wall. This can be derived from the above equations noting that the world has effectively infinite mass and will not move.
 
+\vspace{1cm}
+
 \section{Compliation}
-There is a makefile included in the project. Simply type "make" in the home directory. If OpenGL and GLUT are properly installed on your machine, it should run with no problems. Run with "./CollideFx". This has only been tested on Mac OSX 10.8. All other dependencies are included.
+There is a makefile included in the project. Simply type $make$ in the home directory. If OpenGL and GLUT are properly installed on your machine, it should run with no problems. Run with $./CollideFx$. Report compilation problems to me at chetgnegy@gmail.com.\\
+
+This system uses the OpenGL/GLUT libraries, RtAudio/RtMidi, and the FFT algorithm provided by Librow. This also uses Samuel R. Buss's code to read a bitmap into OpenGl. This has only been tested on Mac OSX 10.8. RtAudio, RtMidi, FFT codes, and bitmap reading codes are included and expected to be cross platform.
+
+\vspace{1cm}
 
 
+\subsection*{Thank You!}
+Thanks to everyone who user tested this app and thanks to Ge for acknowledging that fun is important.
 
-\spag fix the "quotes" with bold or something to signify that it is code \spag
+\vspace{1cm}
 
-[1] http://www.music.mcgill.ca/~gary/rtaudio/
-[2] Jon Dattorro - Part 2: Delay-Line Modulation and Chorus  
+
+\subsection*{References}
+
+\begin{enumerate}
+\item[[1]] http://www.music.mcgill.ca/~gary/rtaudio/
+\item[[2]] Jon Dattorro - Part 2: Delay-Line Modulation and Chorus,  
 https://ccrma.stanford.edu/~dattorro/EffectDesignPart2.pdf 
-[3]https://ccrma.stanford.edu/~jos/pasp/Freeverb.html 
-[4]http://www.myphysicslab.com/collision.html
-\end{document}
+\item[[3]]https://ccrma.stanford.edu/~jos/pasp/Freeverb.html 
+\item[[4]]http://www.myphysicslab.com/collision.html
+\end{enumerate}
 
+\end{document}
 
