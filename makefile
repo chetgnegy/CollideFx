@@ -30,11 +30,11 @@ P_OBJS = Physics.o vmath.o
 V_OBJS = Disc.o Graphics.o Orb.o World.o 
 U_OBJS = Menu.o RgbImage.o
 
-AudioHockeyTable: $(A_OBJS) $(P_OBJS) $(V_OBJS) $(U_OBJS) AudioHockeyTable.o
-	$(CXX) -o AudioHockeyTable $(INC) $(A_OBJS) $(P_OBJS) $(V_OBJS) $(U_OBJS) AudioHockeyTable.o $(LIBS)
+CollideFx: $(A_OBJS) $(P_OBJS) $(V_OBJS) $(U_OBJS) CollideFx.o
+	$(CXX) -o CollideFx $(INC) $(A_OBJS) $(P_OBJS) $(V_OBJS) $(U_OBJS) CollideFx.o $(LIBS)
 
-AudioHockeyTable.o: AudioHockeyTable.cpp DigitalFilter.h
-	$(CXX) $(FLAGS) $(INC) AudioHockeyTable.cpp
+CollideFx.o: CollideFx.cpp DigitalFilter.h
+	$(CXX) $(FLAGS) $(INC) CollideFx.cpp
 
 #------------------Audio modules-----------------#
 
@@ -99,4 +99,4 @@ RgbImage.o: RgbImage.cpp RgbImage.h
 	$(CXX) $(FLAGS) $(INC) $(U_INCDIR)RgbImage.cpp
 
 clean:
-	rm -f *~ *# *.o AudioHockeyTable
+	rm -f *~ *# *.o CollideFx

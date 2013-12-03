@@ -132,7 +132,7 @@ Input::Input(int length){
     name_ = "Input";
     param1_name_ = "Volume";
     param2_name_ = "Not Used";
-    set_limits(0, 1, 0, 1);
+    set_limits(0, 10, 0, 1);
     set_params(1, 0);
     define_printouts(&param1_, "", NULL, "");
     ugen_buffer_size_ = length;

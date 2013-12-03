@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.1415926-2.5-1.40.14 (TeX Live 2013) (format=pdflatex 2013.5.30)  28 NOV 2013 02:38
+This is pdfTeX, Version 3.1415926-2.5-1.40.14 (TeX Live 2013) (format=pdflatex 2013.5.30)  2 DEC 2013 22:19
 entering extended mode
  \write18 enabled.
  %&-line parsing enabled.
@@ -916,7 +916,7 @@ LaTeX Font Info:    Font shape `T1/ptm/bx/n' in size <10> not available
 (Font)              Font shape `T1/ptm/b/n' tried instead on input line 66.
 LaTeX Font Info:    Font shape `T1/ptm/bx/n' in size <12> not available
 (Font)              Font shape `T1/ptm/b/n' tried instead on input line 66.
- <flow.png, id=75, 2200.22pt x 1316.92pt>
+ <flow.png, id=79, 2200.22pt x 1316.92pt>
 File: flow.png Graphic file (type png)
 
 <use flow.png>
@@ -953,37 +953,33 @@ Underfull \hbox (badness 10000) in paragraph at lines 127--128
  []
 
 [3] [4] [5]
-Overfull \hbox (65.38725pt too wide) in paragraph at lines 255--260
+Overfull \hbox (65.38725pt too wide) in paragraph at lines 259--264
 []\T1/ptm/m/n/10 [1] http://www.music.mcgill.ca/ gary/rtaudio/ [2] Jon Dat-torr
 o - Part 2: Delay-Line Mod-u-la-tion and Cho-rus https://ccrma.stanford.edu/ da
 t-
  []
 
 
-Overfull \hbox (34.93706pt too wide) in paragraph at lines 255--260
+Overfull \hbox (34.93706pt too wide) in paragraph at lines 259--264
 \T1/ptm/m/n/10 torro/EffectDesignPart2.pdf [3]https://ccrma.stanford.edu/ jos/p
 asp/Freeverb.html [4]http://www.myphysicslab.com/collision.html 
  []
 
-Package atveryend Info: Empty hook `BeforeClearDocument' on input line 260.
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 264.
 [6]
-Package atveryend Info: Empty hook `AfterLastShipout' on input line 260.
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 264.
  (./docs.aux)
-Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 260.
-Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 260.
+Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 264.
+Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 264.
 Package rerunfilecheck Info: File `docs.out' has not changed.
-(rerunfilecheck)             Checksum: F805F03D1D619E8ADF078943F76A5055;1010.
-
-
-LaTeX Warning: Label(s) may have changed. Rerun to get cross-references right.
-
-Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 260.
+(rerunfilecheck)             Checksum: 4BB5E833BB92829D85891CF8D46E1B74;1057.
+Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 264.
  ) 
 Here is how much of TeX's memory you used:
- 14726 strings out of 493315
- 249735 string characters out of 6137904
- 338163 words of memory out of 5000000
- 17853 multiletter control sequences out of 15000+600000
+ 14728 strings out of 493315
+ 249755 string characters out of 6137904
+ 339155 words of memory out of 5000000
+ 17854 multiletter control sequences out of 15000+600000
  25445 words of font info for 37 fonts, out of 8000000 for 9000
  957 hyphenation exceptions out of 8191
  49i,6n,53p,1402b,417s stack positions out of 5000i,500n,10000p,200000b,80000s
@@ -999,10 +995,10 @@ xmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb></usr/local/texlive/2013/texm
 f-dist/fonts/type1/urw/helvetic/uhvr8a.pfb></usr/local/texlive/2013/texmf-dist/
 fonts/type1/urw/times/utmb8a.pfb></usr/local/texlive/2013/texmf-dist/fonts/type
 1/urw/times/utmr8a.pfb>
-Output written on docs.pdf (6 pages, 224853 bytes).
+Output written on docs.pdf (6 pages, 226216 bytes).
 PDF statistics:
- 192 PDF objects out of 1000 (max. 8388607)
- 169 compressed objects within 2 object streams
- 39 named destinations out of 1000 (max. 500000)
- 154 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 196 PDF objects out of 1000 (max. 8388607)
+ 173 compressed objects within 2 object streams
+ 40 named destinations out of 1000 (max. 500000)
+ 162 words of extra memory for PDF output out of 10000 (max. 10000000)
 

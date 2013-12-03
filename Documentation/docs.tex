@@ -56,7 +56,7 @@
 \definecolor{blue}{RGB}{30,30,150}
 \newcommand{\spag}{\textcolor{red}{SPAGHETTI CAT!!}}
 %  Title page
-\title{Audio Hockey Table}
+\title{CollideFx}
 \author{Chet Gnegy}
 
 \begin{document}
@@ -248,6 +248,10 @@ We limit both the angular and translational changes in velocities due to frictio
 
 For the case where the disc bounces off of the wall, this simplifies a bit. We use a value of $j$, the impulse parameter equal to 2. In other words, we reverse the velocity component of the disc normal to the wall, $
 \Delta\vec{v} = 2\vec{v}$.  Additionally, the calculation for $\vec{v}_{f,tot}$ simplifies to $ - \vec{v}_a - (\vec{r_a}\times\vec{\omega}_a)$. The normal vector for these calculations is a unit vector pointing normal to the wall. This can be derived from the above equations noting that the world has effectively infinite mass and will not move.
+
+\section{Compliation}
+There is a makefile included in the project. Simply type "make" in the home directory. If OpenGL and GLUT are properly installed on your machine, it should run with no problems. Run with "./CollideFx". This has only been tested on Mac OSX 10.8. All other dependencies are included.
+
 
 
 \spag fix the "quotes" with bold or something to signify that it is code \spag

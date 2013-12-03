@@ -27,8 +27,9 @@ long time_now;
 struct timeval timer; 
 float z_distance = -20.0;
 float scale = .45;
+bool fullscreen = false;
 
-GLuint Graphics::splash_;
+GLuint Graphics::splash_ = 300;
 bool Graphics::show_splash_ = false;
 bool Graphics::splash_loaded_ = false;
 
@@ -36,7 +37,7 @@ bool Graphics::splash_loaded_ = false;
 Graphics::Graphics(int w, int h){
   w_ = w;
   h_ = h;
-  GLuint splash_ = 0;
+  GLuint splash_;
   bool show_splash_ = false;
   bool splash_loaded_ = false;
 
@@ -54,11 +55,11 @@ int Graphics::initialize(int argc, char *argv[]){
   // set the window postion
   //glutInitWindowPosition(350, 350);
   // create the window
-  glutCreateWindow("AudioHockeyTable");
+  glutCreateWindow("CollideFx");
   //glutEnterGameMode();
 
   glInitialize();
-  
+    
   // set the idle function - called when idle
   glutIdleFunc(idle);
   // set the display function - called when redrawing
@@ -184,6 +185,9 @@ void display() {
   glLoadIdentity();
   glPushMatrix();
   
+  if (fullscreen) scale = .43;
+  else scale = .45;
+
   //The world scaling that is applied to everything.
   glTranslatef(0, 0, z_distance);
   glScalef(scale,scale,scale);
@@ -236,6 +240,7 @@ void display() {
     glEnable(GL_TEXTURE_2D);
     glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
     glBindTexture(GL_TEXTURE_2D, Graphics::splash_);
+    
     glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_COLOR);
     glBegin(GL_QUADS);
     glTexCoord2f(0.0, 1.0); glVertex3f(-26, 16.5, 0);
@@ -269,8 +274,8 @@ void mouse(int button, int state, int x, int y) {
 
       if (state == GLUT_DOWN) {
         Graphics::show_splash_ = false;
-        glDeleteTextures(1, &Graphics::splash_);
-        Graphics::splash_loaded_ = false;
+        //glDeleteTextures(1, &Graphics::splash_);
+        //Graphics::splash_loaded_ = false;
 
         if (Graphics::move_list_.size() > 0) {
           std::list<Moveable *>::iterator it;
@@ -348,10 +353,20 @@ void recoverClick(int iX, int iY, double &oX, double &oY){
 
 
 void keyboard(unsigned char key, int x, int y){
-  std::cout << key << std::endl;
   switch (key){
     case ('x'):
       exit(0);
+    break;
+    case ('f'):
+      if (!fullscreen){
+        glutFullScreen();
+        fullscreen = true;
+      }
+      else {
+        glutReshapeWindow(1100, 600);
+        glutPositionWindow(0,0);
+        fullscreen = false;
+      }
     break;
   }
 }
