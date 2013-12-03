@@ -146,7 +146,8 @@ void UGenGraphBuilder::rebuild(){
       finalized[i] = true;
     }
     // Give some preference to the looper
-    else if (wires_[i].second->get_ugen()->is_looper()){
+    else if (wires_[i].second->get_ugen()->is_looper() &&
+      wires_[i].second->get_ugen()->is_input()){
       switch_wire_direction(wires_[i]);
     }
   }
