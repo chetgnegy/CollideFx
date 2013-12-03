@@ -1,0 +1,7 @@
+#Can ignore specific files 
+.DS_Store
+*.o
+*.a
+/exclude
+/exclude/**/*
+
