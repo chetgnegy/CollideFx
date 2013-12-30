@@ -16,7 +16,7 @@ UGenGraphBuilder::UGenGraphBuilder(int length){
   buffer_length_ = length;
   fft_visual_ = new complex[buffer_length_];
   buffer_ready_ = false;
-  anti_aliasing_ = new DigitalLowpassFilter(10000, 1, 1);
+  anti_aliasing_ = new DigitalLowpassFilter(15000, 1, 1);
   low_pass_ = new DigitalHighpassFilter(10, 1, 1);
 
 }
@@ -33,22 +33,28 @@ UGenGraphBuilder::~UGenGraphBuilder(){
 // their type and positions
 void UGenGraphBuilder::print_all(){
   std::cout << "********************" << std::endl;
-  std::cout << "Inputs:" << std::endl;
+  if(inputs_.size()>0)std::cout << "Inputs:" << std::endl;
   for (int i = 0; i < inputs_.size(); ++i){
     std::cout << "\t"<< inputs_[i]->get_ugen()->name() << " ";
     std::cout << inputs_[i]->pos_ << std::endl;
   }
 
-  std::cout << "Midi:" << std::endl;
+  if(midi_modules_.size()>0)std::cout << "Midi:" << std::endl;
   for (int i = 0; i < midi_modules_.size(); ++i){
     std::cout << "\t"<< midi_modules_[i]->get_ugen()->name() << " ";
     std::cout << midi_modules_[i]->pos_ << std::endl;
   }
 
-  std::cout << "Effects:" << std::endl;
+  if(fx_.size()>0)std::cout << "Effects:" << std::endl;
   for (int i = 0; i < fx_.size(); ++i){
     std::cout << "\t"<< fx_[i]->get_ugen()->name() << " ";
     std::cout << fx_[i]->pos_ << std::endl;
+  }
+
+  if(to_delete_.size()>0)std::cout << "Deleted:" << std::endl;
+  for (int i = 0; i < to_delete_.size(); ++i){
+    std::cout << "\t"<< to_delete_[i]->get_ugen()->name() << " ";
+    std::cout << to_delete_[i]->pos_ << std::endl;
   }
 }
 
@@ -57,6 +63,8 @@ void UGenGraphBuilder::print_all(){
 // Recomputes the graph based on the new positions of the discs
 void UGenGraphBuilder::rebuild(){
   wires_.clear();
+  old_sinks_.clear();
+  old_sinks_ = sinks_;
   sinks_.clear();
 
   int num_inputs = inputs_.size() + midi_modules_.size();
@@ -65,6 +73,8 @@ void UGenGraphBuilder::rebuild(){
 
   bool marked[num_nodes];
   bool is_sink[num_nodes];
+
+  past_signature_ = signature_; 
 
   for (int i = 0; i < num_nodes; ++i){
     if (data_.count(indexed(i))){
@@ -132,6 +142,8 @@ void UGenGraphBuilder::rebuild(){
   
   // Sorts the wires to ensure that the directionality is stable
   std::sort(wires_.begin(), wires_.end(), compare_wires);
+  signature_ = compute_signature();
+  
 
   // Make sure inputs are only transmitting
   bool finalized[wires_.size()];
@@ -151,6 +163,7 @@ void UGenGraphBuilder::rebuild(){
       switch_wire_direction(wires_[i]);
     }
   }
+
   //Iterate until convergence
   while (!nothing_happened){
     nothing_happened = true;
@@ -174,7 +187,6 @@ void UGenGraphBuilder::rebuild(){
   }
 
   for (int i = 0; i < wires_.size(); ++i){
-
     data_[wires_[i].second].inputs_.push_back(wires_[i].first);
     data_[wires_[i].first].outputs_.push_back(wires_[i].second);
   }
@@ -191,6 +203,14 @@ void UGenGraphBuilder::rebuild(){
   }
 }
 
+std::string UGenGraphBuilder::compute_signature(){
+  std::stringstream s ;
+  for (int i = 0; i < wires_.size(); i++){
+    s << wires_[i].first->getID() << ":" << wires_[i].second->getID() << "."; 
+  }
+  return s.str();
+}
+
 
 // Sorts the wires by the addresses of their endpoints. This sort isn't 
 // especially meaningful, but it provides stability in the connections 
@@ -202,7 +222,6 @@ bool compare_wires (Wire i, Wire j){
 
 
 
-
 // Processes a whole buffer. Note that you must first handoff audio 
 // and midi data to the graph by using the handoff_audio and 
 // handoff midi functions (mono)
@@ -210,24 +229,171 @@ void UGenGraphBuilder::load_buffer(double *out, int frames){
   // Zero out old array
   for (int i = 0; i < frames; ++i) out[i] = 0;
       
-  auto it = sinks_.begin();
   double *temp;
   int count = 0;
-  while (it != sinks_.end()) {
-    temp = pull_result_buffer(*it, frames);
-    // copy new branch into output buffer
-    for (int i = 0; i < frames; ++i){
-      out[i] += temp[i];
+  find_mix_levels();
+  // There has been a change in the graph
+  if (signature_ != past_signature_){
+    double *past,*present;
+    past = new double[frames];
+    present = new double[frames];
+    for (int i = 0; i < frames; ++i){ past[i] = 0; present[i] = 0;}
+
+    int num_nodes = inputs_.size() + midi_modules_.size() 
+                   + fx_.size() + to_delete_.size();
+ 
+    // Compute the save states of all discs, including recently deleted discs
+    std::map<Disc *, UGenState *> saved_states;
+    for (int i = 0; i < num_nodes; ++i){
+      UGenState *k = indexed(i)->get_ugen()->save_state();
+      saved_states[indexed(i)] = k;
     }
-    count++;
-    ++it;
+
+    auto it = old_sinks_.begin();
+    // Compute for past graph
+    while (it != old_sinks_.end()) {
+      temp = pull_result_buffer(*it, frames, true);
+      // copy new branch into output buffer
+      for (int i = 0; i < frames; ++i) past[i] += temp[i];
+      ++it;
+    }
+
+    
+    // Recover saved states
+    auto save_it = saved_states.begin();
+    while ( save_it != saved_states.end() ){
+      save_it->first->get_ugen()->recall_state(save_it->second);
+      data_[save_it->first].computed = false;
+      ++save_it;
+    }
+
+    // Compute for present graph
+    it = sinks_.begin();
+    while (it != sinks_.end()) {
+      temp = pull_result_buffer(*it, frames);
+      for (int i = 0; i < frames; ++i) present[i] += temp[i];
+      ++it;
+    }
+    
+    // Crossfade between graphs
+    double frac = 0;
+    for (int i = 0; i < frames; ++i) {
+      frac = i / (1.0 * frames);
+      out[i] = frac * present[i] + (1-frac) * past[i];
+    }
+
+    finalize_delete();
+    
+    delete past;
+    delete present;
   }
+
+  // The graph has not changed
+  else {
+    auto it = sinks_.begin();
+    while (it != sinks_.end()) {
+      temp = pull_result_buffer(*it, frames);
+      // copy new branch into output buffer
+      for (int i = 0; i < frames; ++i){
+        out[i] += temp[i];
+      }
+      ++it;
+    }
+  }
+
   for (int i = 0; i < frames; ++i){
     //Filters the signal to remove HF and DC components
     low_pass_->tick(out[i]);
     anti_aliasing_->tick(low_pass_->most_recent_sample());
     out[i] = anti_aliasing_->most_recent_sample().re();
   }
+
+}
+
+
+// Reverses the push architechture of "out = tick(in)" to recursively pull
+// samples to the output sinks from the inputs. Works on an entire buffer
+// The buffer out is cleared of any previous contents
+double *UGenGraphBuilder::pull_result_buffer(Disc *k, int length, bool past_data){
+  if (data_[k].computed) return k->get_ugen()->current_buffer();
+
+  double *wet = new double[length];
+  double *dry = new double[length];
+  for (int i = 0; i < length; ++i){ 
+    wet[i] = 0; dry[i] = 0;
+  }
+
+  double *temp, wet_level, scale;
+  // Current Inputs
+  std::vector<Disc *> input_list;
+  if (past_data){
+    input_list = data_[k].past_inputs_;
+  } else {
+    input_list = data_[k].inputs_;
+  }
+
+  for (auto it = input_list.begin(); it != input_list.end(); ++it) {
+    // Finds mix level
+    wet_level = get_mix_level(k, *it);
+    
+    // Scales down based on fan out
+    if (past_data) {
+      scale = scale_factor( data_[*it].past_outputs_.size() );
+    }
+    else{
+      scale = scale_factor( data_[*it].outputs_.size() );
+    } 
+    // Computes buffer coming from previous ugen
+    temp = pull_result_buffer(*it, length, past_data);
+    
+    // Computes wet dry mix
+    for (int i = 0; i < length; ++i){
+      wet[i] += wet_level * scale * temp[i];
+      dry[i] += (1-wet_level) * scale * temp[i];
+    }  
+  }
+
+  double *out_buffer = k->get_ugen()->process_buffer(wet, length);
+
+  data_[k].computed = true;
+  // Merges wet and dry
+  if (!k->get_ugen()->is_input()){
+    for (int i = 0; i < length; ++i){
+      out_buffer[i] += dry[i];
+    }
+  }
+  delete[] wet;
+  delete[] dry;
+  return out_buffer;
+}
+
+void UGenGraphBuilder::find_mix_levels(){
+  wet_levels_.clear();
+  int num_nodes = inputs_.size() + midi_modules_.size() + fx_.size() + to_delete_.size();
+  for ( int i = 0; i < num_nodes; ++i ){
+    for ( int j = i + 1; j < num_nodes; ++j ){
+      if (indexed(i) < indexed(j)){
+        wet_levels_[indexed(i)][indexed(j)] = compute_mix_level(indexed(i), indexed(j));
+      }
+      else{
+        wet_levels_[indexed(j)][indexed(i)] = compute_mix_level(indexed(j), indexed(i));
+      }
+    }
+  }
+}
+
+double UGenGraphBuilder::get_mix_level(Disc *a, Disc *b){
+  if (a < b)return wet_levels_[a][b];
+  return wet_levels_[b][a];
+}
+
+
+double UGenGraphBuilder::compute_mix_level(Disc *a, Disc *b){
+  double both_radii = a->get_radius() + b->get_radius();
+  double separation = (a->pos_ - b->pos_).length() - both_radii;
+  double mix = 1 - separation/(kMaxDist- both_radii);
+  mix = fmax(0, fmin(1, mix));
+  return mix;
 }
 
 
@@ -362,15 +528,6 @@ bool UGenGraphBuilder::add_midi_ugen(Disc *mugen){
 
 bool UGenGraphBuilder::remove_disc(Disc *d){
   std::vector<Disc *> *vec;
-  if (data_.count(d)){
-    auto itr = data_.begin();
-    while (itr != data_.end()) {
-      if (itr->first == d) {
-        data_.erase(itr);
-        break;
-      } ++itr;
-    }
-  }
   // Figures out which vector to look in
   if (d->get_ugen()->is_input() && !d->get_ugen()->is_looper()){
     if (d->get_ugen()->is_midi()) vec = &midi_modules_;
@@ -378,17 +535,45 @@ bool UGenGraphBuilder::remove_disc(Disc *d){
   }
   else vec = &fx_;
 
+  // Puts disc in to_delete vector
   auto it = vec->begin();
   while (it != vec->end()){
     if ((*it) == d){
-      delete *it;
-      vec->erase(it);
+      to_delete_.push_back(*it);
+      it = vec->erase(it);
       return true;
-    }  ++it;
+    } 
+    else ++it;
   } 
   return false;
 }
 
+bool UGenGraphBuilder::finalize_delete(){
+  if (to_delete_.size() == 0) return false;
+
+  //Deletes discs from to_delete_ vector
+  auto it = to_delete_.begin();
+  while (it != to_delete_.end()){
+    std::cout << (*it)->get_ugen()->name() << std::endl;
+    
+    // Deletes data associated with disc
+    if (data_.count(*it)){
+      auto itr = data_.begin();
+      while (itr != data_.end()) {
+        if (itr->first == *it) {
+          data_.erase(itr);
+          break;
+        }
+        else ++itr;
+      }
+    }
+    
+    delete *it;
+    it = to_delete_.erase(it);
+  } 
+  return true;
+  
+}
 
 // #--------------- FFT ----------------#
 
@@ -519,61 +704,13 @@ Disc *UGenGraphBuilder::indexed(int i){
   if (i<inputs_.size() + midi_modules_.size() + fx_.size()){
     return fx_[i - inputs_.size() - midi_modules_.size()];
   }
+  if (i<inputs_.size() + midi_modules_.size() + fx_.size() + to_delete_.size()){
+    return to_delete_[i - inputs_.size() - midi_modules_.size() - fx_.size()];
+  }
   return NULL;
 }
 
 
-
-// Reverses the push architechture of "out = tick(in)" to recursively pull
-// samples to the output sinks from the inputs. Works on an entire buffer
-// The buffer out is cleared of any previous contents
-double *UGenGraphBuilder::pull_result_buffer(Disc *k, int length){
-
-  if (data_[k].computed) return k->get_ugen()->current_buffer();
-  
-  double *wet = new double[length];
-  double *dry = new double[length];
-  for (int i = 0; i < length; ++i){ 
-    wet[i] = 0; dry[i] = 0;
-  }
-
-  double *temp, wet_level, scale;
-  // Current Inputs
-  for (auto it = data_[k].inputs_.begin(); it != data_[k].inputs_.end(); ++it) {
-    // Finds mix level and scaledown factor
-    wet_level = compute_mix_level(k, *it);
-    scale = scale_factor(data_[*it].outputs_.size());
-
-    // Computes buffer coming from previous ugen
-    temp = pull_result_buffer(*it, length);
-    
-    // Computes wet dry mix
-    for (int i = 0; i < length; ++i){
-      wet[i] += wet_level * scale * temp[i];
-      dry[i] += (1-wet_level) * scale * temp[i];
-    }  
-  }
-
-  double *out_buffer = k->get_ugen()->process_buffer(wet, length);
-
-  data_[k].computed = true;
-  // Merges wet and dry
-  if (!k->get_ugen()->is_input()){
-     for (int i = 0; i < length; ++i){
-        out_buffer[i] += dry[i];
-    }
-  }
-  delete[] wet;
-  delete[] dry;
-  return out_buffer;
-}
-
-
-double UGenGraphBuilder::compute_mix_level(Disc *a, Disc *b){
-  double both_radii = a->get_radius() - b->get_radius();
-  double separation = (a->pos_ - b->pos_).length() - both_radii;
-  return 1 - separation/(kMaxDist- both_radii);
-}
 
 // Scales down due to fan out
 double UGenGraphBuilder::scale_factor(int factor){

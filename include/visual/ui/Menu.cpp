@@ -324,6 +324,7 @@ void Menu::unclicked(){
       Graphics::remove_drawable(new_disc_);
       Graphics::remove_moveable(new_disc_);
       Physics::take_physics(new_disc_);
+      delete new_disc_;
     }
     
   }
@@ -522,7 +523,6 @@ void Menu::delete_spotlight(){
 
     //Graphics thread is also using this
     graph_->lock_thread(true);
-    // This also deletes the disc
     graph_->remove_disc(Disc::spotlight_disc_);
     graph_->rebuild();
     graph_->lock_thread(false);

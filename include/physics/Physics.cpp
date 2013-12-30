@@ -38,8 +38,8 @@ void Physics::give_physics(Physical *object){
 
 // Updates the positions of all objects 
 void Physics::update(double update_time){
-  double standard_iterations = 50.0;
-  double update = update_time/standard_iterations;
+  int standard_iterations = 20.0;
+  double update = update_time/(1.0*standard_iterations);
   
   //Numerical Integration
   for (int i = 0; i < standard_iterations; ++i){

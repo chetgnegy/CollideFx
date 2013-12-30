@@ -15,6 +15,7 @@
 #include <vector>
 #include <algorithm>
 #include <iostream>
+#include <sstream>
 #include "UnitGenerator.h"
 #include "DigitalFilter.h" 
 #include "Disc.h"
@@ -40,6 +41,7 @@ public:
 
   // Recomputes the graph based on the new positions of the discs
   void rebuild();
+
 
   // Changes the mutex. Should be called when using anything related to the 
   // audio path
@@ -116,20 +118,34 @@ public:
   const char *text_box_label();
 
   std::vector<Disc *> sinks_;
+  std::vector<Disc *> old_sinks_;
 
 private:
+
+  // Finds the signature for the current graph
+  std::string compute_signature();
+  // All discs scheduled for deletion are removed (called after buffer is generated)
+  bool finalize_delete();
+
   // The distance between two discs
   double get_edge_cost(Disc* a, Disc* b);
 
   // Reverses the push architecture of "out = tick(in)" to recursively pull
-  // samples to the output sinks from the inputs
-  double *pull_result_buffer(Disc *k, int length);
+  // samples to the output sinks from the inputs. past_data allows us to use
+  // the previously stored graph. This is used for crossfading between graph 
+  // changes
+  double *pull_result_buffer(Disc *k, int length, bool past_data = false);
 
   // Reverses the "to" and "from" ends of a wire
   void switch_wire_direction(Wire &w);
 
   // Finds the mix level for two discs based on their proximity
   double compute_mix_level(Disc *a, Disc *b);
+  // Computes all mix levels pairwise
+  void find_mix_levels();
+  //Returns the calculated mix level
+  double get_mix_level(Disc *a, Disc *b);
+
   // Returns 1/sqrt(factor)
   double scale_factor(int factor);
 
@@ -146,12 +162,13 @@ private:
   std::vector<Disc *> inputs_;
   std::vector<Disc *> midi_modules_;
   std::vector<Disc *> fx_;
+  std::vector<Disc *> to_delete_;
   
   std::vector<Wire> wires_;
   
   // Data containing the current connections
   std::map < Disc *, GraphData > data_;
-
+  std::map < Disc *, std::map <Disc *, double> > wet_levels_;
   // Protects the audio and graphics thread from
   // concurrency issues
   Mutex audio_lock_;
@@ -160,15 +177,26 @@ private:
   //Filters to process the output. Just for quality's sake...
   DigitalLowpassFilter *anti_aliasing_;
   DigitalHighpassFilter *low_pass_;
+
+  // Comparable description of graph
+  std::string signature_;
+  std::string past_signature_;
+  
 };
 
-
+// Stores previous state of the graph from the discs' perspective
+// UGen states are stored at UGen level.
 struct GraphData{
+  // Current Connections
   std::vector< Disc* > inputs_;
   std::vector< Disc* > outputs_;
+  // Has the buffer been used in this computation yet?
+  bool computed;
+  // Info for previous buffer's graph
   std::vector< Disc* > past_inputs_;
   std::vector< Disc* > past_outputs_;
-  bool computed;
+  bool past_computed;
+  
 };
 
 

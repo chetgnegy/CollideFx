@@ -22,6 +22,9 @@
 #include "complex.h"
 #include "fft.h"
 
+class UGenState;
+
+
 class UnitGenerator{
 public: 
   virtual ~UnitGenerator(){ 
@@ -38,6 +41,9 @@ public:
   virtual bool is_input() = 0;
   virtual bool is_midi() = 0;
   virtual bool is_looper() = 0;
+
+  virtual UGenState *save_state() = 0;
+  virtual void recall_state(UGenState *state) = 0;
 
   // Allows entire buffers to be processed at once
   double *process_buffer(double *buffer, int length);
@@ -82,6 +88,11 @@ protected:
   const char *name_, *param1_name_, *param2_name_, *param1_units_, *param2_units_;
 };
 
+class UGenState{
+public:
+  virtual ~UGenState(){};
+};
+
 class MidiUnitGenerator: public UnitGenerator{
 public:
 
@@ -102,11 +113,20 @@ public:
   bool is_looper(){ return false; }
   bool is_midi(){ return true; }
 
+  UGenState *save_state();
+  void recall_state(UGenState *state);
+
 protected:
   ClassicWaveform *myCW_;
 };
 
-
+class MidiInputState : public UGenState {
+public:
+  MidiInputState(){}
+  ~MidiInputState();
+  int buffer_length_;
+  double *buffer_;
+};
 
 
 /*
@@ -127,11 +147,21 @@ public:
   // Sets the entire buffer
   void set_buffer(double buffer[], int length);
   
+  UGenState *save_state();
+  void recall_state(UGenState *state);
+
 private:
   double current_value_;
   int current_index_; 
 };
 
+class InputState : public UGenState {
+public:
+  InputState(){}
+  ~InputState();
+  int buffer_length_;
+  double *buffer_;
+};
 
 /*
 The sine wave listens to the midi controller
@@ -203,15 +233,23 @@ public:
   bool is_input(){ return false; }
   bool is_looper(){ return false; }
   bool is_midi(){ return false; }
+
+  UGenState *save_state();
+  void recall_state(UGenState *state);
+
 private:
   // Quantizes the double to the number of bits specified by param1
   double quantize(double in);
-  
+  int sample_count_;
   double sample_;
-  double sample_count_;
 };
 
-
+class BitCrusherState : public UGenState {
+public:
+  BitCrusherState(){}
+  int sample_count_;
+  double sample_;
+};
 
 
 
@@ -241,16 +279,30 @@ public:
   bool is_input(){ return false; }
   bool is_looper(){ return false; }
   bool is_midi(){ return false; }
+
+  UGenState *save_state();
+  void recall_state(UGenState *state);
+
 private:
-  double *buffer_;
   int buf_write_;
-  double rate_hz_, depth_, report_hz_;
-  double sample_count_;
   int buffer_size_;
   int sample_rate_;
+  double rate_hz_, depth_, report_hz_;
+  double sample_count_;
+  double *buffer_;
 };
 
-
+class ChorusState : public UGenState {
+public:
+  ChorusState(){}
+  ~ChorusState(){
+    delete buffer_;
+  }
+  int buf_write_;
+  int buffer_size_;
+  double sample_count_;
+  double *buffer_;
+};
 
 
 
@@ -273,16 +325,26 @@ public:
   bool is_input(){ return false; }
   bool is_looper(){ return false; }
   bool is_midi(){ return false; }
+
+  UGenState *save_state();
+  void recall_state(UGenState *state);
+
 private:
   int buf_write_;
   int max_buffer_size_;
   int sample_rate_;
   float *buffer_;
-  double buffer_size_; 
-  
+  double buffer_size_;   
 };
 
-
+class DelayState : public UGenState {
+public:
+  DelayState(){}
+  ~DelayState(){ delete buffer_;}
+  int buf_write_;
+  int buffer_size_; 
+  float *buffer_;
+};
 
 
 
@@ -294,17 +356,36 @@ The distortion effect clips the input to a speficied level
 class Distortion : public UnitGenerator {
 public:
   
-  Distortion(double p1 = 18.0, double p2 = 1.0, int length = 512);
+  Distortion(double p1 = 5.0, double p2 = 0.2, int length = 512);
   ~Distortion();
+
   // Processes a single sample in the unit generator
-
-
   double tick(double in);  
   
   bool is_input(){ return false; }
   bool is_looper(){ return false; }
   bool is_midi(){ return false; }
+
+  UGenState *save_state();
+  void recall_state(UGenState *state);
+
+private:
+  DigitalLowpassFilter *f_;
+  DigitalFilter *inv_;
+
 };
+
+class DistortionState : public UGenState {
+public:
+  DistortionState(){}
+  ~DistortionState(){ 
+    delete f_state_;
+    delete inv_state_;
+  }
+  
+  DigitalFilterState *f_state_, *inv_state_;
+};
+
 
 
 /*
@@ -329,8 +410,22 @@ public:
   bool is_input(){ return false; }
   bool is_looper(){ return false; }
   bool is_midi(){ return false; }
+
+  UGenState *save_state();
+  void recall_state(UGenState *state);
+
 private:
-  DigitalFilter *f_;
+  DigitalFilter *f_, *f2_;
+  bool currently_lowpass_;
+};
+
+class FilterState : public UGenState {
+public:
+  FilterState(){}
+  ~FilterState(){ 
+    delete f_state_;
+  }
+  DigitalFilterState *f_state_;
   bool currently_lowpass_;
 };
 
@@ -352,12 +447,23 @@ public:
   bool is_input(){ return false; }
   bool is_looper(){ return false; }
   bool is_midi(){ return false; }
+
+  UGenState *save_state();
+  void recall_state(UGenState *state);
+
 private:
   DigitalBandpassFilter *f_;
 
 };
 
-
+class BandpassState : public UGenState {
+public:
+  BandpassState(){}
+  ~BandpassState(){ 
+    delete f_state_;
+  }
+  DigitalFilterState *f_state_;
+};
 
 
 /*
@@ -384,15 +490,29 @@ public:
   bool is_input(){ return false; }
   bool is_looper(){ return false; }
   bool is_midi(){ return false; }
+
+  UGenState *save_state();
+  void recall_state(UGenState *state);
+
 private:
   int buf_write_;
   int sample_rate_;
-  double *buffer_;
   int buffer_size_; 
+  double *buffer_;
   std::vector<Granule> granules_;
 };
 
-
+class GranularState : public UGenState {
+public:
+  GranularState(){}
+  ~GranularState(){
+    delete buffer_;
+  }
+  int buf_write_;
+  int buffer_size_; 
+  double *buffer_;
+  std::vector<Granule> granules_;
+};
 
 
 /*
@@ -421,6 +541,9 @@ public:
   bool is_input(){ return has_recording_; }
   bool is_looper(){ return true; }
   bool is_midi(){ return false; }
+
+  UGenState *save_state();
+  void recall_state(UGenState *state);
 
   // Used in the disc. Stored here so that we don't allocate
   // this memory for every disc. Used only for state transitions
@@ -452,6 +575,25 @@ private:
   bool is_recording_, has_recording_;
 };
 
+class LooperState : public UGenState {
+public:
+  LooperState(){};
+  ~LooperState(){
+    delete buffer_;
+  }
+  bool params_set_;
+  bool counting_down_;
+  bool is_recording_, has_recording_;
+  int start_counter_;
+  int buf_write_, buf_read_;
+  int buffer_size_;
+  int sample_rate_;
+  int this_beat_;
+  int beat_count_;
+  float *buffer_;
+};
+
+
 
 /*
 A ring modulator. Multiplies the input by a sinusoid
@@ -473,11 +615,22 @@ public:
   bool is_input(){ return false; }
   bool is_looper(){ return false; }
   bool is_midi(){ return false; }
+
+  UGenState *save_state();
+  void recall_state(UGenState *state);
+
 private:
-  int sample_count_;
+  long sample_count_;
   int sample_rate_;
   double rate_hz_, report_hz_;
 };
+
+class RingModState : public UGenState {
+public:
+  RingModState(){}
+  long sample_count_;
+};
+
 
 
 /*
@@ -500,13 +653,22 @@ public:
   bool is_input(){ return false; }
   bool is_looper(){ return false; }
   bool is_midi(){ return false; }
+
+  UGenState *save_state();
+  void recall_state(UGenState *state);
+
 private:
   FilterBank *fb_;
   std::list<AllpassApproximationFilter *> aaf_;
-  
 };
 
-
+class ReverbState : public UGenState {
+public:
+  ReverbState(){}
+  ~ReverbState(){}
+  DigitalFilterState comb_state_[8];
+  DigitalFilterState ap_state_[4];
+};
 
 
 
@@ -532,12 +694,21 @@ public:
   bool is_input(){ return false; }
   bool is_looper(){ return false; }
   bool is_midi(){ return false; }
+
+  UGenState *save_state();
+  void recall_state(UGenState *state);
   
 private:
-  int sample_count_;
   int sample_rate_;
+  long sample_count_;
   double rate_hz_, report_hz_;
+};
 
+class TremoloState : public UGenState {
+public:
+  TremoloState(){};
+  long sample_count_;
+  //double rate_hz_, report_hz_;
 };
 
 #endif

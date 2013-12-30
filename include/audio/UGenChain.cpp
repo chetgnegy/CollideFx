@@ -31,7 +31,6 @@ void midiCallback( double dt, std::vector< unsigned char > *message, void *data 
       int MIDI_pitch = static_cast<int>(message->at(1));
       int veloctiy = static_cast<int>(message->at(2));
       graph->handoff_midi(MIDI_pitch, veloctiy);
-      
     }
 }
 
@@ -139,6 +138,13 @@ int UGenChain::initialize_audio(){
   return 0;
 }
   
+// Tests if a string is a number or not
+bool is_number(const std::string& s)
+{
+    std::string::const_iterator it = s.begin();
+    while (it != s.end() && std::isdigit(*it)) ++it;
+    return !s.empty() && it == s.end();
+}
 
 // Checks to see if any midi ports are available
 int UGenChain::initialize_midi(){
@@ -152,9 +158,31 @@ int UGenChain::initialize_midi(){
     midi_initialized_ = false;
     return 0;
   }
+  int priority_port = 0;
 
-  midi_->openPort(0);
+  if(nPorts>1){
+    
+    for (int i = 0; i < nPorts; ++i){
+      if(nPorts>1)printf("%d: %s\n",i,midi_->getPortName(i).c_str()); 
+    }
+
+    //User must select a midi interface if there are several
+    std::string s;
+    do{ 
+      printf("Select a MIDI interface: ");
+      std::cin >> s;
+      try{
+        priority_port = atoi(s.c_str());
+      }catch(exception e){//try again, fool
+        priority_port = -1;
+      }
+    }while(priority_port<0 || priority_port>nPorts || !is_number(s.c_str()));
+  }
+  
+  midi_->openPort(priority_port);
+  
   midi_->setCallback( &midiCallback, (void *) this->graph_builder_);
+  printf("Using MIDI: %s\n",midi_->getPortName(priority_port).c_str());
   // Don't ignore sysex, timing, or active sensing messages.
   midi_->ignoreTypes(false, false, false);
   midi_initialized_ = true;

@@ -3,6 +3,13 @@
 
 
 //Creates a generic filter with no history or previous input
+DigitalFilter::DigitalFilter(double a[3], double b[3]){
+  gain_ = 1;
+  Q_ = 1;
+  corner_frequency_ = 1;
+  force_coefficients(a,b);
+};
+
 DigitalFilter::DigitalFilter(double center, double Q, double gain) {
   gain_ = gain;
   Q_ = Q;
@@ -15,9 +22,7 @@ DigitalFilter::DigitalFilter(double center, double Q, double gain) {
   y_past_[2] = 0;
 }
 
-DigitalFilter::~DigitalFilter() {
-
-}
+DigitalFilter::~DigitalFilter() {}
 
 
 
@@ -43,7 +48,17 @@ complex DigitalFilter::most_recent_sample() {
 
 //Calculates the DC gain of the system. Good for normalizing with high Q or extreme corner frequency values.
 double DigitalFilter::dc_gain() {
-  return (b_[0] + b_[1] + b_[2]) / (a_[0] + a_[1] + a_[2]);
+  return fabs((b_[0] + b_[1] + b_[2]) / (a_[0] + a_[1] + a_[2]));
+}
+double DigitalFilter::hf_gain() {
+  return fabs(((b_[0] - b_[1] + b_[2]) / (a_[0] - a_[1] + a_[2])));
+}
+
+DigitalFilter* DigitalFilter::create_inverse(){
+  double a[] = {b_[0], b_[1], b_[2]};
+  double b[] = {a_[0], a_[1], a_[2]};
+  DigitalFilter *f = new DigitalFilter(b,a);
+  return f;
 }
 
 void DigitalFilter::change_parameters(double center, double Q, double gain){
@@ -53,7 +68,21 @@ void DigitalFilter::change_parameters(double center, double Q, double gain){
   calculate_coefficients();
 }
 
+// Stores the most recent values in the filter so that the state of the 
+// filter can be restored later
+DigitalFilterState* DigitalFilter::get_state(){
+  DigitalFilterState *d = new DigitalFilterState();
+  d->x_[0] = x_past_[0]; d->x_[1] = x_past_[1]; d->x_[2] = x_past_[2];
+  d->y_[0] = y_past_[0]; d->y_[1] = y_past_[1]; d->y_[2] = y_past_[2];
+  return d;
+}
 
+// Recalls the most recent values in the filter
+void DigitalFilter::set_state(DigitalFilterState *d){
+  x_past_[0] = d->x_[0]; x_past_[1] = d->x_[1]; x_past_[2] =  d->x_[2];
+  y_past_[0] = d->y_[0]; y_past_[1] = d->y_[1]; y_past_[2] =  d->y_[2];
+  delete d;
+}
 
 
 

@@ -25,12 +25,14 @@
 class Disc : public Drawable, public Moveable, public Physical{
 public:
   static const int kNumParticles = 5;
+  static int NEXT_ID;
 
   // Pairs the disc with a unit generator, can be set to ghost mode
   Disc(UnitGenerator *u, double radius, bool ghost, int initial_orbs = 0, int maintain_orbs = 0, int max_orbs = 50); 
   // Cleans up the unit generator
   ~Disc();
   
+  int getID(){return ID;}
   void excite(double brightness){
     brightness_ = brightness;
   }
@@ -163,6 +165,8 @@ private:
   // Reads in a bitmap file and uses it as a texture.
   GLuint loadTextureFromFile( const char * filename );
 
+  // each disc gets its own id
+  int ID;
 
   void handle_looper_click();
   void handle_looper_unclick();

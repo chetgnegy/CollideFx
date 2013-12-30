@@ -167,11 +167,13 @@ bool Graphics::remove_moveable(Moveable *k){
 
 //Is the main loop. Runs repeatedly.
 void display() {
-  usleep(2000);
-
-  gettimeofday(&timer, NULL);  
   long new_time = (long)(timer.tv_sec*1000000+timer.tv_usec);
   long time_diff =  new_time - time_now;
+  if(time_diff < 5000)usleep(5000 - time_diff);
+
+  gettimeofday(&timer, NULL);  
+  new_time = (long)(timer.tv_sec*1000000+timer.tv_usec);
+  time_diff =  new_time - time_now;
   if (time_now > 0){
     Physics::update(time_diff*1.0e-6);
   }

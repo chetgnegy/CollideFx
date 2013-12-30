@@ -19,20 +19,31 @@
 #define TWOPI 6.2831853072
 #endif
 
-//       All numerical stuff from here:
-//
-// Tunable and Variable Passive Digital Filters
-//      for Multimedia Signal Processing
-//                 H. K. Kwan
+/*
+       All numerical stuff from here:
+
+ Tunable and Variable Passive Digital Filters
+      for Multimedia Signal Processing
+                  H. K. Kwan
+*/
+
+class DigitalFilterState{
+public:
+  DigitalFilterState(){}
+  complex x_[3];
+  complex y_[3];
+};
+
 
 class DigitalFilter {
  public:
- //Creates a generic filter with no history or previous input
+  //Creates a generic filter with no history or previous input
+  DigitalFilter(double a[3], double b[3]);//Pick coefficents directly
   DigitalFilter(double center_frequency, double Q, double gain);
-  virtual ~DigitalFilter() = 0;
+  virtual ~DigitalFilter();
   
   // Must be overridden by subclass
-  virtual void calculate_coefficients() = 0;
+  virtual void calculate_coefficients(){};
 
   // Advances the filter by a single sample, in. The new value is returned.
   virtual complex tick(complex in);
@@ -43,12 +54,27 @@ class DigitalFilter {
   // Calculates the gain of the system at frequency zero. Good for 
   // normalizing with high Q or extreme corner frequency values.
   double dc_gain(void);
+  double hf_gain(void);
   double gain_;
+
+  // Creates a new instance of a filter that is the inverse of the current
+  // filter
+  DigitalFilter* create_inverse();
 
   // Changes the parameters. For some filters, this still might do 
   // nothing (because it may be overridden), depends on filter implementation
   virtual void change_parameters(double center_frequency, double Q, double gain);
-  
+ 
+  DigitalFilterState* get_state();
+  void set_state(DigitalFilterState *d);
+
+ private:
+  void force_coefficients(double a[3], double b[3]){
+    a_[0] = a[0]; b_[0] = b[0];
+    a_[1] = a[1]; b_[1] = b[1];
+    a_[2] = a[2]; b_[2] = b[2];
+  }
+
  protected:
   //The coefficients for the numerator
   double a_[3];  
@@ -168,6 +194,7 @@ private:
   int buf_index_;
 };
 
+
 //A bunch of filters can be added to this. They are all used in parallel.
 class FilterBank {
  public:
@@ -202,6 +229,8 @@ class FilterBank {
   
   //The peak detecting low pass filter
   DigitalLowpassFilter *gain_control_;
+
+
  private:
   // The number of filters that are inside the filter bank
   int num_filters_;

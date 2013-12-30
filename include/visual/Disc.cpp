@@ -10,6 +10,7 @@
 
 
 // Static variable initialization
+int Disc::NEXT_ID = 0;
 Disc* Disc::spotlight_disc_ = NULL;
 double Disc::spotlight_graphic_timer = 0;
 bool Disc::texture_loaded_ = false;
@@ -43,10 +44,12 @@ Disc::Disc(UnitGenerator *u, double radius, bool ghost, int initial_orbs, int ma
   
   quadratic = gluNewQuadric();
     
+  ID = Disc::NEXT_ID++;
 }
 
 // Cleans up the unit generator
 Disc::~Disc(){
+  delete quadratic;
   delete ugen_;
 }
 
@@ -193,18 +196,18 @@ void Disc::draw(){
     
     // Animate the selected disc
     if (this == spotlight_disc_){
-      double spot_alpha = .05*sin(8*spotlight_graphic_timer);
+      double spot_alpha = .15*sin(8*spotlight_graphic_timer);
       glColor4f(color_.x,color_.y,color_.z, 
                 .23 + spot_alpha);
       gluDisk(quadratic,1.95f,2.0f,res,res);
       glColor4f(color_.x,color_.y,color_.z,
-                .16 + spot_alpha);
+                .1 + spot_alpha);
       gluDisk(quadratic,1.75f,1.8f,res,res);
       glColor4f(color_.x,color_.y,color_.z, 
-                .12 + spot_alpha);
+                .08 + spot_alpha);
       gluDisk(quadratic,1.55f,1.6f,res,res);
       glColor4f(color_.x,color_.y,color_.z, 
-                .07 + spot_alpha);
+                .04 + spot_alpha);
       gluDisk(quadratic,1.35f,1.4f,res,res);
     }
 

@@ -50,6 +50,9 @@ void UnitGenerator::buffer_fft(int full_length, complex *out){
     complex_arr_[i] = ugen_buffer_[i];
   }
   CFFT::Forward(complex_arr_, out, full_length);
+    for (int i = 0; i < ugen_buffer_size_; ++i){
+    out[i] = out[i] * 0.5 * (1 + cos(6.2831853 * i/(ugen_buffer_size_-1)));
+  }
   delete[] complex_arr_;
 }
 
@@ -124,7 +127,27 @@ double MidiUnitGenerator::tick(){
   return myCW_->tick();
 }
 
+UGenState *MidiUnitGenerator::save_state(){
+  MidiInputState *s = new MidiInputState();
+  s->buffer_length_ = ugen_buffer_size_;
+  s->buffer_ = new double[s->buffer_length_];
+  for (int i = 0; i < s->buffer_length_; ++i){
+    s->buffer_[i] = ugen_buffer_[i];
+  }
+  return s;
+}
+void MidiUnitGenerator::recall_state(UGenState *state){
+  MidiInputState *s = static_cast<MidiInputState *>(state);
+  if (s->buffer_length_ == ugen_buffer_size_){
+    for (int i = 0; i < s->buffer_length_; ++i){
+    ugen_buffer_[i] = s->buffer_[i];
+    }
+  }
+  else printf("Mismatched buffer size (MidiUnitGenerator::Recall_State)\n");
+  delete state;
+}
 
+MidiInputState::~MidiInputState(){delete[] buffer_;}
 
 // #------------Unit Generator Inherited Classes --------------#
 
@@ -161,7 +184,7 @@ void Input::set_sample(double val){
 // Sets the entire buffer
 void Input::set_buffer(double buffer[], int length){ 
   if (length != ugen_buffer_size_) {
-    printf("Resizing buffer");
+    printf("Resizing input 7buffer");
     ugen_buffer_size_ = length;
     delete[] ugen_buffer_;
     ugen_buffer_ = new double[ugen_buffer_size_];
@@ -173,6 +196,28 @@ void Input::set_buffer(double buffer[], int length){
   current_index_ = 0;
 }
 
+UGenState* Input::save_state(){
+  InputState *s = new InputState();
+  s->buffer_length_ = ugen_buffer_size_;
+  s->buffer_ = new double[s->buffer_length_];
+  for (int i = 0; i < s->buffer_length_; ++i){
+    s->buffer_[i] = ugen_buffer_[i];
+  }
+  return s;
+}
+
+void Input::recall_state(UGenState *state){
+  InputState *s = static_cast<InputState *>(state);
+  if (s->buffer_length_ == ugen_buffer_size_){
+    for (int i = 0; i < s->buffer_length_; ++i){
+      ugen_buffer_[i] = s->buffer_[i];
+    }
+  }
+  else printf("Mismatched buffer size (Input::Recall_State)\n");
+  delete state;
+}
+
+InputState::~InputState(){delete[] buffer_;}
 
 
 
@@ -181,14 +226,12 @@ The sine wave listens to the midi controller
 param1 = attack (seconds)
 param2 = sustain (seconds)
 */
-
-
 Sine::Sine(double p1, double p2, int sample_rate, int length){
   name_ = "Sine";
   param1_name_ = "Attack";
   param2_name_ = "Sustain";
   myCW_ = new ClassicWaveform("sine", 44100);
-  set_limits(0.001, 10, 0.001, 10);
+  set_limits(0.05, 10, 0.05, 10);
   define_printouts(&param1_, "s", &param2_, "s");
   set_params(p1, p2);
   ugen_buffer_size_ = length;
@@ -222,13 +265,12 @@ The square wave listens to the midi controller
 param1 = attack
 param2 = sustain
 */
-
 Square::Square(double p1, double p2, int sample_rate, int length){
   name_ = "Square";
   param1_name_ = "Attack";
   param2_name_ = "Sustain";
   myCW_ = new ClassicWaveform("square", 44100);
-  set_limits(0.001, 10, 0.001, 10);
+  set_limits(0.05, 10, 0.05, 10);
   set_params(p1, p2);
   define_printouts(&param1_, "s", &param2_, "s");
   ugen_buffer_size_ = length;
@@ -261,13 +303,12 @@ The tri wave listens to the midi controller
 param1 = attack
 param2 = sustain
 */
-
 Tri::Tri(double p1, double p2, int sample_rate, int length){
   name_ = "Tri";
   param1_name_ = "Attack";
   param2_name_ = "Sustain";
   myCW_ = new ClassicWaveform("tri", 44100);
-  set_limits(0.001, 10, 0.001, 10);
+  set_limits(0.05, 10, 0.05, 10);
   set_params(p1, p2);
   define_printouts(&param1_, "s", &param2_, "s");
   ugen_buffer_size_ = length;
@@ -298,13 +339,12 @@ The saw wave listens to the midi controller
 param1 = attack
 param2 = sustain
 */
-
 Saw::Saw(double p1, double p2, int sample_rate, int length){
   name_ = "Saw";
   param1_name_ = "Attack";
   param2_name_ = "Sustain";
   myCW_ = new ClassicWaveform("saw", 44100);
-  set_limits(0.001, 10, 0.001, 10);
+  set_limits(0.05, 10, 0.05, 10);
   set_params(p1, p2);
   define_printouts(&param1_, "s", &param2_, "s");
   ugen_buffer_size_ = length;
@@ -340,7 +380,7 @@ BitCrusher::BitCrusher(int p1, int p2, int length){
   name_ = "BitCrusher";
   param1_name_ = "Bits";
   param2_name_ = "Downsampling Factor";
-  set_limits(1, 16, 1, 16);
+  set_limits(2, 16, 1, 16);
   set_params(p1, p2); 
   define_printouts(&param1_, "", &param2_, "x");
   sample_ = 0;
@@ -380,6 +420,18 @@ double BitCrusher::quantize(double in){
 }
 
 
+UGenState* BitCrusher::save_state(){
+  BitCrusherState *s = new BitCrusherState();
+  s->sample_count_ = sample_count_;
+  s->sample_ = sample_;
+  return s;
+}
+void BitCrusher::recall_state(UGenState *state){
+  BitCrusherState *s = static_cast<BitCrusherState *>(state);
+  sample_count_ = s->sample_count_;
+  sample_ = s->sample_;
+  delete state;
+}
 
 
 
@@ -461,6 +513,29 @@ void Chorus::set_params(double p1, double p2){
   
 }
 
+UGenState* Chorus::save_state(){
+  ChorusState *s = new ChorusState();
+  s->buf_write_ = buf_write_;
+  s->buffer_size_ = buffer_size_;
+  s->sample_count_ = sample_count_;
+  s->buffer_ = new double[s->buffer_size_];
+  for (int i = 0; i < s->buffer_size_; ++i){
+    s->buffer_[i] = buffer_[i];
+  }
+  return s;
+}
+void Chorus::recall_state(UGenState *state){
+  ChorusState *s = static_cast<ChorusState *>(state);
+  if (buffer_size_ == s->buffer_size_){
+    buf_write_ = s->buf_write_;
+    buffer_size_ = s->buffer_size_;
+    sample_count_ = s->sample_count_;
+    for (int i = 0; i < s->buffer_size_; ++i){
+      buffer_[i] = s->buffer_[i];
+    }
+  } else { printf("Mismatched buffer size (Chorus::Recall_State)\n"); }
+  delete state;
+}
 
 
 
@@ -514,17 +589,34 @@ double Delay::tick(double in){
 
 void Delay::set_params(double p1, double p2){
   param1_ = clamp(p1, 1);
-
   //Reallocates delay buffer
   buffer_size_ = ceil(sample_rate_ * param1_);
-  
-  
   param2_ = clamp(p2, 2);
   
 }
 
 
-
+UGenState* Delay::save_state(){
+  DelayState *s = new DelayState();
+  s->buf_write_ = buf_write_;
+  s->buffer_size_ = buffer_size_;
+  s->buffer_ = new float[s->buffer_size_];
+  for (int i = 0; i < s->buffer_size_; ++i){
+    s->buffer_[i] = buffer_[i];
+  }
+  return s;
+}
+void Delay::recall_state(UGenState *state){
+  DelayState *s = static_cast<DelayState *>(state);
+  if (buffer_size_ == s->buffer_size_){
+    buf_write_ = s->buf_write_;
+    buffer_size_ = s->buffer_size_;
+    for (int i = 0; i < s->buffer_size_; ++i){
+      buffer_[i] = s->buffer_[i];
+    }
+  } else { printf("Mismatched buffer size (Delay::Recall_State)\n"); }
+  delete state;
+}
 
 
 
@@ -554,13 +646,42 @@ Distortion::Distortion(double p1, double p2, int length){
   for (int i = 0; i < ugen_buffer_size_; i++){
     ugen_buffer_[i] = 0;
   }
+  f_ = new DigitalLowpassFilter(1000,1,1); 
+  f_->calculate_coefficients();
+  inv_ = f_->create_inverse();
 }
-Distortion::~Distortion(){}
+Distortion::~Distortion(){
+  delete f_;
+  delete inv_;
+}
 // Processes a single sample in the unit generator
 double Distortion::tick(double in){
-  return param2_ * atan(param1_*in);
+  double gain_adj = f_->dc_gain();
+  double offset = 0.04;
+  in = f_->tick(in).re() / gain_adj;
+  in = param1_ * in + offset;
+  double out = 0;
+  // Cubic transfer function
+  if (in>1) out = 2/3.0;
+  else if (in<-1) out = -2/3.0;
+  else out = in - pow(in, 3)/3.0;
+  out -= offset - pow(offset, 3)/3.0;
+  out = inv_->tick(out).re() * gain_adj;
+  return param2_ * out;
 }  
 
+UGenState* Distortion::save_state(){
+  DistortionState *s = new DistortionState();
+  s->f_state_ = f_->get_state();
+  s->inv_state_ = inv_->get_state();
+  return s;
+}
+void Distortion::recall_state(UGenState *state){
+  DistortionState *s = static_cast<DistortionState *>(state);
+  f_->set_state(s->f_state_);
+  inv_->set_state(s->inv_state_);
+  delete state;
+}
 
 
 
@@ -585,6 +706,8 @@ Filter::Filter(double p1, double p2, int length){
   param2_ = clamp(p2, 2);
   f_ = new DigitalLowpassFilter(param1_, param2_, 1);
   f_->calculate_coefficients();
+  f2_ = new DigitalLowpassFilter(param1_, param2_, 1);
+  f2_->calculate_coefficients();
   currently_lowpass_ = true;
 
   ugen_buffer_size_ = length;
@@ -597,11 +720,17 @@ Filter::Filter(double p1, double p2, int length){
 
 Filter::~Filter(){
   delete f_;
+  delete f2_;
 }
 
 // Processes a single sample in the unit generator
 double Filter::tick(double in){
-  return f_->tick(in).re();
+  double factor = 1;
+  if (currently_lowpass_)
+    factor = 1/f_->dc_gain();
+  else
+    factor = 1/f_->hf_gain();
+  return factor * f2_->tick(factor * f_->tick(in)).re();
 }
 
 // Tells the filter to change parameters
@@ -609,6 +738,7 @@ void Filter::set_params(double p1, double p2){
   param1_ = clamp(p1, 1);
   param2_ = clamp(p2, 2);
   f_->change_parameters(param1_, param2_, 1);
+  f2_->change_parameters(param1_, param2_, 1);
 }
 
 // The filter can be either high or low pass.
@@ -616,19 +746,37 @@ void Filter::set_params(double p1, double p2){
 void Filter::set_lowpass(bool lowpass){
   if (lowpass && !currently_lowpass_){
     delete f_;
+    delete f2_;
     f_ = new DigitalLowpassFilter(param1_, param2_, 1);
+    f2_ = new DigitalLowpassFilter(param1_, param2_, 1);
     f_->calculate_coefficients();
+    f2_->calculate_coefficients();
     currently_lowpass_ = !currently_lowpass_;
   }
   else if (!lowpass && currently_lowpass_){
     delete f_;
+    delete f2_;
     f_ = new DigitalHighpassFilter(param1_, param2_, 1);
+    f2_ = new DigitalHighpassFilter(param1_, param2_, 1);
     f_->calculate_coefficients();
+    f2_->calculate_coefficients();
     currently_lowpass_ = !currently_lowpass_;
   }
 
 }
 
+UGenState* Filter::save_state(){
+  FilterState *s = new FilterState();
+  s->f_state_ = f_->get_state();
+  s->currently_lowpass_ = currently_lowpass_;
+  return s;
+}
+void Filter::recall_state(UGenState *state){
+  FilterState *s = static_cast<FilterState *>(state);
+  f_->set_state(s->f_state_);
+  currently_lowpass_ = s->currently_lowpass_;
+  delete state;
+}
 
 
 
@@ -671,8 +819,16 @@ void Bandpass::set_params(double p1, double p2){
   f_->change_parameters(param1_, param2_, 1);
 }
 
-
-
+UGenState* Bandpass::save_state(){
+  BandpassState *s = new BandpassState();
+  s->f_state_ = f_->get_state();
+  return s;
+}
+void Bandpass::recall_state(UGenState *state){
+  BandpassState *s = static_cast<BandpassState *>(state);
+  f_->set_state(s->f_state_);
+  delete state;
+}
 
 
 
@@ -752,6 +908,34 @@ void Granular::set_params(double p1, double p2){
   param2_ = clamp(p2, 2);
   
 }
+
+UGenState* Granular::save_state(){
+  GranularState *s = new GranularState();
+  s->buf_write_ = buf_write_;
+  s->buffer_size_ = buffer_size_;
+  s->granules_ = granules_;
+  s->buffer_ = new double[s->buffer_size_];
+  for (int i = 0; i < s->buffer_size_; ++i){
+    s->buffer_[i] = buffer_[i];
+  }
+  return s;
+}
+void Granular::recall_state(UGenState *state){
+  GranularState *s = static_cast<GranularState *>(state);
+  if (buffer_size_ == s->buffer_size_){
+    buf_write_ = s->buf_write_;
+    buffer_size_ = s->buffer_size_;
+    granules_ = s->granules_;
+    for (int i = 0; i < s->buffer_size_; ++i){
+      buffer_[i] = s->buffer_[i];
+    }
+  } else { printf("Mismatched buffer size (Granular::Recall_State)\n"); }
+  delete state;
+}
+
+
+
+
 
 
 
@@ -914,6 +1098,36 @@ void Looper::stop_recording(){
 }
 
 
+UGenState* Looper::save_state(){
+  LooperState *s = new LooperState();
+  s->buf_write_ = buf_write_;
+  s->buf_read_ = buf_read_;
+  s->buffer_size_ = buffer_size_;
+  s->this_beat_ = this_beat_;
+  s->beat_count_ = beat_count_;
+  s->start_counter_ = start_counter_;
+  s->buffer_ = new float[s->buffer_size_];
+  for (int i = 0; i < s->buffer_size_; ++i){
+    s->buffer_[i] = buffer_[i];
+  }
+  return s;
+}
+void Looper::recall_state(UGenState *state){
+  LooperState *s = static_cast<LooperState *>(state);
+  if (buffer_size_ == s->buffer_size_){
+    buf_write_ = s->buf_write_;
+    buf_read_ = s->buf_read_;
+    buffer_size_ = s->buffer_size_;
+    this_beat_ = s->this_beat_;
+    beat_count_ = s->beat_count_;
+    start_counter_ = s->start_counter_;
+    for (int i = 0; i < s->buffer_size_; ++i){
+      buffer_[i] = s->buffer_[i];
+    }
+  } else { printf("Mismatched buffer size (Looper::Recall_State)\n"); }
+  
+  delete state;
+}
 
 
 
@@ -960,11 +1174,20 @@ void RingMod::set_params(double p1, double p2){
   param2_ = clamp(p2, 2);
   // Non linear scaling
   p1 = (kMaxFreq - kMinFreq) * pow( param1_, 4) + kMinFreq;
-  //sets the rate of the tremolo
   report_hz_ = p1;
   rate_hz_ = 6.2831853 / (1.0 * sample_rate_) * p1;
 }
 
+UGenState* RingMod::save_state(){
+  RingModState *s = new RingModState();
+  s->sample_count_ = sample_count_;
+  return s;
+}
+void RingMod::recall_state(UGenState *state){
+  RingModState *s = static_cast<RingModState *>(state);
+  sample_count_ = s->sample_count_;
+  delete state;
+}
 
 
 
@@ -1048,6 +1271,42 @@ void Reverb::set_params(double p1, double p2){
   }
 }
 
+UGenState* Reverb::save_state(){
+  ReverbState *s = new ReverbState();
+  auto it = fb_->filters_.begin();
+  int i = 0;
+  while (fb_->filters_.size() > 0 && it != fb_->filters_.end()) {  
+    s->comb_state_[i++] = *(*it)->get_state();
+    ++it;
+  }
+
+  auto it2 = aaf_.begin();
+  i = 0;
+  while (aaf_.size() > 0 && it2 != aaf_.end()) {  
+    s->ap_state_[i++] = *(*it2)->get_state();
+    ++it2;
+  }
+  return s;
+
+}
+void Reverb::recall_state(UGenState *state){
+  ReverbState *s = static_cast<ReverbState *>(state);
+  auto it = fb_->filters_.begin();
+  int i = 0;
+  while (fb_->filters_.size() > 0 && it != fb_->filters_.end()) {  
+    (*it)->set_state(&s->comb_state_[i++]);
+    ++it;
+  }
+
+  auto it2 = aaf_.begin();
+  i = 0;
+  while (aaf_.size() > 0 && it2 != aaf_.end()) {  
+    (*it2)->set_state(&s->ap_state_[i++]);
+    ++it2;
+  }
+  delete state;
+}
+
 
 
 
@@ -1100,7 +1359,16 @@ void Tremolo::set_params(double p1, double p2){
   rate_hz_ = 6.2831853 / (1.0 * sample_rate_) * p1;
 }
 
-
+UGenState* Tremolo::save_state(){
+  TremoloState *s = new TremoloState();
+  s->sample_count_ = sample_count_;
+  return s;
+}
+void Tremolo::recall_state(UGenState *state){
+  TremoloState *s = static_cast<TremoloState *>(state);
+  sample_count_ = s->sample_count_;
+  delete state;
+}
 
 // #-------Useful functions for sound buffer operations --------#
 

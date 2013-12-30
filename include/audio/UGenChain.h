@@ -11,6 +11,7 @@
 
 
 #include <cmath>
+#include <string>
 #include "RtAudio.h"
 #include "RtMidi.h"
 #include "RtError.h"
