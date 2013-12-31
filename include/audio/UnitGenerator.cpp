@@ -537,6 +537,14 @@ void Chorus::recall_state(UGenState *state){
   delete state;
 }
 
+void Chorus::patch_buffer(double *buffer, int length){
+  double frac = 0;
+  for (int i = 0; i < length; ++i){
+    frac = i / (1.0 * length);
+    buffer_[(buf_write_-1-i+buffer_size_)%buffer_size_] = (1-frac) * buffer_[(buf_write_-1-i+buffer_size_)%buffer_size_] 
+                            + frac * buffer[length-1-i];
+  }
+}
 
 
 
@@ -617,7 +625,15 @@ void Delay::recall_state(UGenState *state){
   } else { printf("Mismatched buffer size (Delay::Recall_State)\n"); }
   delete state;
 }
-
+void Delay::patch_buffer(double *buffer, int length){
+  double frac = 0;
+  int b_size = static_cast<int>(buffer_size_);
+  for (int i = 0; i < length; ++i){
+    frac = i / (1.0 * length);
+    buffer_[(buf_write_-1-i+b_size)%b_size] = (1-frac) * buffer_[(buf_write_-1-i+b_size)%b_size] 
+                            + frac * buffer[length-1-i];
+  }
+}
 
 
 
@@ -933,7 +949,14 @@ void Granular::recall_state(UGenState *state){
   delete state;
 }
 
-
+void Granular::patch_buffer(double *buffer, int length){
+  double frac = 0;
+  for (int i = 0; i < length; ++i){
+    frac = i / (1.0 * length);
+    buffer_[(buf_write_-1-i+buffer_size_)%buffer_size_] = (1-frac) * buffer_[(buf_write_-1-i+buffer_size_)%buffer_size_] 
+                            + frac * buffer[length-1-i];
+  }
+}
 
 
 
@@ -1129,6 +1152,16 @@ void Looper::recall_state(UGenState *state){
   delete state;
 }
 
+void Looper::patch_buffer(double *buffer, int length){
+  double frac = 0;
+  for (int i = 0; i < length; ++i){
+    frac = i / (1.0 * length);
+    buffer_[(buf_write_-1-i+buffer_size_)%buffer_size_] = (1-frac) * buffer_[(buf_write_-1-i+buffer_size_)%buffer_size_] 
+                            + frac * buffer[length-1-i];
+  }
+}
+
+
 
 
 
@@ -1275,15 +1308,17 @@ UGenState* Reverb::save_state(){
   ReverbState *s = new ReverbState();
   auto it = fb_->filters_.begin();
   int i = 0;
+  s->comb_state_ = new DigitalFilterState*[8];
   while (fb_->filters_.size() > 0 && it != fb_->filters_.end()) {  
-    s->comb_state_[i++] = *(*it)->get_state();
+    s->comb_state_[i++] = (*it)->get_state();
     ++it;
   }
 
+  s->ap_state_ = new DigitalFilterState*[4];
   auto it2 = aaf_.begin();
   i = 0;
   while (aaf_.size() > 0 && it2 != aaf_.end()) {  
-    s->ap_state_[i++] = *(*it2)->get_state();
+    s->ap_state_[i++] = (*it2)->get_state();
     ++it2;
   }
   return s;
@@ -1294,16 +1329,17 @@ void Reverb::recall_state(UGenState *state){
   auto it = fb_->filters_.begin();
   int i = 0;
   while (fb_->filters_.size() > 0 && it != fb_->filters_.end()) {  
-    (*it)->set_state(&s->comb_state_[i++]);
+    (*it)->set_state(s->comb_state_[i++]);
     ++it;
   }
 
   auto it2 = aaf_.begin();
   i = 0;
   while (aaf_.size() > 0 && it2 != aaf_.end()) {  
-    (*it2)->set_state(&s->ap_state_[i++]);
+    (*it2)->set_state(s->ap_state_[i++]);
     ++it2;
   }
+
   delete state;
 }
 

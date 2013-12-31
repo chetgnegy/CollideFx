@@ -21,8 +21,9 @@
 /*
 Known Bugs/Issues-- 
   Pops when switching between signal graphs
-  - State based UGenState approach to crossfades
-  - Store state, compute, roll back and compute for new graph
+  - Ugens with effect buffers don't fade well
+  
+  Can't change buffer size without crash
 
 Things to add: 
   Better distortion algorithm! // This is started

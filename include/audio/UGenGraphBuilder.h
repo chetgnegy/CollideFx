@@ -196,6 +196,9 @@ struct GraphData{
   std::vector< Disc* > past_inputs_;
   std::vector< Disc* > past_outputs_;
   bool past_computed;
+
+  bool need_crossfade_;
+  double *crossfade_;
   
 };
 

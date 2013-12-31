@@ -41,9 +41,11 @@ public:
   virtual bool is_input() = 0;
   virtual bool is_midi() = 0;
   virtual bool is_looper() = 0;
+  virtual bool needs_buffer_patch(){return false;}
 
   virtual UGenState *save_state() = 0;
   virtual void recall_state(UGenState *state) = 0;
+  virtual void patch_buffer(double *buffer, int length){}
 
   // Allows entire buffers to be processed at once
   double *process_buffer(double *buffer, int length);
@@ -279,9 +281,11 @@ public:
   bool is_input(){ return false; }
   bool is_looper(){ return false; }
   bool is_midi(){ return false; }
+  bool needs_buffer_patch(){ return true; }
 
   UGenState *save_state();
   void recall_state(UGenState *state);
+  void patch_buffer(double *buffer, int length);
 
 private:
   int buf_write_;
@@ -325,9 +329,11 @@ public:
   bool is_input(){ return false; }
   bool is_looper(){ return false; }
   bool is_midi(){ return false; }
+  bool needs_buffer_patch(){ return true; }
 
   UGenState *save_state();
   void recall_state(UGenState *state);
+  void patch_buffer(double *buffer, int length);
 
 private:
   int buf_write_;
@@ -378,10 +384,7 @@ private:
 class DistortionState : public UGenState {
 public:
   DistortionState(){}
-  ~DistortionState(){ 
-    delete f_state_;
-    delete inv_state_;
-  }
+  ~DistortionState(){}
   
   DigitalFilterState *f_state_, *inv_state_;
 };
@@ -490,9 +493,11 @@ public:
   bool is_input(){ return false; }
   bool is_looper(){ return false; }
   bool is_midi(){ return false; }
+  bool needs_buffer_patch(){ return true; }
 
   UGenState *save_state();
   void recall_state(UGenState *state);
+  void patch_buffer(double *buffer, int length);
 
 private:
   int buf_write_;
@@ -541,10 +546,12 @@ public:
   bool is_input(){ return has_recording_; }
   bool is_looper(){ return true; }
   bool is_midi(){ return false; }
+  bool needs_buffer_patch(){ return false; }
 
   UGenState *save_state();
   void recall_state(UGenState *state);
-
+  void patch_buffer(double *buffer, int length);
+  
   // Used in the disc. Stored here so that we don't allocate
   // this memory for every disc. Used only for state transitions
   struct timeval timer; 
@@ -592,6 +599,7 @@ public:
   int beat_count_;
   float *buffer_;
 };
+
 
 
 
@@ -665,9 +673,12 @@ private:
 class ReverbState : public UGenState {
 public:
   ReverbState(){}
-  ~ReverbState(){}
-  DigitalFilterState comb_state_[8];
-  DigitalFilterState ap_state_[4];
+  ~ReverbState(){
+    delete[] comb_state_;
+    delete[] ap_state_;
+  }
+  DigitalFilterState **comb_state_;
+  DigitalFilterState **ap_state_;
 };
 
 

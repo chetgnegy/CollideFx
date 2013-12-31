@@ -281,7 +281,7 @@ FilterBank::~FilterBank() {
     delete (*list_iterator);
     ++list_iterator;
   }
-
+  delete gain_control_;
 }
 
 // Adds a filter in parallel
@@ -292,7 +292,7 @@ void FilterBank::add_filter(DigitalFilter *f) {
 }
 
 // A new sample 'in' is added into the filter and a new output is
-// calculated (and can be accssed using most_recent_sample()). The 
+// calculated (and can be accessed using most_recent_sample()). The 
 // output of each filter is summed together. The lowpass filter
 // is given the output.
 complex FilterBank::tick(complex in) {

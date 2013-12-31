@@ -221,7 +221,6 @@ bool compare_wires (Wire i, Wire j){
 }
 
 
-
 // Processes a whole buffer. Note that you must first handoff audio 
 // and midi data to the graph by using the handoff_audio and 
 // handoff midi functions (mono)
@@ -241,12 +240,13 @@ void UGenGraphBuilder::load_buffer(double *out, int frames){
 
     int num_nodes = inputs_.size() + midi_modules_.size() 
                    + fx_.size() + to_delete_.size();
- 
+
     // Compute the save states of all discs, including recently deleted discs
     std::map<Disc *, UGenState *> saved_states;
     for (int i = 0; i < num_nodes; ++i){
       UGenState *k = indexed(i)->get_ugen()->save_state();
       saved_states[indexed(i)] = k;
+
     }
 
     auto it = old_sinks_.begin();
@@ -256,13 +256,26 @@ void UGenGraphBuilder::load_buffer(double *out, int frames){
       // copy new branch into output buffer
       for (int i = 0; i < frames; ++i) past[i] += temp[i];
       ++it;
-    }
-
+    }  
     
     // Recover saved states
     auto save_it = saved_states.begin();
     while ( save_it != saved_states.end() ){
       save_it->first->get_ugen()->recall_state(save_it->second);
+      
+      // We prepare to crossfade inside of the buffers if necessary
+      if (save_it->first->get_ugen()->needs_buffer_patch()){
+        // This must be done before data_[k].computed is reset to false. 
+        // We get the buffer data without effecting anything. We return
+        // the buffer without it making any recursive calls.
+        double *pre = pull_result_buffer(save_it->first,frames,true);
+        data_[save_it->first].crossfade_ = new double[frames];
+        for (int i = 0; i < frames; ++i){
+          data_[save_it->first].crossfade_[i] = pre[i]; 
+        }
+        data_[save_it->first].need_crossfade_ = true;
+      }
+      
       data_[save_it->first].computed = false;
       ++save_it;
     }
@@ -274,7 +287,19 @@ void UGenGraphBuilder::load_buffer(double *out, int frames){
       for (int i = 0; i < frames; ++i) present[i] += temp[i];
       ++it;
     }
-    
+
+    // Complete crossfades on buffers of ugens that have history
+    save_it = saved_states.begin();
+    while ( save_it != saved_states.end() ){
+      // We prepare to crossfade inside of the buffers if necessary
+      if (data_[save_it->first].need_crossfade_){
+        save_it->first->get_ugen()->patch_buffer(data_[save_it->first].crossfade_, frames);
+        delete[] data_[save_it->first].crossfade_;
+      }  
+      ++save_it;
+    }
+
+
     // Crossfade between graphs
     double frac = 0;
     for (int i = 0; i < frames; ++i) {
@@ -353,8 +378,11 @@ double *UGenGraphBuilder::pull_result_buffer(Disc *k, int length, bool past_data
     }  
   }
 
+  // crossfade inside ugen buffers? instead of overwriting completely, we can 
+  // fadeout in the savestate part and fadein in the process buffer part
   double *out_buffer = k->get_ugen()->process_buffer(wet, length);
-
+  
+  // Chorus buffer doesn't have a crossfade
   data_[k].computed = true;
   // Merges wet and dry
   if (!k->get_ugen()->is_input()){
@@ -554,8 +582,6 @@ bool UGenGraphBuilder::finalize_delete(){
   //Deletes discs from to_delete_ vector
   auto it = to_delete_.begin();
   while (it != to_delete_.end()){
-    std::cout << (*it)->get_ugen()->name() << std::endl;
-    
     // Deletes data associated with disc
     if (data_.count(*it)){
       auto itr = data_.begin();
