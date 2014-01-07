@@ -22,6 +22,7 @@
 Known Bugs/Issues-- 
   Pops when switching between signal graphs
   - Ugens with effect buffers don't fade well
+  - BitCrusher, Distortion, LPF, RingMod, Tremolo work well
   
   Can't change buffer size without crash
 
@@ -35,35 +36,32 @@ Things to add:
 */
 
 int main(int argc, char *argv[]) {
-    srand (time(NULL));
+  srand (time(NULL));
 
-  
-    Graphics *myGraphics = new Graphics(1100, 600);
-    myGraphics->initialize(argc, argv);
+  Graphics *myGraphics = new Graphics(1100, 600);
+  myGraphics->initialize(argc, argv);
 
-    myGraphics->show_splash_screen();
+  myGraphics->show_splash_screen();
 
-    UGenChain *myChain = new UGenChain();
-    myChain->initialize_audio();
-    myChain->initialize_midi();
+  UGenChain *myChain = new UGenChain();
+  myChain->initialize_audio();
+  myChain->initialize_midi();
 
-    Menu *myMenu = new Menu();
-    World *myWorld = new World(30, 30, 9, 0);
-
-
-    Graphics::add_drawable(myMenu, 1);
-    Graphics::add_moveable(myMenu);
-    myMenu->link_ugen_graph(myChain->get_signal_graph());
-    if (UGenChain::has_midi()){ 
-        myMenu->enable_midi(); 
-    }
-
-    Graphics::add_drawable(myWorld, 2);
-    Physics::set_bounds(30*(1-2*World::kWallThickness), 30*(1-2*World::kWallThickness), 9, 0);
-    myGraphics->start_graphics();
+  Menu *myMenu = new Menu();
+  World *myWorld = new World(30, 30, 9, 0);
 
 
-  
+  Graphics::add_drawable(myMenu, 1);
+  Graphics::add_moveable(myMenu);
+  myMenu->link_ugen_graph(myChain->get_signal_graph());
+  if (UGenChain::has_midi()){ 
+    myMenu->enable_midi(); 
+  }
+
+  Graphics::add_drawable(myWorld, 2);
+  Physics::set_bounds(30*(1-2*World::kWallThickness), 30*(1-2*World::kWallThickness), 9, 0);
+  myGraphics->start_graphics();
+
   return 1;
 
 }

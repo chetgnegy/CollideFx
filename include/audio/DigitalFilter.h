@@ -11,6 +11,7 @@
 #include <list>
 #include "complex.h"
 #include <iostream>
+
 #ifndef SAMPLE_RATE
 #define SAMPLE_RATE 44100.0
 #endif
@@ -65,8 +66,8 @@ class DigitalFilter {
   // nothing (because it may be overridden), depends on filter implementation
   virtual void change_parameters(double center_frequency, double Q, double gain);
  
-  DigitalFilterState* get_state();
-  void set_state(DigitalFilterState *d);
+  virtual DigitalFilterState* get_state();
+  virtual void set_state(DigitalFilterState *d);
 
  private:
   void force_coefficients(double a[3], double b[3]){
@@ -184,6 +185,11 @@ class AllpassApproximationFilter : public DigitalFilter {
 
   // Computes a new value and adds it to a sample from the filtered delay line
   complex tick(complex in);
+
+  DigitalFilterState* get_state();
+  void set_state(DigitalFilterState *d);
+  void patch_buffer(double *buffer, int length);
+
 private:
   // With this type of filter, we don't need to compute anything
   void calculate_coefficients(){}
@@ -194,6 +200,13 @@ private:
   int buf_index_;
 };
 
+class AllpassApproximationFilterState: public DigitalFilterState{
+public:
+  AllpassApproximationFilterState(){}
+  complex *output_buffer_;
+  complex *input_buffer_;
+  int buf_index_;
+};
 
 //A bunch of filters can be added to this. They are all used in parallel.
 class FilterBank {

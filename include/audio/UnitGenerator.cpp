@@ -390,7 +390,6 @@ BitCrusher::BitCrusher(int p1, int p2, int length){
   for (int i = 0; i < ugen_buffer_size_; i++){
     ugen_buffer_[i] = 0;
   }
-  printf("Calibrate Bit Crusher...\n");
   
 }
 
@@ -994,6 +993,8 @@ Looper::Looper(int sample_rate, int length){
     ugen_buffer_[i] = 0;
   }
 
+  buffer_ = NULL;
+
   click_data.first = 0;
   click_data.second = 0;
 }
@@ -1073,10 +1074,11 @@ void Looper::pulse(){
 
 // Starts counting down beats until recording starts 
 void Looper::start_countdown(){
-  if (params_set_) delete[] buffer_; // Makes a new recording
-  buffer_size_ = ceil(60* sample_rate_ * param2_ / param1_);
-  //Makes empty buffer
-  buffer_ = new float[buffer_size_];
+  if (!params_set_){
+    buffer_size_ = ceil(60* sample_rate_ * param2_ / param1_);
+    //Makes empty buffer
+    buffer_ = new float[buffer_size_];
+  }
   for (int i = 0; i < buffer_size_; ++i) {
     buffer_[i] = 0;
   }
@@ -1091,7 +1093,7 @@ void Looper::start_countdown(){
 
 // Sets the number of count in beats
 void Looper::set_start_counter(int num){
-  if (is_recording_ || counting_down_) return;
+  if (counting_down_) return;
   start_counter_ = num;
 }
 
@@ -1129,12 +1131,18 @@ UGenState* Looper::save_state(){
   s->this_beat_ = this_beat_;
   s->beat_count_ = beat_count_;
   s->start_counter_ = start_counter_;
-  s->buffer_ = new float[s->buffer_size_];
-  for (int i = 0; i < s->buffer_size_; ++i){
-    s->buffer_[i] = buffer_[i];
+  if (buffer_ != NULL){
+    s->buffer_ = new float[s->buffer_size_];
+    for (int i = 0; i < s->buffer_size_; ++i){
+      s->buffer_[i] = buffer_[i];
+    }
   }
+  else s->buffer_ = NULL;
   return s;
 }
+
+
+
 void Looper::recall_state(UGenState *state){
   LooperState *s = static_cast<LooperState *>(state);
   if (buffer_size_ == s->buffer_size_){
@@ -1144,8 +1152,10 @@ void Looper::recall_state(UGenState *state){
     this_beat_ = s->this_beat_;
     beat_count_ = s->beat_count_;
     start_counter_ = s->start_counter_;
-    for (int i = 0; i < s->buffer_size_; ++i){
-      buffer_[i] = s->buffer_[i];
+    if (s->buffer_ != NULL){
+      for (int i = 0; i < s->buffer_size_; ++i){
+        buffer_[i] = s->buffer_[i];
+      }
     }
   } else { printf("Mismatched buffer size (Looper::Recall_State)\n"); }
   
@@ -1267,7 +1277,7 @@ Reverb::Reverb(double p1, double p2, int length){
 Reverb::~Reverb(){
   std::list<AllpassApproximationFilter *>::iterator it;
   it = aaf_.begin();
-  //Deletes all filters
+  // Deletes all filters
   while (aaf_.size() > 0 && it != aaf_.end()) {
     delete (*it);
     ++it;
@@ -1277,9 +1287,10 @@ Reverb::~Reverb(){
 
 // Processes a single sample in the unit generator
 double Reverb::tick(double in){
+  // This should probably use 1/sqrt(8), but it's too loud as it is...
   complex sample = fb_->tick(.125*in);
   
-  //Ticks each allpass
+  // Ticks each allpass
   std::list<AllpassApproximationFilter *>::iterator it;
   it = aaf_.begin();
   while (aaf_.size() > 0 && it != aaf_.end()) {
@@ -1342,7 +1353,9 @@ void Reverb::recall_state(UGenState *state){
 
   delete state;
 }
-
+void Reverb::patch_buffer(double *buffer, int length){
+  (*aaf_.begin())->patch_buffer(buffer, length);
+}
 
 
 

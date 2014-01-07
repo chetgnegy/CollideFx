@@ -425,9 +425,7 @@ private:
 class FilterState : public UGenState {
 public:
   FilterState(){}
-  ~FilterState(){ 
-    delete f_state_;
-  }
+  ~FilterState(){}
   DigitalFilterState *f_state_;
   bool currently_lowpass_;
 };
@@ -462,9 +460,7 @@ private:
 class BandpassState : public UGenState {
 public:
   BandpassState(){}
-  ~BandpassState(){ 
-    delete f_state_;
-  }
+  ~BandpassState(){}
   DigitalFilterState *f_state_;
 };
 
@@ -584,9 +580,9 @@ private:
 
 class LooperState : public UGenState {
 public:
-  LooperState(){};
+  LooperState(){buffer_ = NULL;};
   ~LooperState(){
-    delete buffer_;
+    if (buffer_!=NULL) delete[] buffer_;
   }
   bool params_set_;
   bool counting_down_;
@@ -661,10 +657,12 @@ public:
   bool is_input(){ return false; }
   bool is_looper(){ return false; }
   bool is_midi(){ return false; }
+  bool needs_buffer_patch(){ return true; }
 
   UGenState *save_state();
   void recall_state(UGenState *state);
-
+  void patch_buffer(double *buffer, int length);
+  
 private:
   FilterBank *fb_;
   std::list<AllpassApproximationFilter *> aaf_;

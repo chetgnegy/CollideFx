@@ -1,5 +1,4 @@
 #include "DigitalFilter.h"
-#include <iostream>
 
 
 //Creates a generic filter with no history or previous input
@@ -212,7 +211,6 @@ FilteredFeedbackCombFilter::~FilteredFeedbackCombFilter(){
 // Computes a new value and adds it to a sample from the filtered delay line
 complex FilteredFeedbackCombFilter::tick(complex in){
   complex out = in + roomsize_ * sp_->tick(buffer_[buf_index_]);
-  //std::cout << out.re() << std::endl;
   buffer_[buf_index_] = out;
   ++buf_index_;
   buf_index_ %= samples_;
@@ -228,8 +226,8 @@ void FilteredFeedbackCombFilter::change_parameters(int samples, double roomsize,
 
 
 
-//One zero, one pole approximation of an allpass filter
-//https://ccrma.stanford.edu/~jos/pasp/Freeverb_Allpass_Approximation.html
+// One zero, one pole approximation of an allpass filter
+// https://ccrma.stanford.edu/~jos/pasp/Freeverb_Allpass_Approximation.html
 AllpassApproximationFilter::AllpassApproximationFilter(int samples, double g): DigitalFilter(0.0, 0.0, 1.0){
   samples_ = samples; 
   g_ = g;
@@ -245,12 +243,11 @@ AllpassApproximationFilter::AllpassApproximationFilter(int samples, double g): D
 AllpassApproximationFilter::~AllpassApproximationFilter(){
   delete[] output_buffer_;
   delete[] input_buffer_;
-  
 }
 
 // Computes a new value and adds it to a sample from the filtered delay line
 complex AllpassApproximationFilter::tick(complex in){
-  complex out = g_ * output_buffer_[buf_index_] - in + (1+g_)*input_buffer_[buf_index_];
+  complex out = g_ * output_buffer_[buf_index_] - in + (1+g_) * input_buffer_[buf_index_];
   input_buffer_[buf_index_] = in;
   output_buffer_[buf_index_] = out;
   ++buf_index_;
@@ -258,12 +255,50 @@ complex AllpassApproximationFilter::tick(complex in){
   return out;    
 }
 
+// Stores the most recent values in the filter so that the state of the 
+// filter can be restored later
+DigitalFilterState* AllpassApproximationFilter::get_state(){
+  AllpassApproximationFilterState *d = new AllpassApproximationFilterState();
+  d->output_buffer_ = new complex[samples_];
+  d->input_buffer_ = new complex[samples_];
+  for (int i = 0; i < samples_; i++){
+    d->output_buffer_[i] = output_buffer_[i];
+    d->input_buffer_[i] = input_buffer_[i];
+  }
+  d->buf_index_ = buf_index_;
+  return d;
+}
+
+// Recalls the most recent values in the filter
+void AllpassApproximationFilter::set_state(DigitalFilterState *d){
+  AllpassApproximationFilterState *a = static_cast<AllpassApproximationFilterState*>(d);
+  for (int i = 0; i < samples_; i++){
+    output_buffer_[i] = a->output_buffer_[i];
+    input_buffer_[i] = a->input_buffer_[i];
+  }
+  delete[] a->output_buffer_;
+  delete[] a->input_buffer_;
+  a->buf_index_ = buf_index_;
+  delete d;
+}
+
+void AllpassApproximationFilter::patch_buffer(double *buffer, int length){
+  double frac = 0;
+  int howmany = length<samples_ ? length : samples_;
+  for (int i = 0; i < howmany; ++i){
+    frac = i / (1.0 * howmany);
+    input_buffer_[(buf_index_-1-i+samples_)%samples_] = (1-frac) * input_buffer_[(buf_index_-1-i+samples_)%samples_] 
+                            + frac * buffer[length-1-i];
+  }
+}
+
+
 
 
 // Creates a bank that is capable of holding parallel filters.
 // Comes with a built in Lowpass Filter of frequency 10Hz that
 // useful for building a peak detector. Gain is normalized to 
-// 1/DCGain.
+// 1/DC Gain.
 FilterBank::FilterBank() {
   gain_control_ = new DigitalLowpassFilter(10.0, 1.0, 1.0);
   gain_control_->gain_ = 1 / gain_control_->dc_gain();
@@ -292,9 +327,8 @@ void FilterBank::add_filter(DigitalFilter *f) {
 }
 
 // A new sample 'in' is added into the filter and a new output is
-// calculated (and can be accessed using most_recent_sample()). The 
-// output of each filter is summed together. The lowpass filter
-// is given the output.
+// calculated. The output of each filter is summed together. The 
+// lowpass filter is given the output.
 complex FilterBank::tick(complex in) {
 
   if (filters_.size() > 0) {
