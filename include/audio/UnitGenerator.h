@@ -41,12 +41,10 @@ public:
   virtual bool is_input() = 0;
   virtual bool is_midi() = 0;
   virtual bool is_looper() = 0;
-  virtual bool needs_buffer_patch(){return false;}
-
+  
   virtual UGenState *save_state() = 0;
   virtual void recall_state(UGenState *state) = 0;
-  virtual void patch_buffer(double *buffer, int length){}
-
+  
   // Allows entire buffers to be processed at once
   double *process_buffer(double *buffer, int length);
   double *current_buffer(){return ugen_buffer_;}
@@ -285,7 +283,6 @@ public:
 
   UGenState *save_state();
   void recall_state(UGenState *state);
-  void patch_buffer(double *buffer, int length);
 
 private:
   int buf_write_;
@@ -333,8 +330,7 @@ public:
 
   UGenState *save_state();
   void recall_state(UGenState *state);
-  void patch_buffer(double *buffer, int length);
-
+  
 private:
   int buf_write_;
   int max_buffer_size_;
@@ -493,8 +489,7 @@ public:
 
   UGenState *save_state();
   void recall_state(UGenState *state);
-  void patch_buffer(double *buffer, int length);
-
+  
 private:
   int buf_write_;
   int sample_rate_;
@@ -542,8 +537,7 @@ public:
   bool is_input(){ return has_recording_; }
   bool is_looper(){ return true; }
   bool is_midi(){ return false; }
-  bool needs_buffer_patch(){ return false; }
-
+  
   UGenState *save_state();
   void recall_state(UGenState *state);
   void patch_buffer(double *buffer, int length);
@@ -661,7 +655,6 @@ public:
 
   UGenState *save_state();
   void recall_state(UGenState *state);
-  void patch_buffer(double *buffer, int length);
   
 private:
   FilterBank *fb_;

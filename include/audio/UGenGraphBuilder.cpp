@@ -233,11 +233,6 @@ void UGenGraphBuilder::load_buffer(double *out, int frames){
   find_mix_levels();
   // There has been a change in the graph
   if (signature_ != past_signature_){
-    double *past,*present;
-    past = new double[frames];
-    present = new double[frames];
-    for (int i = 0; i < frames; ++i){ past[i] = 0; present[i] = 0;}
-
     int num_nodes = inputs_.size() + midi_modules_.size() 
                    + fx_.size() + to_delete_.size();
 
@@ -246,83 +241,48 @@ void UGenGraphBuilder::load_buffer(double *out, int frames){
     for (int i = 0; i < num_nodes; ++i){
       UGenState *k = indexed(i)->get_ugen()->save_state();
       saved_states[indexed(i)] = k;
-
     }
 
-    auto it = old_sinks_.begin();
-    // Compute for past graph
-    while (it != old_sinks_.end()) {
-      temp = pull_result_buffer(*it, frames, true);
-      // copy new branch into output buffer
-      for (int i = 0; i < frames; ++i) past[i] += temp[i];
-      ++it;
+    // Compute for past graph, this stores a buffer in the data_ object
+    // that is accessed by sending a 2 state to the pull_result_buffer 
+    // method
+    for (auto it = old_sinks_.begin(); it != old_sinks_.end(); ++it) {
+      pull_result_buffer(*it, frames, 1);
     }  
-    
+
     // Recover saved states
-    auto save_it = saved_states.begin();
-    while ( save_it != saved_states.end() ){
-      save_it->first->get_ugen()->recall_state(save_it->second);
-      
-      // We prepare to crossfade inside of the buffers if necessary
-      if (save_it->first->get_ugen()->needs_buffer_patch()){
-        // This must be done before data_[k].computed is reset to false. 
-        // We get the buffer data without effecting anything. We return
-        // the buffer without it making any recursive calls.
-        double *pre = pull_result_buffer(save_it->first,frames,true);
-        data_[save_it->first].crossfade_ = new double[frames];
-        for (int i = 0; i < frames; ++i){
-          data_[save_it->first].crossfade_[i] = pre[i]; 
-        }
-        data_[save_it->first].need_crossfade_ = true;
-      }
-      
-      data_[save_it->first].computed = false;
-      ++save_it;
+    for (auto it = saved_states.begin(); it != saved_states.end(); ++it){
+      it->first->get_ugen()->recall_state(it->second);      
+      data_[it->first].computed = false;
     }
 
-    // Compute for present graph
-    it = sinks_.begin();
-    while (it != sinks_.end()) {
-      temp = pull_result_buffer(*it, frames);
-      for (int i = 0; i < frames; ++i) present[i] += temp[i];
-      ++it;
+    // Compute for present graph (internally crossfading)
+    for (auto it = sinks_.begin(); it != sinks_.end(); ++it) {
+      temp = pull_result_buffer(*it, frames, 2);
+      for (int i = 0; i < frames; ++i) out[i] += temp[i];
     }
 
-    // Complete crossfades on buffers of ugens that have history
-    save_it = saved_states.begin();
-    while ( save_it != saved_states.end() ){
-      // We prepare to crossfade inside of the buffers if necessary
-      if (data_[save_it->first].need_crossfade_){
-        save_it->first->get_ugen()->patch_buffer(data_[save_it->first].crossfade_, frames);
-        delete[] data_[save_it->first].crossfade_;
+    // Cleans up any extra buffers that were created during crossfade
+    for (auto it = saved_states.begin(); it != saved_states.end(); ++it){
+      if (data_[it->first].need_crossfade_){
+        delete[] data_[it->first].crossfade_wet_;
+        delete[] data_[it->first].crossfade_dry_;
+        data_[it->first].need_crossfade_ = false;
       }  
-      ++save_it;
     }
 
-
-    // Crossfade between graphs
-    double frac = 0;
-    for (int i = 0; i < frames; ++i) {
-      frac = i / (1.0 * frames);
-      out[i] = frac * present[i] + (1-frac) * past[i];
-    }
-
+    // Cleans up any discs that are on the to_delete list
     finalize_delete();
-    
-    delete past;
-    delete present;
   }
 
   // The graph has not changed
   else {
-    auto it = sinks_.begin();
-    while (it != sinks_.end()) {
-      temp = pull_result_buffer(*it, frames);
+    for (auto it = sinks_.begin(); it != sinks_.end(); it++) {
+      temp = pull_result_buffer(*it, frames, 0);
       // copy new branch into output buffer
       for (int i = 0; i < frames; ++i){
         out[i] += temp[i];
       }
-      ++it;
     }
   }
 
@@ -339,7 +299,8 @@ void UGenGraphBuilder::load_buffer(double *out, int frames){
 // Reverses the push architechture of "out = tick(in)" to recursively pull
 // samples to the output sinks from the inputs. Works on an entire buffer
 // The buffer out is cleared of any previous contents
-double *UGenGraphBuilder::pull_result_buffer(Disc *k, int length, bool past_data){
+// State - 0: Normal, 1: Prepare, 2: Recall
+double *UGenGraphBuilder::pull_result_buffer(Disc *k, int length, int state){
   if (data_[k].computed) return k->get_ugen()->current_buffer();
 
   double *wet = new double[length];
@@ -351,7 +312,7 @@ double *UGenGraphBuilder::pull_result_buffer(Disc *k, int length, bool past_data
   double *temp, wet_level, scale;
   // Current Inputs
   std::vector<Disc *> input_list;
-  if (past_data){
+  if (state == 1){
     input_list = data_[k].past_inputs_;
   } else {
     input_list = data_[k].inputs_;
@@ -362,14 +323,14 @@ double *UGenGraphBuilder::pull_result_buffer(Disc *k, int length, bool past_data
     wet_level = get_mix_level(k, *it);
     
     // Scales down based on fan out
-    if (past_data) {
+    if (state == 1) {
       scale = scale_factor( data_[*it].past_outputs_.size() );
     }
     else{
       scale = scale_factor( data_[*it].outputs_.size() );
     } 
     // Computes buffer coming from previous ugen
-    temp = pull_result_buffer(*it, length, past_data);
+    temp = pull_result_buffer(*it, length, state);
     
     // Computes wet dry mix
     for (int i = 0; i < length; ++i){
@@ -378,11 +339,33 @@ double *UGenGraphBuilder::pull_result_buffer(Disc *k, int length, bool past_data
     }  
   }
 
-  // crossfade inside ugen buffers? instead of overwriting completely, we can 
-  // fadeout in the savestate part and fadein in the process buffer part
+  // We need to store the input buffers so that they may be 
+  // used in the recall state
+  if (state == 1){
+    data_[k].crossfade_wet_ = new double[length];
+    data_[k].crossfade_dry_ = new double[length];
+    for (int i = 0; i < length; ++i){
+      data_[k].crossfade_wet_[i] = wet[i]; 
+      data_[k].crossfade_dry_[i] = dry[i]; 
+    }
+    data_[k].need_crossfade_ = true;
+  }
+
+  // We recall the state and crossfade previous inputs and past inputs 
+  // before they go into the current disc
+  if (state == 2){
+    if (data_[k].need_crossfade_) {
+      double frac = 0;
+      for (int i = 0; i < length; ++i){
+        frac = i / (length * 1.0);
+        wet[i] = frac * data_[k].crossfade_wet_[i] + (1-frac) * wet[i]; 
+        dry[i] = frac * data_[k].crossfade_dry_[i] + (1-frac) * dry[i]; 
+      }
+    }
+  }
+
   double *out_buffer = k->get_ugen()->process_buffer(wet, length);
   
-  // Chorus buffer doesn't have a crossfade
   data_[k].computed = true;
   // Merges wet and dry
   if (!k->get_ugen()->is_input()){

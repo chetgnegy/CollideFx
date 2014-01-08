@@ -134,7 +134,8 @@ private:
   // samples to the output sinks from the inputs. past_data allows us to use
   // the previously stored graph. This is used for crossfading between graph 
   // changes
-  double *pull_result_buffer(Disc *k, int length, bool past_data = false);
+  // State - 0: Normal, 1: Prepare, 2: Recall
+  double *pull_result_buffer(Disc *k, int length, int state = 0);
 
   // Reverses the "to" and "from" ends of a wire
   void switch_wire_direction(Wire &w);
@@ -198,7 +199,8 @@ struct GraphData{
   bool past_computed;
 
   bool need_crossfade_;
-  double *crossfade_;
+  double *crossfade_dry_;
+  double *crossfade_wet_;
   
 };
 

@@ -20,10 +20,6 @@
 #include "Menu.h"
 /*
 Known Bugs/Issues-- 
-  Pops when switching between signal graphs
-  - Ugens with effect buffers don't fade well
-  - BitCrusher, Distortion, LPF, RingMod, Tremolo work well
-  
   Can't change buffer size without crash
 
 Things to add: 

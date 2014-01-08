@@ -536,16 +536,6 @@ void Chorus::recall_state(UGenState *state){
   delete state;
 }
 
-void Chorus::patch_buffer(double *buffer, int length){
-  double frac = 0;
-  for (int i = 0; i < length; ++i){
-    frac = i / (1.0 * length);
-    buffer_[(buf_write_-1-i+buffer_size_)%buffer_size_] = (1-frac) * buffer_[(buf_write_-1-i+buffer_size_)%buffer_size_] 
-                            + frac * buffer[length-1-i];
-  }
-}
-
-
 
 
 
@@ -623,15 +613,6 @@ void Delay::recall_state(UGenState *state){
     }
   } else { printf("Mismatched buffer size (Delay::Recall_State)\n"); }
   delete state;
-}
-void Delay::patch_buffer(double *buffer, int length){
-  double frac = 0;
-  int b_size = static_cast<int>(buffer_size_);
-  for (int i = 0; i < length; ++i){
-    frac = i / (1.0 * length);
-    buffer_[(buf_write_-1-i+b_size)%b_size] = (1-frac) * buffer_[(buf_write_-1-i+b_size)%b_size] 
-                            + frac * buffer[length-1-i];
-  }
 }
 
 
@@ -948,15 +929,6 @@ void Granular::recall_state(UGenState *state){
   delete state;
 }
 
-void Granular::patch_buffer(double *buffer, int length){
-  double frac = 0;
-  for (int i = 0; i < length; ++i){
-    frac = i / (1.0 * length);
-    buffer_[(buf_write_-1-i+buffer_size_)%buffer_size_] = (1-frac) * buffer_[(buf_write_-1-i+buffer_size_)%buffer_size_] 
-                            + frac * buffer[length-1-i];
-  }
-}
-
 
 
 
@@ -1162,15 +1134,6 @@ void Looper::recall_state(UGenState *state){
   delete state;
 }
 
-void Looper::patch_buffer(double *buffer, int length){
-  double frac = 0;
-  for (int i = 0; i < length; ++i){
-    frac = i / (1.0 * length);
-    buffer_[(buf_write_-1-i+buffer_size_)%buffer_size_] = (1-frac) * buffer_[(buf_write_-1-i+buffer_size_)%buffer_size_] 
-                            + frac * buffer[length-1-i];
-  }
-}
-
 
 
 
@@ -1230,8 +1193,8 @@ void RingMod::recall_state(UGenState *state){
   RingModState *s = static_cast<RingModState *>(state);
   sample_count_ = s->sample_count_;
   delete state;
-}
 
+}
 
 
 
@@ -1335,6 +1298,9 @@ UGenState* Reverb::save_state(){
   return s;
 
 }
+
+
+
 void Reverb::recall_state(UGenState *state){
   ReverbState *s = static_cast<ReverbState *>(state);
   auto it = fb_->filters_.begin();
@@ -1352,9 +1318,6 @@ void Reverb::recall_state(UGenState *state){
   }
 
   delete state;
-}
-void Reverb::patch_buffer(double *buffer, int length){
-  (*aaf_.begin())->patch_buffer(buffer, length);
 }
 
 
