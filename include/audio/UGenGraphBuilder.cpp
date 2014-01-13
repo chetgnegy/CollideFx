@@ -229,7 +229,6 @@ void UGenGraphBuilder::load_buffer(double *out, int frames){
   for (int i = 0; i < frames; ++i) out[i] = 0;
       
   double *temp;
-  int count = 0;
   find_mix_levels();
   // There has been a change in the graph
   if (signature_ != past_signature_){
@@ -246,24 +245,28 @@ void UGenGraphBuilder::load_buffer(double *out, int frames){
     // Compute for past graph, this stores a buffer in the data_ object
     // that is accessed by sending a 2 state to the pull_result_buffer 
     // method
-    for (auto it = old_sinks_.begin(); it != old_sinks_.end(); ++it) {
+    for (std::vector<Disc *>::iterator it = old_sinks_.begin(); 
+      it != old_sinks_.end(); ++it) {
       pull_result_buffer(*it, frames, 1);
     }  
 
     // Recover saved states
-    for (auto it = saved_states.begin(); it != saved_states.end(); ++it){
+    for (std::map<Disc *, UGenState *>::iterator it = saved_states.begin(); 
+      it != saved_states.end(); ++it){
       it->first->get_ugen()->recall_state(it->second);      
       data_[it->first].computed = false;
     }
 
     // Compute for present graph (internally crossfading)
-    for (auto it = sinks_.begin(); it != sinks_.end(); ++it) {
+    for (std::vector<Disc *>::iterator it = sinks_.begin(); 
+      it != sinks_.end(); ++it) {
       temp = pull_result_buffer(*it, frames, 2);
       for (int i = 0; i < frames; ++i) out[i] += temp[i];
     }
 
     // Cleans up any extra buffers that were created during crossfade
-    for (auto it = saved_states.begin(); it != saved_states.end(); ++it){
+    for (std::map<Disc *, UGenState *>::iterator it = saved_states.begin(); 
+      it != saved_states.end(); ++it){
       if (data_[it->first].need_crossfade_){
         delete[] data_[it->first].crossfade_wet_;
         delete[] data_[it->first].crossfade_dry_;
@@ -277,7 +280,8 @@ void UGenGraphBuilder::load_buffer(double *out, int frames){
 
   // The graph has not changed
   else {
-    for (auto it = sinks_.begin(); it != sinks_.end(); it++) {
+    for (std::vector<Disc *>::iterator it = sinks_.begin(); 
+      it != sinks_.end(); it++) {
       temp = pull_result_buffer(*it, frames, 0);
       // copy new branch into output buffer
       for (int i = 0; i < frames; ++i){
@@ -318,7 +322,8 @@ double *UGenGraphBuilder::pull_result_buffer(Disc *k, int length, int state){
     input_list = data_[k].inputs_;
   }
 
-  for (auto it = input_list.begin(); it != input_list.end(); ++it) {
+  for (std::vector< Disc* >::iterator it = input_list.begin(); 
+    it != input_list.end(); ++it) {
     // Finds mix level
     wet_level = get_mix_level(k, *it);
     
@@ -547,7 +552,7 @@ bool UGenGraphBuilder::remove_disc(Disc *d){
   else vec = &fx_;
 
   // Puts disc in to_delete vector
-  auto it = vec->begin();
+  std::vector< Disc* >::iterator it = vec->begin();
   while (it != vec->end()){
     if ((*it) == d){
       to_delete_.push_back(*it);
@@ -563,11 +568,11 @@ bool UGenGraphBuilder::finalize_delete(){
   if (to_delete_.size() == 0) return false;
 
   //Deletes discs from to_delete_ vector
-  auto it = to_delete_.begin();
+  std::vector< Disc* >::iterator it = to_delete_.begin();
   while (it != to_delete_.end()){
     // Deletes data associated with disc
     if (data_.count(*it)){
-      auto itr = data_.begin();
+      std::map < Disc *, GraphData >::iterator itr = data_.begin();
       while (itr != data_.end()) {
         if (itr->first == *it) {
           data_.erase(itr);
@@ -606,7 +611,8 @@ void UGenGraphBuilder::calculate_fft(){
   }
   double weight, weight_total = 0;
   int k = 0;
-  for (auto it = fft_list_.begin(); it!=fft_list_.end(); ++it){
+  for (std::list<complex *>::iterator it = fft_list_.begin(); 
+      it!=fft_list_.end(); ++it){
     weight = 1/(++k*1.0+7);
     for (int i = 0; i < buffer_length_; ++i){
       fft_visual_[i]+= (*it)[i] * weight;

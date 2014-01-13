@@ -2357,7 +2357,7 @@ void MidiOutWinMM :: sendMessage( std::vector<unsigned char> *message )
 
 #if defined(__WINDOWS_KS__)
 
-#include <string>
+#include <cstring>
 #include <vector>
 #include <memory>
 #include <stdexcept>

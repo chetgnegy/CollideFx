@@ -14,7 +14,7 @@ UNAME := $(shell uname)
 
 ifeq ($(UNAME), Linux)
 FLAGS=-D__UNIX_JACK__ -c 
-LIBS=-lasound -lpthread -ljack -lstdc++ -lm
+LIBS=-lasound -lpthread -ljack -lstdc++ -lm -lglut -lGL -lGLU
 endif
 ifeq ($(UNAME), Darwin)
 FLAGS=-D__MACOSX_CORE__ -c -g

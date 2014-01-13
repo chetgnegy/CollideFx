@@ -619,7 +619,7 @@ void Menu::make_disc(int button){
           new_disc_->set_texture(9);
           break; 
     }
-    // Bandpass
+    // Granular
     case 205: {
           Granular *u_gn = new Granular();
           new_disc_ = new Disc(u_gn, rad, true);

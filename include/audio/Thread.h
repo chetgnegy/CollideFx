@@ -14,28 +14,18 @@
 #if !defined(__THREAD_H)
 #define __THREAD_H
 
+
 #include "Stk.h"
+#include <pthread.h>
+#include <cstring>
 
-#if (defined(__OS_IRIX__) || defined(__OS_LINUX__) || defined(__OS_MACOSX__)) || defined(__WINDOWS_PTHREAD__)
+#define THREAD_TYPE
+typedef pthread_t THREAD_HANDLE;
+typedef void * THREAD_RETURN;
+typedef void * (*THREAD_FUNCTION)(void *);
+typedef pthread_mutex_t MUTEX;
 
-  #include <pthread.h>
-  #define THREAD_TYPE
-  typedef pthread_t THREAD_HANDLE;
-  typedef void * THREAD_RETURN;
-  typedef void * (*THREAD_FUNCTION)(void *);
-  typedef pthread_mutex_t MUTEX;
 
-#elif defined(__OS_WINDOWS__)
-
-  #include <windows.h>
-  #include <process.h>
-  #define THREAD_TYPE __stdcall
-  typedef unsigned long THREAD_HANDLE;
-  typedef unsigned THREAD_RETURN;
-  typedef unsigned (__stdcall *THREAD_FUNCTION)(void *);
-  typedef CRITICAL_SECTION MUTEX;
-
-#endif
 
 class Thread : public Stk
 {

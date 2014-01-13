@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.1415926-2.5-1.40.14 (TeX Live 2013) (format=pdflatex 2013.5.30)  7 JAN 2014 18:26
+This is pdfTeX, Version 3.1415926-2.5-1.40.14 (TeX Live 2013) (format=pdflatex 2013.5.30)  9 JAN 2014 21:11
 entering extended mode
  \write18 enabled.
  %&-line parsing enabled.
@@ -928,11 +928,11 @@ Underfull \vbox (badness 3746) has occurred while \output is active []
  [1
 
 {/usr/local/texlive/2013/texmf-var/fonts/map/pdftex/updmap/pdftex.map} <./cfxsc
-reenshot.png>] <flow.png, id=88, 2200.22pt x 1316.92pt>
+reenshot.png>] <flow.png, id=88, 1100.11pt x 658.46pt>
 File: flow.png Graphic file (type png)
  <use flow.png>
 Package pdftex.def Info: flow.png used on input line 80.
-(pdftex.def)             Requested size: 483.69687pt x 289.50226pt.
+(pdftex.def)             Requested size: 483.69687pt x 289.5123pt.
 LaTeX Font Info:    Try loading font information for T1+phv on input line 81.
 
 (/usr/local/texlive/2013/texmf-dist/tex/latex/psnfss/t1phv.fd
@@ -961,10 +961,6 @@ Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 293.
 Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 293.
 Package rerunfilecheck Info: File `docs.out' has not changed.
 (rerunfilecheck)             Checksum: 4BB5E833BB92829D85891CF8D46E1B74;1057.
-
-
-LaTeX Warning: Label(s) may have changed. Rerun to get cross-references right.
-
 Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 293.
  ) 
 Here is how much of TeX's memory you used:
@@ -987,7 +983,7 @@ xmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb></usr/local/texlive/2013/texm
 f-dist/fonts/type1/urw/helvetic/uhvr8a.pfb></usr/local/texlive/2013/texmf-dist/
 fonts/type1/urw/times/utmb8a.pfb></usr/local/texlive/2013/texmf-dist/fonts/type
 1/urw/times/utmr8a.pfb>
-Output written on docs.pdf (7 pages, 527608 bytes).
+Output written on docs.pdf (7 pages, 479762 bytes).
 PDF statistics:
  204 PDF objects out of 1000 (max. 8388607)
  179 compressed objects within 2 object streams

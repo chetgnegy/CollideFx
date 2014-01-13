@@ -879,7 +879,7 @@ double Granular::tick(double in){
   double sum = 0;
   double window,window_length;
   int this_sample;
-  auto it = granules_.begin();
+  std::vector<Granule>::iterator it = granules_.begin();
   while (it != granules_.end()){
     this_sample = (it->start + it->at)%buffer_size_;
     if (it->end == (it->start + it->at)%buffer_size_ ){
@@ -1280,7 +1280,7 @@ void Reverb::set_params(double p1, double p2){
 
 UGenState* Reverb::save_state(){
   ReverbState *s = new ReverbState();
-  auto it = fb_->filters_.begin();
+  std::list<DigitalFilter *>::iterator it = fb_->filters_.begin();
   int i = 0;
   s->comb_state_ = new DigitalFilterState*[8];
   while (fb_->filters_.size() > 0 && it != fb_->filters_.end()) {  
@@ -1289,7 +1289,7 @@ UGenState* Reverb::save_state(){
   }
 
   s->ap_state_ = new DigitalFilterState*[4];
-  auto it2 = aaf_.begin();
+  std::list<AllpassApproximationFilter *>::iterator it2 = aaf_.begin();
   i = 0;
   while (aaf_.size() > 0 && it2 != aaf_.end()) {  
     s->ap_state_[i++] = (*it2)->get_state();
@@ -1303,14 +1303,14 @@ UGenState* Reverb::save_state(){
 
 void Reverb::recall_state(UGenState *state){
   ReverbState *s = static_cast<ReverbState *>(state);
-  auto it = fb_->filters_.begin();
+  std::list<DigitalFilter *>::iterator it = fb_->filters_.begin();
   int i = 0;
   while (fb_->filters_.size() > 0 && it != fb_->filters_.end()) {  
     (*it)->set_state(s->comb_state_[i++]);
     ++it;
   }
 
-  auto it2 = aaf_.begin();
+  std::list<AllpassApproximationFilter *>::iterator it2 = aaf_.begin();
   i = 0;
   while (aaf_.size() > 0 && it2 != aaf_.end()) {  
     (*it2)->set_state(s->ap_state_[i++]);

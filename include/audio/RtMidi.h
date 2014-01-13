@@ -46,7 +46,7 @@
 #define RTMIDI_H
 
 #include "RtError.h"
-#include <string>
+#include <cstring>
 #include <vector>
 
 class RtMidi

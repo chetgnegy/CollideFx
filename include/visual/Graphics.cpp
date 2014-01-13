@@ -23,7 +23,7 @@ std::list<Moveable *> Graphics::move_list_;
 
 Moveable *clicked;
 bool valid_clicked;
-long time_now;
+long time_pre = 0;
 struct timeval timer; 
 float z_distance = -20.0;
 float scale = .45;
@@ -70,7 +70,7 @@ int Graphics::initialize(int argc, char *argv[]){
   glutMouseFunc(mouse);
   glutMotionFunc(mouseMotion);
   glutKeyboardFunc(keyboard);
-  time_now = -1;
+  time_pre = -1;
 
 
   return 0;
@@ -163,20 +163,25 @@ bool Graphics::remove_moveable(Moveable *k){
  }
 // #----------GLUT CODE -----------------#
 
-
-
+int refresh_rate = 20000; //us
 //Is the main loop. Runs repeatedly.
 void display() {
-  long new_time = (long)(timer.tv_sec*1000000+timer.tv_usec);
-  long time_diff =  new_time - time_now;
-  if(time_diff < 5000)usleep(5000 - time_diff);
-
-  gettimeofday(&timer, NULL);  
-  new_time = (long)(timer.tv_sec*1000000+timer.tv_usec);
-  time_diff =  new_time - time_now;
-  if (time_now > 0){
+  long time_diff = 0;
+  if (time_pre > 0){
+    gettimeofday(&timer, NULL);  
+    long time_post = (long)(timer.tv_sec*1000000+timer.tv_usec);
+    time_diff =  time_post - time_pre;
+    
+    if(time_diff < refresh_rate)usleep(refresh_rate - time_diff);
+    
+    gettimeofday(&timer, NULL);  
+    time_post = (long)(timer.tv_sec*1000000+timer.tv_usec);
+    time_diff =  time_post - time_pre;
+    
     Physics::update(time_diff*1.0e-6);
   }
+  gettimeofday(&timer, NULL);  
+  time_pre = (long)(timer.tv_sec*1000000+timer.tv_usec);
   
   // clear the color and depth buffers
   glMatrixMode (GL_MODELVIEW);
@@ -203,7 +208,7 @@ void display() {
     //Process each effect in chain
     int count = 0;
     while (it != Graphics::draw_list_.end()) {
-      if (time_now > 0){
+      if (time_pre > 0){
         (*it)->advance_time(time_diff*1.0e-6);
       }
       glPushMatrix();
@@ -260,7 +265,6 @@ void display() {
   // swap the double buffer
   glutSwapBuffers();
 
-  time_now = new_time;
   
 }
 

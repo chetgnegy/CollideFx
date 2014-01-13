@@ -119,7 +119,7 @@
 #include <cstring>
 #include <iostream>
 #include <sstream>
-#include <string>
+#include <cstring>
 #include <cassert>
 
 #ifdef VMATH_NAMESPACE

@@ -73,7 +73,7 @@ public:
   
   void set_orb_maintain(int maintain){
     maintain_orbs_ = maintain;
-    max_orbs_ = max(maintain, max_orbs_);
+    max_orbs_ = std::max(maintain, max_orbs_);
   };
 
   // Creates a new orb to hang out around this disc

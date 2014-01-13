@@ -21,7 +21,13 @@
 #include "RgbImage.h"
 
 #ifndef RGBIMAGE_DONT_USE_OPENGL
-#include "GLUT/glut.h"
+#ifdef __MACOSX_CORE__
+  #include <GLUT/glut.h>
+#else
+  #include <GL/gl.h>
+  #include <GL/glu.h>
+  #include <GL/glut.h>
+#endif
 #endif
 
 RgbImage::RgbImage( int numRows, int numCols )

@@ -10,10 +10,11 @@
 #ifndef _CLASSICWAVEFORM_H_
 #define _CLASSICWAVEFORM_H_
 
-#include <string>
+#include <stdio.h>
+#include <cstring>
 #include <list>
 #include <math.h>
-#include <thread.h>
+#include <Thread.h>
 
 struct Note{
   bool flag_for_deletion;

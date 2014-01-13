@@ -14,7 +14,7 @@
 
 #include "Stk.h"
 #include <stdio.h>
-#include <string.h>
+#include <string>
 
 MY_FLOAT Stk :: srate = (MY_FLOAT) SRATE;
 std::string Stk :: rawwavepath = RAWWAVE_PATH;

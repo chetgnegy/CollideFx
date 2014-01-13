@@ -47,7 +47,8 @@
 #ifndef __RTAUDIO_H
 #define __RTAUDIO_H
 
-#include <string>
+#include <stdio.h>
+#include <cstring>
 #include <vector>
 #include "RtError.h"
 

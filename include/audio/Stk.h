@@ -15,8 +15,8 @@
 #if !defined(__STK_H)
 #define __STK_H
 
+#include <cstring>
 #include <string>
-using namespace std;
 
 // Most data in STK is passed and calculated with the
 // following user-definable floating-point type.  You

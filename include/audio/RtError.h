@@ -14,7 +14,7 @@
 
 #include <exception>
 #include <iostream>
-#include <string>
+#include <cstring>
 
 class RtError : public std::exception
 {

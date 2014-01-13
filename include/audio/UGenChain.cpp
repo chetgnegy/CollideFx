@@ -173,7 +173,7 @@ int UGenChain::initialize_midi(){
       std::cin >> s;
       try{
         priority_port = atoi(s.c_str());
-      }catch(exception e){//try again, fool
+      }catch(int e){//try again, fool
         priority_port = -1;
       }
     }while(priority_port<0 || priority_port>nPorts || !is_number(s.c_str()));

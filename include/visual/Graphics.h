@@ -18,7 +18,7 @@
 #include "Moveable.h"
 #include "Physics.h"
 #include "RgbImage.h"
-
+#include <unistd.h> //usleep
 #ifdef __MACOSX_CORE__
   #include <GLUT/glut.h>
 #else

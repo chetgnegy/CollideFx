@@ -45,7 +45,7 @@ void Physics::update(double update_time){
   for (int i = 0; i < standard_iterations; ++i){
 
     if (all_.size() > 0) {
-      auto it = all_.begin();
+      std::list<Physical *>::iterator it = all_.begin();
       while (it != all_.end()) {
         (*it)->acc_ = (*it)->external_forces()/(*it)->m_;
         (*it)->ang_acc_ = (*it)->external_torques()/(*it)->I_;
@@ -57,7 +57,7 @@ void Physics::update(double update_time){
     check_in_bounds();
 
     if (all_.size() > 0) {
-      auto it = all_.begin();
+      std::list<Physical *>::iterator it = all_.begin();
       while (it != all_.end()) {
         integrate_translational(update, *it); 
         if (!(*it)->rotates()) integrate_rotational(update, *it); 
@@ -103,8 +103,8 @@ void Physics::collision_prevention(){
     //int to_remove = recent_collisions_.size();
     
     if (all_.size() > 1) {
-      auto it_a = all_.begin();
-      auto it_b = all_.begin();
+      std::list<Physical *>::iterator it_a = all_.begin();
+      std::list<Physical *>::iterator it_b = all_.begin();
       while (it_a != all_.end()) {
         if ( (*it_a)->has_collisions() ){ // Only if A can collide
           it_b = it_a;
@@ -203,7 +203,7 @@ void Physics::collide(Physical* a, Physical* b){
 void Physics::check_in_bounds(){
   if (all_.size() > 0) {
       double mu = .2;
-      auto it = all_.begin();
+      std::list<Physical *>::iterator it = all_.begin();
       double impulse, r;
       Vector3d tang_v, fric_dir, f_fric_max, dw_fric_max, dv_fric_max;
       
@@ -290,7 +290,7 @@ bool Physics::is_clear_area(double x, double y, double r){
     return false;
   }
   if (all_.size() > 1) {
-    auto it_a = all_.begin();
+    std::list<Physical *>::iterator it_a = all_.begin();
     while (it_a != all_.end()) {
       if ( (*it_a)->has_collisions()){
         Vector3d between = Vector3d(x,y,0) - (*it_a)->pos_;

@@ -36,7 +36,7 @@ Disc::Disc(UnitGenerator *u, double radius, bool ghost, int initial_orbs, int ma
   color_ = Vector3d(0,0,1);
   initial_orbs_ = initial_orbs;
   maintain_orbs_ = maintain_orbs;
-  max_orbs_ = max(max(max_orbs, initial_orbs_), maintain_orbs_);
+  max_orbs_ = std::max(std::max(max_orbs, initial_orbs_), maintain_orbs_);
   orb_color_scheme_ = 0;
   brightness_ = 0;
   pulse_timer_ = 100;

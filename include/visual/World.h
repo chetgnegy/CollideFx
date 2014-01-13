@@ -8,9 +8,9 @@
 #define _WORLD_H_
 
 #include <math.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <algorithm>
-#include <iostream>//remove
 #include "Drawable.h" //imports opengl stuff, too
 
 typedef struct {
