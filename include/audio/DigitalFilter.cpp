@@ -1,5 +1,6 @@
 #include "DigitalFilter.h"
 
+float DigitalFilter::sample_rate = 44100;
 
 //Creates a generic filter with no history or previous input
 DigitalFilter::DigitalFilter(double a[3], double b[3]){
@@ -24,7 +25,9 @@ DigitalFilter::DigitalFilter(double center, double Q, double gain) {
 DigitalFilter::~DigitalFilter() {}
 
 
-
+void DigitalFilter::set_sample_rate(int sr){
+  DigitalFilter::sample_rate = sr;
+}
 
 //Advances the filter by a single sample, in.
 complex DigitalFilter::tick(complex in) {
@@ -90,8 +93,8 @@ void DigitalBandpassFilter::calculate_coefficients() {
   double lambda_1 = TWOPI * corner_frequency_ - bandwidth / 2.0;
   double lambda_2 = TWOPI * corner_frequency_ + bandwidth / 2.0;
 
-  double gamma_0 = 4 * SAMPLE_RATE * SAMPLE_RATE;
-  double gamma_1 = 2 * SAMPLE_RATE * (bandwidth);
+  double gamma_0 = 4 * DigitalFilter::sample_rate * DigitalFilter::sample_rate;
+  double gamma_1 = 2 * DigitalFilter::sample_rate * (bandwidth);
   double gamma_2 = lambda_1 * lambda_2;
 
   double denominator = gamma_0 + gamma_1 + gamma_2;
@@ -114,15 +117,15 @@ void DigitalBandstopFilter::calculate_coefficients() {
   double lambda_1 = TWOPI * corner_frequency_ - bandwidth / 2.0;
   double lambda_2 = TWOPI * corner_frequency_ + bandwidth / 2.0;
 
-  double gamma_0 = 4 * SAMPLE_RATE * SAMPLE_RATE;
-  double gamma_1 = 2 * SAMPLE_RATE * (bandwidth);
+  double gamma_0 = 4 * DigitalFilter::sample_rate * DigitalFilter::sample_rate;
+  double gamma_1 = 2 * DigitalFilter::sample_rate * (bandwidth);
   double gamma_2 = lambda_1 * lambda_2;
 
   double denominator = gamma_0 + gamma_1 + gamma_2;
   double alpha_1 = (gamma_0 - gamma_1 - gamma_2) / denominator;
   double alpha_2 = (gamma_0 + gamma_1 - gamma_2) / denominator;
-  double beta = -2 * (4 * pow(SAMPLE_RATE, 2) - gamma_2)
-      / (4 * pow(SAMPLE_RATE, 2) + gamma_2);
+  double beta = -2 * (4 * pow(DigitalFilter::sample_rate, 2) - gamma_2)
+      / (4 * pow(DigitalFilter::sample_rate, 2) + gamma_2);
   b_[0] = .5 * (2 + alpha_1 - alpha_2);
   b_[1] = beta * b_[0];
   b_[2] = b_[0];
@@ -136,8 +139,8 @@ void DigitalBandstopFilter::calculate_coefficients() {
 void DigitalLowpassFilter::calculate_coefficients() {
 
   double gamma_0 = 4;
-  double gamma_1 = 2 / SAMPLE_RATE * (TWOPI * corner_frequency_) / Q_;
-  double gamma_2 = pow(TWOPI * corner_frequency_ / SAMPLE_RATE, 2);
+  double gamma_1 = 2 / DigitalFilter::sample_rate * (TWOPI * corner_frequency_) / Q_;
+  double gamma_2 = pow(TWOPI * corner_frequency_ / DigitalFilter::sample_rate, 2);
 
   double denominator = gamma_0 + gamma_1 + gamma_2;
   double alpha_1 = (gamma_0 - gamma_1 - gamma_2) / denominator;
@@ -157,8 +160,8 @@ void DigitalLowpassFilter::calculate_coefficients() {
 void DigitalHighpassFilter::calculate_coefficients() {
   
   double gamma_0 = 4;
-  double gamma_1 = 2 / SAMPLE_RATE * (TWOPI * corner_frequency_) / Q_;
-  double gamma_2 = pow(TWOPI * corner_frequency_ / SAMPLE_RATE, 2);
+  double gamma_1 = 2 / DigitalFilter::sample_rate * (TWOPI * corner_frequency_) / Q_;
+  double gamma_2 = pow(TWOPI * corner_frequency_ / DigitalFilter::sample_rate, 2);
 
   double denominator = gamma_0 + gamma_1 + gamma_2;
   double alpha_1 = (gamma_0 - gamma_1 - gamma_2) / denominator;

@@ -32,8 +32,10 @@ public:
 
   static const double kMaxDist = 7.0;
 
-  UGenGraphBuilder(int buffer_length);
+  UGenGraphBuilder();
   ~UGenGraphBuilder();
+
+  void initialize(int buffer_length, int sample_rate);
 
   // Prints all data about the graph, including the nodes,
   // their type and positions

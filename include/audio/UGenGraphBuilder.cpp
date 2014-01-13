@@ -12,13 +12,10 @@
 
 bool compare_wires(Wire i, Wire j);
 
-UGenGraphBuilder::UGenGraphBuilder(int length){
-  buffer_length_ = length;
-  fft_visual_ = new complex[buffer_length_];
+UGenGraphBuilder::UGenGraphBuilder(){
   buffer_ready_ = false;
   anti_aliasing_ = new DigitalLowpassFilter(15000, 1, 1);
   low_pass_ = new DigitalHighpassFilter(10, 1, 1);
-
 }
 
 UGenGraphBuilder::~UGenGraphBuilder(){
@@ -27,6 +24,11 @@ UGenGraphBuilder::~UGenGraphBuilder(){
   delete[] fft_visual_;
 }
 
+void UGenGraphBuilder::initialize(int length, int sample_rate){
+  buffer_length_ = length;
+  fft_visual_ = new complex[buffer_length_];
+  UnitGenerator::set_audio_settings(length, sample_rate);
+}
 
 
 // Prints all data about the graph, including the nodes,
@@ -681,9 +683,9 @@ const char *UGenGraphBuilder::text_box_content(){
     }
     if (strcmp("Looper", Disc::spotlight_disc_->get_ugen()->name())==0){
       Looper *l = static_cast<Looper *>(Disc::spotlight_disc_->get_ugen());
-      std::stringstream s;
-      s << " " << l->get_start_counter() << " ";
-      return s.str().c_str();
+      sprintf(l->param3_str_, " %d",l->get_start_counter());
+      return l->param3_str_;
+
     }
   }
   return "";

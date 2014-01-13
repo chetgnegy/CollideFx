@@ -10,12 +10,21 @@
 
 #include "UnitGenerator.h"
 
+// Default values
+int UnitGenerator::sample_rate = 44100;
+int UnitGenerator::buffer_length = 512;
+
 float interpolate(float *array, int length, double index);
 double interpolate(double *array, int length, double index);
 
 
 // #--------------Unit Generator Base Classes ----------------#
 
+void UnitGenerator::set_audio_settings(int bl, int sr){
+  UnitGenerator::buffer_length = bl;
+  UnitGenerator::sample_rate = sr;
+  DigitalFilter::set_sample_rate(sr);
+}
 
 // Allows user to set the generic parameters, bounds must already be set
 void UnitGenerator::set_params(double p1, double p2){
@@ -25,7 +34,7 @@ void UnitGenerator::set_params(double p1, double p2){
 
 // Allows entire buffers to be processed at once
 double *UnitGenerator::process_buffer(double *buffer, int length){
-  if (length != ugen_buffer_size_) printf("Buffer size mismatch");
+  if (length != ugen_buffer_size_) printf("Buffer size mismatch! Input: %d  internal: %d\n", length, ugen_buffer_size_);
     for (int i = 0; i < length; ++i){
       ugen_buffer_[i] = tick(buffer[i]);  
   }
@@ -44,7 +53,7 @@ double UnitGenerator::buffer_energy(){
 
 // Gets the FFT of the unit generator's current buffer
 void UnitGenerator::buffer_fft(int full_length, complex *out){
-  if (ugen_buffer_size_ != ugen_buffer_size_) printf("Buffer size mismatch");
+  if (full_length != ugen_buffer_size_) printf("FFT Buffer size mismatch! Input: %d  internal: %d\n", full_length, ugen_buffer_size_);
   complex *complex_arr_ = new complex[ugen_buffer_size_];
   for (int i = 0; i < ugen_buffer_size_; ++i){
     complex_arr_[i] = ugen_buffer_[i];
@@ -94,11 +103,23 @@ double UnitGenerator::clamp(double param_in, int which){
 
 const char *UnitGenerator::report_param(int which){
   std::stringstream s;
-  if (which == 1 & report_param1_ != NULL) 
-    s << *report_param1_ << " " << param1_units_;
-  else if (report_param2_ != NULL) 
-    s << *report_param2_ << " " << param2_units_;
-  return s.str().c_str();
+  if (which == 1 & report_param1_ != NULL) {
+    if ((int)*report_param1_ == *report_param1_)
+      sprintf(param1_str_, "%d",(int)(*report_param1_));
+    else
+      sprintf(param1_str_, "%.3f",*report_param1_);
+    return param1_str_;
+    
+  }
+  else if (report_param2_ != NULL) {
+    if ((int)(*report_param2_) == *report_param2_)
+      sprintf(param2_str_, "%d",(int)(*report_param2_));
+    else
+      sprintf(param2_str_, "%.3f",*report_param2_);
+    return param2_str_;
+    
+  }
+  return "";
 }
 
 void UnitGenerator::define_printouts(double *report_param1, const char *p1_units, 
@@ -151,14 +172,14 @@ MidiInputState::~MidiInputState(){delete[] buffer_;}
 
 // #------------Unit Generator Inherited Classes --------------#
 
-Input::Input(int length){
+Input::Input(){
     name_ = "Input";
     param1_name_ = "Volume";
     param2_name_ = "Not Used";
     set_limits(0, 10, 0, 1);
     set_params(1, 0);
     define_printouts(&param1_, "", NULL, "");
-    ugen_buffer_size_ = length;
+    ugen_buffer_size_ = UnitGenerator::buffer_length;
     ugen_buffer_ = new double[ugen_buffer_size_];
     for (int i = 0; i < ugen_buffer_size_; i++){
       ugen_buffer_[i] = 0;
@@ -184,7 +205,7 @@ void Input::set_sample(double val){
 // Sets the entire buffer
 void Input::set_buffer(double buffer[], int length){ 
   if (length != ugen_buffer_size_) {
-    printf("Resizing input 7buffer");
+    printf("Resizing input buffer\n");
     ugen_buffer_size_ = length;
     delete[] ugen_buffer_;
     ugen_buffer_ = new double[ugen_buffer_size_];
@@ -226,15 +247,15 @@ The sine wave listens to the midi controller
 param1 = attack (seconds)
 param2 = sustain (seconds)
 */
-Sine::Sine(double p1, double p2, int sample_rate, int length){
+Sine::Sine(double p1, double p2){
   name_ = "Sine";
   param1_name_ = "Attack";
   param2_name_ = "Sustain";
-  myCW_ = new ClassicWaveform("sine", 44100);
+  myCW_ = new ClassicWaveform("sine", UnitGenerator::sample_rate);
   set_limits(0.05, 10, 0.05, 10);
   define_printouts(&param1_, "s", &param2_, "s");
   set_params(p1, p2);
-  ugen_buffer_size_ = length;
+  ugen_buffer_size_ = UnitGenerator::buffer_length;
   ugen_buffer_ = new double[ugen_buffer_size_];
   for (int i = 0; i < ugen_buffer_size_; i++){
     ugen_buffer_[i] = 0;
@@ -265,15 +286,15 @@ The square wave listens to the midi controller
 param1 = attack
 param2 = sustain
 */
-Square::Square(double p1, double p2, int sample_rate, int length){
+Square::Square(double p1, double p2){
   name_ = "Square";
   param1_name_ = "Attack";
   param2_name_ = "Sustain";
-  myCW_ = new ClassicWaveform("square", 44100);
+  myCW_ = new ClassicWaveform("square", UnitGenerator::sample_rate);
   set_limits(0.05, 10, 0.05, 10);
   set_params(p1, p2);
   define_printouts(&param1_, "s", &param2_, "s");
-  ugen_buffer_size_ = length;
+  ugen_buffer_size_ = UnitGenerator::buffer_length;
   ugen_buffer_ = new double[ugen_buffer_size_];
   for (int i = 0; i < ugen_buffer_size_; i++){
     ugen_buffer_[i] = 0;
@@ -303,15 +324,15 @@ The tri wave listens to the midi controller
 param1 = attack
 param2 = sustain
 */
-Tri::Tri(double p1, double p2, int sample_rate, int length){
+Tri::Tri(double p1, double p2){
   name_ = "Tri";
   param1_name_ = "Attack";
   param2_name_ = "Sustain";
-  myCW_ = new ClassicWaveform("tri", 44100);
+  myCW_ = new ClassicWaveform("tri", UnitGenerator::sample_rate);
   set_limits(0.05, 10, 0.05, 10);
   set_params(p1, p2);
   define_printouts(&param1_, "s", &param2_, "s");
-  ugen_buffer_size_ = length;
+  ugen_buffer_size_ = UnitGenerator::buffer_length;
   ugen_buffer_ = new double[ugen_buffer_size_];
   for (int i = 0; i < ugen_buffer_size_; i++){
     ugen_buffer_[i] = 0;
@@ -339,15 +360,15 @@ The saw wave listens to the midi controller
 param1 = attack
 param2 = sustain
 */
-Saw::Saw(double p1, double p2, int sample_rate, int length){
+Saw::Saw(double p1, double p2){
   name_ = "Saw";
   param1_name_ = "Attack";
   param2_name_ = "Sustain";
-  myCW_ = new ClassicWaveform("saw", 44100);
+  myCW_ = new ClassicWaveform("saw", UnitGenerator::sample_rate);
   set_limits(0.05, 10, 0.05, 10);
   set_params(p1, p2);
   define_printouts(&param1_, "s", &param2_, "s");
-  ugen_buffer_size_ = length;
+  ugen_buffer_size_ = UnitGenerator::buffer_length;
   ugen_buffer_ = new double[ugen_buffer_size_];
   for (int i = 0; i < ugen_buffer_size_; i++){
     ugen_buffer_[i] = 0;
@@ -376,7 +397,7 @@ The bitcrusher effect quantizes and downsamples the input
   param1 = bits (casted to an int)
   param2 = downsampling factor
 */
-BitCrusher::BitCrusher(int p1, int p2, int length){
+BitCrusher::BitCrusher(int p1, int p2){
   name_ = "BitCrusher";
   param1_name_ = "Bits";
   param2_name_ = "Downsampling Factor";
@@ -385,7 +406,7 @@ BitCrusher::BitCrusher(int p1, int p2, int length){
   define_printouts(&param1_, "", &param2_, "x");
   sample_ = 0;
   sample_count_ = 0;
-  ugen_buffer_size_ = length;
+  ugen_buffer_size_ = UnitGenerator::buffer_length;
   ugen_buffer_ = new double[ugen_buffer_size_];
   for (int i = 0; i < ugen_buffer_size_; i++){
     ugen_buffer_[i] = 0;
@@ -441,11 +462,11 @@ The chorus effect delays the signal by a variable amount
   param1 = rate of the chorus LFO
   param2 = depth of the chorus effect
 */
-Chorus::Chorus(double p1, double p2, int sample_rate, int length){
+Chorus::Chorus(double p1, double p2){
   name_ = "Chorus";
   param1_name_ = "Rate";
   param2_name_ = "Depth";
-  sample_rate_ = sample_rate;
+  sample_rate_ = UnitGenerator::sample_rate;
   set_limits(0, 1, 0, 1);
   set_params(p1, p2);
   define_printouts(&report_hz_, "Hz", &param2_, "");
@@ -458,7 +479,7 @@ Chorus::Chorus(double p1, double p2, int sample_rate, int length){
   sample_count_ = 0;
   buf_write_ = 0;
 
-  ugen_buffer_size_ = length;
+  ugen_buffer_size_ = UnitGenerator::buffer_length;
   ugen_buffer_ = new double[ugen_buffer_size_];
   for (int i = 0; i < ugen_buffer_size_; i++){
     ugen_buffer_[i] = 0;
@@ -545,11 +566,11 @@ The delay effect plays the signal back some time later
   param1 = time in seconds until delay repeats
   param2 = amount of feedback in delay buffer
 */
-Delay::Delay(double p1, double p2, int sample_rate, int length){
+Delay::Delay(double p1, double p2){
   name_ = "Delay";
   param1_name_ = "Time";
   param2_name_ = "Feedback";
-  sample_rate_ = sample_rate;
+  sample_rate_ = UnitGenerator::sample_rate;
   set_limits(0.01, 2, 0, 1);
   define_printouts(&param1_, "s", &param2_, "");
   
@@ -562,7 +583,7 @@ Delay::Delay(double p1, double p2, int sample_rate, int length){
   for (int i = 0; i < max_buffer_size_; ++i) buffer_[i] = 0;
   buf_write_ = 0;
 
-  ugen_buffer_size_ = length;
+  ugen_buffer_size_ = UnitGenerator::buffer_length;
   ugen_buffer_ = new double[ugen_buffer_size_];
   for (int i = 0; i < ugen_buffer_size_; i++){
     ugen_buffer_[i] = 0;
@@ -628,7 +649,7 @@ The distortion effect clips the input to a specified level
   param1 = pre clip gain
   param2 = clipping level
 */
-Distortion::Distortion(double p1, double p2, int length){
+Distortion::Distortion(double p1, double p2){
   name_ = "Distortion";
   param1_name_ = "Pre-gain";
   param2_name_ = "Post-gain";
@@ -637,7 +658,7 @@ Distortion::Distortion(double p1, double p2, int length){
   define_printouts(&param1_, "", &param2_, "");
 
 
-  ugen_buffer_size_ = length;
+  ugen_buffer_size_ = UnitGenerator::buffer_length;
   ugen_buffer_ = new double[ugen_buffer_size_];
   for (int i = 0; i < ugen_buffer_size_; i++){
     ugen_buffer_[i] = 0;
@@ -653,16 +674,16 @@ Distortion::~Distortion(){
 // Processes a single sample in the unit generator
 double Distortion::tick(double in){
   double gain_adj = f_->dc_gain();
-  double offset = 0.04;
-  in = f_->tick(in).re() / gain_adj;
+  double offset = 0.00;//4;
+  //in = f_->tick(in).re() / gain_adj;
   in = param1_ * in + offset;
   double out = 0;
   // Cubic transfer function
-  if (in>1) out = 2/3.0;
-  else if (in<-1) out = -2/3.0;
+  if (in > 1) out = 2/3.0;
+  else if (in < -1) out = -2/3.0;
   else out = in - pow(in, 3)/3.0;
   out -= offset - pow(offset, 3)/3.0;
-  out = inv_->tick(out).re() * gain_adj;
+  //out = inv_->tick(out).re() * gain_adj;
   return param2_ * out;
 }  
 
@@ -691,7 +712,7 @@ A second order high or low pass filter
   param2 = Q
 */
 
-Filter::Filter(double p1, double p2, int length){
+Filter::Filter(double p1, double p2){
   name_ = "Filter";
   param1_name_ = "Cutoff Frequency";
   param2_name_ = "Q";
@@ -706,7 +727,7 @@ Filter::Filter(double p1, double p2, int length){
   f2_->calculate_coefficients();
   currently_lowpass_ = true;
 
-  ugen_buffer_size_ = length;
+  ugen_buffer_size_ = UnitGenerator::buffer_length;
   ugen_buffer_ = new double[ugen_buffer_size_];
   for (int i = 0; i < ugen_buffer_size_; i++){
     ugen_buffer_[i] = 0;
@@ -785,7 +806,7 @@ param1 = cutoff frequency
 param2 = Q
 */
 
-Bandpass::Bandpass(double p1, double p2, int length){
+Bandpass::Bandpass(double p1, double p2){
   name_ = "Bandpass";
   param1_name_ = "Cutoff Frequency";
   param2_name_ = "Q";
@@ -797,7 +818,7 @@ Bandpass::Bandpass(double p1, double p2, int length){
 
   f_ = new DigitalBandpassFilter(param1_, param2_, 1);
   f_->calculate_coefficients();
-  ugen_buffer_size_ = length;
+  ugen_buffer_size_ = UnitGenerator::buffer_length;
   ugen_buffer_ = new double[ugen_buffer_size_];
   for (int i = 0; i < ugen_buffer_size_; i++){
     ugen_buffer_[i] = 0;
@@ -833,11 +854,11 @@ The delay effect plays the signal back some time later
   param1 = time in seconds until delay repeats
   param2 = amount of feedback in delay buffer
 */
-Granular::Granular(double p1, double p2, int sample_rate, int length){
+Granular::Granular(double p1, double p2){
   name_ = "Granular";
   param1_name_ = "Granule Length";
   param2_name_ = "Density";
-  sample_rate_ = sample_rate;
+  sample_rate_ = UnitGenerator::sample_rate;
   set_limits(30, 10000, 0.01, 1);
   define_printouts(&param1_, "samples", &param2_, "");
   
@@ -849,7 +870,7 @@ Granular::Granular(double p1, double p2, int sample_rate, int length){
   for (int i = 0; i < buffer_size_; ++i) buffer_[i] = 0;
   buf_write_ = 0;
   
-  ugen_buffer_size_ = length;
+  ugen_buffer_size_ = UnitGenerator::buffer_length;
   ugen_buffer_ = new double[ugen_buffer_size_];
   for (int i = 0; i < ugen_buffer_size_; i++){
     ugen_buffer_[i] = 0;
@@ -939,12 +960,12 @@ The looper effect keeps a section of the input in a buffer and loops it back
   param1 = beats per minute
   param2 = number of beats
 */
-Looper::Looper(int sample_rate, int length){
+Looper::Looper(){
   name_ = "Looper";
   param1_name_ = "BPM";
   param2_name_ = "Number of Beats";
   //declare float buffer
-  sample_rate_ = sample_rate;
+  sample_rate_ = UnitGenerator::sample_rate;
   set_limits(60, 250, 1, 60);
   define_printouts(&param1_, "BPM", &param2_, "Beats");
   
@@ -959,7 +980,7 @@ Looper::Looper(int sample_rate, int length){
   counting_down_ = false;
   is_recording_ = false;
   has_recording_ = false;
-  ugen_buffer_size_ = length;
+  ugen_buffer_size_ = UnitGenerator::buffer_length;
   ugen_buffer_ = new double[ugen_buffer_size_];
   for (int i = 0; i < ugen_buffer_size_; i++){
     ugen_buffer_[i] = 0;
@@ -1146,17 +1167,17 @@ A ring modulator. Multiplies the input by a sinusoid
   param1 = frequency
   param2 = Not Used
 */
-RingMod::RingMod(double p1, double p2, int sample_rate, int length){
+RingMod::RingMod(double p1, double p2){
   name_ = "RingMod";
   param1_name_ = "Frequency";
   param2_name_ = "Not Used";
-  sample_rate_ = sample_rate;
+  sample_rate_ = UnitGenerator::sample_rate;
   set_limits(0, 1, 0, 1);
   set_params(p1, p2);
   define_printouts(&report_hz_, "Hz", NULL, "");
   
   sample_count_ = 0;
-  ugen_buffer_size_ = length;
+  ugen_buffer_size_ = UnitGenerator::buffer_length;
   ugen_buffer_ = new double[ugen_buffer_size_];
   for (int i = 0; i < ugen_buffer_size_; i++){
     ugen_buffer_[i] = 0;
@@ -1210,7 +1231,7 @@ The reverb effect convolves the signal with an impulse response
 const int Reverb::kCombDelays[] = {1116,1188,1356,1277,1422,1491,1617,1557};
 const int Reverb::kAllPassDelays[] = {225, 556, 441, 341};
 
-Reverb::Reverb(double p1, double p2, int length){
+Reverb::Reverb(double p1, double p2){
   name_ = "Reverb";
   param1_name_ = "Room Size";
   param2_name_ = "Damping";
@@ -1230,7 +1251,7 @@ Reverb::Reverb(double p1, double p2, int length){
   for (int i = 0; i < 4; ++i){
     aaf_.push_back(new AllpassApproximationFilter(kAllPassDelays[i], 0.5));
   }  
-  ugen_buffer_size_ = length;
+  ugen_buffer_size_ = UnitGenerator::buffer_length;
   ugen_buffer_ = new double[ugen_buffer_size_];
   for (int i = 0; i < ugen_buffer_size_; i++){
     ugen_buffer_[i] = 0;
@@ -1331,17 +1352,17 @@ The Tremolo effect modulates the amplitude of the signal
   param1 = rate
   param2 = depth
 */
-Tremolo::Tremolo(double p1, double p2, int sample_rate, int length){
+Tremolo::Tremolo(double p1, double p2){
   name_ = "Tremolo";
   param1_name_ = "Rate";
   param2_name_ = "Depth";
-  sample_rate_ = sample_rate;
+  sample_rate_ = UnitGenerator::sample_rate;
   set_limits(0, 1, 0, 1);
   set_params(p1, p2);
   define_printouts(&report_hz_, "Hz", &param2_, "");
   
   sample_count_ = 0;
-  ugen_buffer_size_ = length;
+  ugen_buffer_size_ = UnitGenerator::buffer_length;
   ugen_buffer_ = new double[ugen_buffer_size_];
   for (int i = 0; i < ugen_buffer_size_; i++){
     ugen_buffer_[i] = 0;

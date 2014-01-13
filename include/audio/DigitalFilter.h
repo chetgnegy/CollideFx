@@ -12,9 +12,7 @@
 #include "complex.h"
 #include <iostream>
 
-#ifndef SAMPLE_RATE
-#define SAMPLE_RATE 44100.0
-#endif
+
 
 #ifndef TWOPI
 #define TWOPI 6.2831853072
@@ -43,6 +41,8 @@ class DigitalFilter {
   DigitalFilter(double center_frequency, double Q, double gain);
   virtual ~DigitalFilter();
   
+  static void set_sample_rate(int sr);
+
   // Must be overridden by subclass
   virtual void calculate_coefficients(){};
 
@@ -77,6 +77,9 @@ class DigitalFilter {
   }
 
  protected:
+
+  static float sample_rate;
+  
   //The coefficients for the numerator
   double a_[3];  
   //The coefficients for the denominator

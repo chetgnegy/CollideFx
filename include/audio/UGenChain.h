@@ -26,10 +26,8 @@ public:
   static const unsigned int kSampleRate = 44100;
   static const int kNumChannels = 2;
   static const double kTwoPi = 6.2831853072;
-  static const unsigned int kBufferFrames = 512;
   static const double kMaxOutput = 2.5;
 
-  // Creates all structures. You still need to call initialize()!
   UGenChain();
   // Closes the buffer and cleans up objects
   ~UGenChain();
@@ -62,7 +60,8 @@ private:
   // The RtMidi object listens for MIDI events
   RtMidiIn *midi_;
 
-
+  // The size of all buffers
+  unsigned int buffer_frames_;
 };
  
 #endif

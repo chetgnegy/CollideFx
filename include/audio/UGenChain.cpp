@@ -38,17 +38,15 @@ double k = 0;
 // This callback deals directly with the audio callback buffers. All interaction with 
 // the soundcard happens in this function
 int audioCallback(void *outputBuffer, void *inputBuffer, unsigned int num_frames, double streamTime, RtAudioStreamStatus status, void * data) {
-
   double *input_buffer = (double *) inputBuffer;
   double *output_buffer = (double *) outputBuffer;
   
   UGenGraphBuilder *graph = (UGenGraphBuilder *) data;
   int numChannels = UGenChain::kNumChannels;
   
-  
   double newVal = 0, lastVal;
 
-  graph->handoff_audio_buffer(input_buffer,num_frames);
+  graph->handoff_audio_buffer(input_buffer, num_frames);
 
   double *out_mono = new double[num_frames];
   graph->lock_thread(true);
@@ -60,9 +58,6 @@ int audioCallback(void *outputBuffer, void *inputBuffer, unsigned int num_frames
   //Fills the other channels
   for (unsigned int i = 0; i < num_frames; ++i) {
     for (unsigned int j = 0; j < numChannels; ++j) {
-      // Limiting
-      //if (fabs(out_mono[i]) > 15) out_mono[i] = 0;
-
       output_buffer[i * numChannels + j] = 0.1 * out_mono[i];
     }
   }
@@ -79,16 +74,15 @@ int audioCallback(void *outputBuffer, void *inputBuffer, unsigned int num_frames
 
 
 
-//Creates all structures. You still need to call initialize()!
 UGenChain::UGenChain(){
-  graph_builder_ = new UGenGraphBuilder(kBufferFrames);
+  graph_builder_ = NULL;
 }
 
 //Closes the buffer and cleans up objects
 UGenChain::~UGenChain(){
   //Make sure we close things gracefully
   stop_audio();
-  delete graph_builder_;
+  if (graph_builder_ != NULL)delete graph_builder_;
   delete midi_;
 }
 
@@ -114,26 +108,35 @@ int UGenChain::initialize_audio(){
   output_params.deviceId = adac_->getDefaultOutputDevice();
   output_params.nChannels = kNumChannels;
   output_params.firstChannel = 0; 
-  
+
+  buffer_frames_ = 512; // a default value
+  graph_builder_ = new UGenGraphBuilder();
+    
   try { 
     // Yeah, I hate this too, it's just to make the openStream function happy...
     unsigned int sample_rate = kSampleRate;
-    unsigned int buffer_frames = kBufferFrames;
     RtAudioFormat format = kFormat;
+
     // Tells the audio stream how to open and what callback to use
     adac_->openStream(&output_params, 
-                      &input_params, format, 
+                      &input_params, 
+                      format, 
                       sample_rate, 
-                      &buffer_frames, 
+                      &buffer_frames_, 
                       &audioCallback, 
                       (void *) this->graph_builder_, 
                       &options_);
+
+    // Tells it how big the buffer should be (set by the external audio setup)
+    graph_builder_->initialize(buffer_frames_, sample_rate);
+    
      // opens the audio buffer
     adac_->startStream();
   } catch (RtError& e) {
     std::cout << e.getMessage() << std::endl;
     return -1;
   }
+  
   audio_initialized_ = true;
   return 0;
 }
