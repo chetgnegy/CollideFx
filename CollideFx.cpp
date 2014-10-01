@@ -12,6 +12,9 @@
 #include <math.h>
 #include <iostream>
 
+#include <stdio.h>
+#include <unistd.h>
+ #include <libgen.h>
 #include "UGenChain.h"
 #include "Disc.h"
 #include "World.h"
@@ -33,6 +36,9 @@ Things to add:
 
 int main(int argc, char *argv[]) {
   srand (time(NULL));
+
+  // Makes sure we are running from the right directory
+  chdir(dirname(argv[0]));
 
   Graphics *myGraphics = new Graphics(1100, 600);
   myGraphics->initialize(argc, argv);

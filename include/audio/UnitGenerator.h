@@ -719,7 +719,6 @@ class TremoloState : public UGenState {
 public:
   TremoloState(){};
   long sample_count_;
-  //double rate_hz_, report_hz_;
 };
 
 #endif

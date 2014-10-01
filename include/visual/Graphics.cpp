@@ -146,7 +146,7 @@ bool Graphics::remove_moveable(Moveable *k){
     if (!splash_loaded_) {
       glGenTextures( 1, &splash_ );
       glBindTexture(GL_TEXTURE_2D, splash_);
-
+      
       RgbImage theTexMap( "graphics/splash.bmp" ); // instantiation
 
       // Set the interpolation settings to best quality.
