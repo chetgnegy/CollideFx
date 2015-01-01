@@ -52,6 +52,9 @@ class DigitalFilter {
   // Gets the current output of the filter.
   complex most_recent_sample(void);
   
+  // When changing coefficients over time, we update using this.
+  void update_coefficients();
+    
   // Calculates the gain of the system at frequency zero. Good for 
   // normalizing with high Q or extreme corner frequency values.
   double dc_gain(void);
@@ -64,7 +67,9 @@ class DigitalFilter {
 
   // Changes the parameters. For some filters, this still might do 
   // nothing (because it may be overridden), depends on filter implementation
-  virtual void change_parameters(double center_frequency, double Q, double gain);
+  // The time constant allows the filter to smoothly change, if none is specified,
+  // it will change smoothly over the course of a 512 length buffer.
+  virtual void change_parameters(double center_frequency, double Q, double gain, double tau = 0.009);//.009
  
   virtual DigitalFilterState* get_state();
   virtual void set_state(DigitalFilterState *d);
@@ -79,8 +84,12 @@ class DigitalFilter {
  protected:
 
   static float sample_rate;
-  
-  //The coefficients for the numerator
+  //current coefficients
+  double now_a_[3];
+  double now_b_[3];
+  double tau_;
+  // The goal coefficients for the numerator (may be different from now_a when
+  // interpolating
   double a_[3];  
   //The coefficients for the denominator
   double b_[3];  
@@ -101,6 +110,9 @@ class DigitalBandpassFilter : public DigitalFilter {
   DigitalBandpassFilter(double center_frequency, double Q, double gain)
       : DigitalFilter(center_frequency, Q, gain) {
       this->calculate_coefficients();
+      memcpy(now_b_, b_, sizeof(double) * 3);
+      memcpy(now_a_, a_, sizeof(double) * 3);
+
   };
   //Calculates the bandpass filter coefficients
   void calculate_coefficients();
@@ -114,6 +126,9 @@ class DigitalBandstopFilter : public DigitalFilter {
   DigitalBandstopFilter(double center_frequency, double Q, double gain)
       : DigitalFilter(center_frequency, Q, gain) {
       this->calculate_coefficients();
+      memcpy(now_b_, b_, sizeof(double) * 3);
+      memcpy(now_a_, a_, sizeof(double) * 3);
+      
   };
   // Calculates the bandstop filter coefficients
   void calculate_coefficients();
@@ -126,6 +141,9 @@ class DigitalLowpassFilter : public DigitalFilter {
   DigitalLowpassFilter(double center_frequency, double Q, double gain)
       : DigitalFilter(center_frequency, Q, gain) {
       this->calculate_coefficients();
+      memcpy(now_b_, b_, sizeof(double) * 3);
+      memcpy(now_a_, a_, sizeof(double) * 3);
+
   };
   // Calculates the lowpass filter coefficients
   void calculate_coefficients();
@@ -138,6 +156,9 @@ class DigitalHighpassFilter : public DigitalFilter {
   DigitalHighpassFilter(double center_frequency, double Q, double gain)
       : DigitalFilter(center_frequency, Q, gain) {
       this->calculate_coefficients();
+      memcpy(now_b_, b_, sizeof(double) * 3);
+      memcpy(now_a_, a_, sizeof(double) * 3);
+
   };
   //Calculates the highpass filter coefficients
   void calculate_coefficients();
@@ -149,6 +170,7 @@ class SinglePoleFilter : public DigitalFilter {
   SinglePoleFilter(double pole, double damping, double gain)
       : DigitalFilter(pole, damping, gain) {
       this->calculate_coefficients();
+          
   };
   //Calculates the single pole filter's coefficients
   void calculate_coefficients();
@@ -252,6 +274,7 @@ class FilterBank {
   int num_filters_;
   // The current output of the filter
   complex current_sample_;
+    
 };
 
 

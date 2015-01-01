@@ -48,7 +48,7 @@ public:
   void get_rotation(double &w, double &x, double &y, double &z);
   
   // initializes the textures
-  void prepare_graphics(void);
+  void prepare_graphics();
 
   // Advances the graphics
   void advance_time(double time);

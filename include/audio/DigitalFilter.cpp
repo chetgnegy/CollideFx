@@ -7,6 +7,7 @@ DigitalFilter::DigitalFilter(double a[3], double b[3]){
   gain_ = 1;
   Q_ = 1;
   corner_frequency_ = 1;
+  tau_ = .009;
   force_coefficients(a,b);
 };
 
@@ -14,6 +15,7 @@ DigitalFilter::DigitalFilter(double center, double Q, double gain) {
   gain_ = gain;
   Q_ = Q;
   corner_frequency_ = center;  //Convert to rads/sec
+  tau_ = .009;
   x_past_[0] = 0;
   x_past_[1] = 0;
   x_past_[2] = 0;
@@ -29,16 +31,27 @@ void DigitalFilter::set_sample_rate(int sr){
   DigitalFilter::sample_rate = sr;
 }
 
+void DigitalFilter::update_coefficients(){
+  now_a_[0] += (a_[0] - now_a_[0])*tau_;
+  now_a_[1] += (a_[1] - now_a_[1])*tau_;
+  now_a_[2] += (a_[2] - now_a_[2])*tau_;
+  now_b_[0] += (b_[0] - now_b_[0])*tau_;
+  now_b_[1] += (b_[1] - now_b_[1])*tau_;
+  now_b_[2] += (b_[2] - now_b_[2])*tau_;
+}
+
+
 //Advances the filter by a single sample, in.
 complex DigitalFilter::tick(complex in) {
+  update_coefficients();
   x_past_[2] = x_past_[1];
   x_past_[1] = x_past_[0];
   x_past_[0] = in;
   y_past_[2] = y_past_[1];
   y_past_[1] = y_past_[0];
 
-  y_past_[0] = -a_[1] * y_past_[1] - a_[2] * y_past_[2]
-      + (b_[0] * x_past_[0] + b_[1] * x_past_[1] + b_[2] * x_past_[2]);
+  y_past_[0] = -now_a_[1] * y_past_[1] - now_a_[2] * y_past_[2]
+      + (now_b_[0] * x_past_[0] + now_b_[1] * x_past_[1] + now_b_[2] * x_past_[2]);
   
   return most_recent_sample();
 }
@@ -48,7 +61,7 @@ complex DigitalFilter::most_recent_sample() {
   return y_past_[0] * gain_;
 }
 
-//Calculates the DC gain of the system. Good for normalizing with high Q or extreme corner frequency values.
+//Calculates the DC gain of the system.
 double DigitalFilter::dc_gain() {
   return fabs((b_[0] + b_[1] + b_[2]) / (a_[0] + a_[1] + a_[2]));
 }
@@ -63,10 +76,12 @@ DigitalFilter* DigitalFilter::create_inverse(){
   return f;
 }
 
-void DigitalFilter::change_parameters(double center, double Q, double gain){
+void DigitalFilter::change_parameters(double center, double Q, double gain, double tau){
   gain_ = gain;
   Q_ = Q;
   corner_frequency_ = center;  //Convert to rads/sec
+  if (tau_<.0001) tau = .0001;
+  tau_ = tau;
   calculate_coefficients();
 }
 
@@ -108,11 +123,10 @@ void DigitalBandpassFilter::calculate_coefficients() {
   a_[1] = -(alpha_1 + alpha_2);
   a_[2] = 1 + alpha_1 - alpha_2;
 
-}
+ }
 
 
 void DigitalBandstopFilter::calculate_coefficients() {
-
   double bandwidth = TWOPI * corner_frequency_ / Q_;
   double lambda_1 = TWOPI * corner_frequency_ - bandwidth / 2.0;
   double lambda_2 = TWOPI * corner_frequency_ + bandwidth / 2.0;
@@ -132,12 +146,9 @@ void DigitalBandstopFilter::calculate_coefficients() {
   a_[0] = 1;
   a_[1] = -(alpha_1 + alpha_2);
   a_[2] = 1 + alpha_1 - alpha_2;
-
 }
 
-
 void DigitalLowpassFilter::calculate_coefficients() {
-
   double gamma_0 = 4;
   double gamma_1 = 2 / DigitalFilter::sample_rate * (TWOPI * corner_frequency_) / Q_;
   double gamma_2 = pow(TWOPI * corner_frequency_ / DigitalFilter::sample_rate, 2);
@@ -146,19 +157,18 @@ void DigitalLowpassFilter::calculate_coefficients() {
   double alpha_1 = (gamma_0 - gamma_1 - gamma_2) / denominator;
   double alpha_2 = (gamma_0 + gamma_1 - gamma_2) / denominator;
 
-  b_[0] = .5 * (alpha_2 - alpha_1);
+  b_[0] = .5 * (1-alpha_2);
   b_[1] = 2 * b_[0];
   b_[2] = b_[0];
   a_[0] = 1;
   a_[1] = -(alpha_1 + alpha_2);
   a_[2] = 1 + alpha_1 - alpha_2;
-
+  
 }
 
 
 
 void DigitalHighpassFilter::calculate_coefficients() {
-  
   double gamma_0 = 4;
   double gamma_1 = 2 / DigitalFilter::sample_rate * (TWOPI * corner_frequency_) / Q_;
   double gamma_2 = pow(TWOPI * corner_frequency_ / DigitalFilter::sample_rate, 2);
@@ -167,7 +177,7 @@ void DigitalHighpassFilter::calculate_coefficients() {
   double alpha_1 = (gamma_0 - gamma_1 - gamma_2) / denominator;
   double alpha_2 = (gamma_0 + gamma_1 - gamma_2) / denominator;
 
-  b_[0] = .5 * (alpha_2 + alpha_1);
+  b_[0] = .5 * (1 + alpha_1);
   b_[1] = -2 * b_[0];
   b_[2] = b_[0];
   a_[0] = 1;

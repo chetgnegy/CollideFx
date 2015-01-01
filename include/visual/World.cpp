@@ -113,7 +113,7 @@ void World::get_rotation(double &w, double &x, double &y, double &z){
 }
 
 // initializes the textures
-void World::prepare_graphics(void){
+void World::prepare_graphics(){
     GLubyte *tex = new GLubyte[32 * 32 * 3];
     FILE *tf;
     tf = fopen ( "graphics/particle.raw", "rb" );

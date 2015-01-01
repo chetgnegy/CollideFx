@@ -43,10 +43,10 @@ public:
 
   // Marks something to be drawn. Things without transparency
   // should be pushed to the front of the list. 
-  static void add_drawable(Drawable *, int priority = 999999);
-  static bool remove_drawable(Drawable *);
-  static void add_moveable(Moveable *);
-  static bool remove_moveable(Moveable *);
+  static void add_drawable(Drawable * const, int priority = 999999);
+  static bool remove_drawable(Drawable * const);
+  static void add_moveable(Moveable * const);
+  static bool remove_moveable(Moveable * const);
   
   static std::list<Drawable *> draw_list_;
   static std::list<Moveable *> move_list_;

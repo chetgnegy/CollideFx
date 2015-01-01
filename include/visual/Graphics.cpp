@@ -80,7 +80,7 @@ int Graphics::initialize(int argc, char *argv[]){
 void Graphics::start_graphics(){ glutMainLoop(); }
 
 
-void Graphics::add_drawable(Drawable *k, int priority){ 
+void Graphics::add_drawable(Drawable * const k, int priority){ 
   k->prepare_graphics();
   if (priority < 999999){
 
@@ -103,7 +103,7 @@ void Graphics::add_drawable(Drawable *k, int priority){
 }
 
 // Removes an item from the draw list
-bool Graphics::remove_drawable(Drawable *k){ 
+bool Graphics::remove_drawable(Drawable * const k){ 
   if (Graphics::draw_list_.size() > 0) {
     std::list<Drawable *>::iterator it;
     std::list<int>::iterator pri_it;
@@ -123,10 +123,10 @@ bool Graphics::remove_drawable(Drawable *k){
 }
 
 
-void Graphics::add_moveable(Moveable *k){ move_list_.push_back(k); }
+void Graphics::add_moveable(Moveable * const k){ move_list_.push_back(k); }
 
 // Removes an item from the move list
-bool Graphics::remove_moveable(Moveable *k){ 
+bool Graphics::remove_moveable(Moveable * const k){ 
   if (Graphics::move_list_.size() > 0) {
     std::list<Moveable *>::iterator it;
     it = Graphics::move_list_.begin();
